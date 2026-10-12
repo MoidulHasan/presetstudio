@@ -16,7 +16,20 @@ function reset(section: DesignSection) {
   toast.add({ severity: 'secondary', summary: `${SECTION_META[section].label} reset`, detail: `Back to the base preset. Press ${undoHint} to undo.`, life: 3000 })
 }
 
-const canReset = computed(() => !!designSection.value && store.modifiedSections.has(designSection.value))
+const canReset = computed(() =>
+  store.prefs.section === 'semantic'
+    ? store.semanticOverrideCount > 0
+    : !!designSection.value && store.modifiedSections.has(designSection.value))
+
+function onReset() {
+  if (store.prefs.section === 'semantic') {
+    store.resetSemantic()
+    toast.add({ severity: 'secondary', summary: 'Custom semantic tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
+  }
+  else if (designSection.value) {
+    reset(designSection.value)
+  }
+}
 
 // Scroll the panel back to the top when switching sections.
 const body = ref<HTMLElement | null>(null)
@@ -51,7 +64,7 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
           size="small"
           text
           class="-my-1"
-          @click="reset(designSection!)"
+          @click="onReset"
         />
       </div>
       <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
@@ -78,6 +91,7 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
       <EditorPanelsShapePanel v-else-if="store.prefs.section === 'shape'" />
       <EditorPanelsDensityPanel v-else-if="store.prefs.section === 'density'" />
       <EditorPanelsFocusPanel v-else-if="store.prefs.section === 'focus'" />
+      <EditorPanelsSemanticPanel v-else-if="store.prefs.section === 'semantic'" />
       <EditorPanelsAccessibilityPanel v-else-if="store.prefs.section === 'accessibility'" />
     </div>
   </div>

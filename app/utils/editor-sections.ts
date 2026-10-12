@@ -37,6 +37,11 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     icon: 'pi pi-bullseye',
     description: 'The keyboard focus indicator. Press Tab inside the preview to see it.',
   },
+  semantic: {
+    label: 'Semantic tokens',
+    icon: 'pi pi-sitemap',
+    description: 'Every semantic token of the preset. Edit a value or point it at another token.',
+  },
   accessibility: {
     label: 'Accessibility',
     icon: 'pi pi-eye',

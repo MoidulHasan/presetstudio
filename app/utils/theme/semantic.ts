@@ -39,7 +39,10 @@ export function groupKeyOf(token: TokenDescriptor): string {
 
 /** Semantic tokens visible when editing `scheme`: shared tokens plus that scheme's tokens, grouped. */
 export function groupSemanticTokens(tokens: TokenDescriptor[], scheme: ColorScheme): TokenGroup[] {
-  const visible = tokens.filter(t => t.layer === 'semantic' && (t.scheme === null || t.scheme === scheme))
+  const candidates = tokens.filter(t => t.layer === 'semantic' && (t.scheme === null || t.scheme === scheme))
+  // A scheme value shadows a shared token with the same name (the engine uses the scheme one).
+  const schemeNames = new Set(candidates.filter(t => t.scheme === scheme).map(t => t.name))
+  const visible = candidates.filter(t => t.scheme !== null || !schemeNames.has(t.name))
   return GROUPS
     .map(group => ({ ...group, tokens: visible.filter(t => groupKeyOf(t) === group.key) }))
     .filter(group => group.tokens.length)

@@ -106,3 +106,12 @@ describe('semantic grouping', () => {
     expect(countSemanticOverrides({ semantic: { a: '1', b: { c: '2' } }, primitive: { x: '1' } })).toBe(2)
   })
 })
+
+describe('shadowed shared tokens', () => {
+  it('hides a shared token when the scheme defines the same token', async () => {
+    const Lara = (await import('@primeuix/themes/lara')).default as unknown as TokenTree
+    const names = groupSemanticTokens(describePreset(Lara), 'light').flatMap(g => g.tokens).filter(t => t.name === 'focus-ring-shadow')
+    expect(names).toHaveLength(1)
+    expect(names[0]!.scheme).toBe('light')
+  })
+})

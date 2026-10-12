@@ -1,11 +1,16 @@
 import { defineStore } from 'pinia'
 import { buildEffectivePreset, buildPresetOverrides } from '~/utils/theme/build'
+import { designToTokens } from '~/utils/theme/design'
 import { checkContrast, classifyContrast, type ClassifiedContrast } from '~/utils/theme/contrast'
 import { countTokens, generatePresetCode, presetFileBase, presetIdentifier } from '~/utils/theme/export'
 import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
 import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
+import { describePreset } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
+import { countSemanticOverrides } from '~/utils/theme/semantic'
+import { deletePath, setPath } from '~/utils/theme/tree'
+import { sanitizeTokenValue } from '~/utils/theme/values'
 import {
   createThemeDocument,
   createWorkspace,
@@ -29,7 +34,7 @@ const WORKSPACE_KEY = 'presetstudio:workspace'
 const LEGACY_THEME_KEY = 'presetstudio:theme'
 const PREFS_KEY = 'presetstudio:prefs'
 
-export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'accessibility'] as const
+export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'semantic', 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
 export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
@@ -189,6 +194,38 @@ export const useEditorStore = defineStore('editor', () => {
     return c ? [...c.light, ...c.dark].filter(r => r.status === 'introduced').length : 0
   })
 
+  // --- Token-level editing ---------------------------------------------------------
+
+  /** Every token of the base preset with inferred kind and labels. */
+  const descriptors = computed(() => (basePreset.value ? describePreset(basePreset.value) : []))
+
+  /** Tokens set by design decisions (to tell 'design' from 'base' values). */
+  const designTokens = computed(() => (basePreset.value ? designToTokens(theme.value.design, basePreset.value) : {}))
+
+  const semanticOverrideCount = computed(() => countSemanticOverrides(theme.value.overrides))
+
+  /** Sets a raw token override. Returns false if the value isn't a safe token value. */
+  function setToken(path: string[], value: string): boolean {
+    const safe = sanitizeTokenValue(value)
+    if (safe === null) return false
+    update((d) => {
+      d.overrides = setPath(d.overrides, path, safe)
+    }, `token:${path.join('.')}`)
+    return true
+  }
+
+  function resetToken(path: string[]) {
+    update((d) => {
+      d.overrides = deletePath(d.overrides, path)
+    })
+  }
+
+  function resetSemantic() {
+    update((d) => {
+      d.overrides = deletePath(d.overrides, ['semantic'])
+    })
+  }
+
   const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
 
   function resetDesignSection(section: DesignSection) {
@@ -263,6 +300,12 @@ export const useEditorStore = defineStore('editor', () => {
     contrast,
     contrastIssues,
     modifiedSections,
+    descriptors,
+    designTokens,
+    semanticOverrideCount,
+    setToken,
+    resetToken,
+    resetSemantic,
     resetSection: resetDesignSection,
     exportInfo,
     canUndo: computed(() => canUndo(history.value)),

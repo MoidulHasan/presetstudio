@@ -9,6 +9,7 @@ const store = useEditorStore()
 const groups: Array<{ label: string, sections: readonly EditorSection[] }> = [
   { label: 'Start', sections: ['start'] },
   { label: 'Global design', sections: DESIGN_SECTIONS },
+  { label: 'Tokens', sections: ['semantic'] },
   { label: 'Review', sections: ['accessibility'] },
 ]
 
@@ -58,6 +59,13 @@ const isModified = (section: EditorSection) => store.modifiedSections.has(sectio
             aria-label="Changed"
           />
           <Badge
+            v-if="item.key === 'semantic' && store.semanticOverrideCount"
+            v-tooltip.right="'Custom token values'"
+            :value="store.semanticOverrideCount"
+            severity="secondary"
+            size="small"
+          />
+          <Badge
             v-if="item.key === 'accessibility' && store.contrastIssues"
             :value="store.contrastIssues"
             severity="danger"
@@ -69,7 +77,7 @@ const isModified = (section: EditorSection) => store.modifiedSections.has(sectio
     </Menu>
 
     <p class="mt-4 px-2 text-xs text-surface-400 dark:text-surface-500">
-      Semantic and component tokens are coming next.
+      Component tokens are coming next.
     </p>
   </nav>
 </template>
