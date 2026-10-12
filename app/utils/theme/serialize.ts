@@ -1,5 +1,6 @@
 import { isTokenTree, mergeOverrides } from './merge'
 import { normalizeHex } from './palette'
+import { sanitizeTokenTree } from './values'
 import {
   BASE_PRESETS,
   DENSITIES,
@@ -84,7 +85,7 @@ function migrateV1(input: Record<string, unknown>): ThemeState {
   const color = typeof input.primaryColor === 'string' ? normalizeHex(input.primaryColor) : null
   // v1 always used PrimeTek's palette(); keep the exact same colors.
   if (color) state.design.primary = { kind: 'custom', color, algorithm: 'classic', shades: {} }
-  if (isTokenTree(input.overrides)) state.overrides = mergeOverrides(input.overrides)
+  if (isTokenTree(input.overrides)) state.overrides = sanitizeTokenTree(mergeOverrides(input.overrides))
   return state
 }
 
@@ -100,7 +101,7 @@ export function parseThemeState(input: unknown): ThemeState | null {
     version: THEME_STATE_VERSION,
     basePreset: oneOf(BASE_PRESETS, input.basePreset) ? input.basePreset : 'aura',
     design: parseDesign(input.design),
-    overrides: isTokenTree(input.overrides) ? mergeOverrides(input.overrides) : {},
+    overrides: isTokenTree(input.overrides) ? sanitizeTokenTree(mergeOverrides(input.overrides)) : {},
   }
 }
 

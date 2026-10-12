@@ -1,7 +1,8 @@
-import { isTokenTree, mergeOverrides } from './merge'
+import { mergeOverrides } from './merge'
 import { parseColor, rgbToOklch } from './color'
 import { generateNeutralPalette, generatePalette } from './palette'
 import { createResolver } from './tokens'
+import { getPath, setPath } from './tree'
 import {
   SHADES,
   type ColorPalette,
@@ -103,33 +104,15 @@ export function scaleLength(value: string, factor: number): string | null {
   return scaled.includes(null) ? null : scaled.join(' ')
 }
 
-function getPath(tree: TokenTree, path: readonly string[]): unknown {
-  let node: unknown = tree
-  for (const key of path) {
-    if (!isTokenTree(node)) return undefined
-    node = node[key]
-  }
-  return node
-}
-
-function setPath(tree: TokenTree, path: readonly string[], value: string): void {
-  let node = tree
-  for (const key of path.slice(0, -1)) {
-    if (!isTokenTree(node[key])) node[key] = {}
-    node = node[key] as TokenTree
-  }
-  node[path[path.length - 1]!] = value
-}
-
 function densityTokens(density: Density, base: TokenTree): TokenTree {
   const factor = DENSITY_FACTORS[density]
-  const out: TokenTree = {}
+  let out: TokenTree = {}
   if (factor === 1) return out
   for (const path of DENSITY_PATHS) {
     const current = getPath(base, path)
     if (typeof current !== 'string') continue
     const scaled = scaleLength(current, factor)
-    if (scaled !== null) setPath(out, path, scaled)
+    if (scaled !== null) out = setPath(out, path, scaled)
   }
   return out
 }
