@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
-import { buildEffectivePreset } from '~/utils/theme/build'
+import { buildEffectivePreset, buildPresetOverrides } from '~/utils/theme/build'
 import { checkContrast, classifyContrast, type ClassifiedContrast } from '~/utils/theme/contrast'
-import { generatePresetCode } from '~/utils/theme/export'
+import { countTokens, generatePresetCode, presetFileBase, presetIdentifier } from '~/utils/theme/export'
 import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
 import { PREVIEW_TEMPLATES, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
@@ -32,6 +32,12 @@ const PREFS_KEY = 'presetstudio:prefs'
 export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
+export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
+export type PreviewViewport = (typeof PREVIEW_VIEWPORTS)[number]
+
+export const UI_THEMES = ['system', 'light', 'dark'] as const
+export type UiTheme = (typeof UI_THEMES)[number]
+
 interface EditorPrefs {
   /** Scheme shown in the preview and edited by scheme-aware panels. */
   colorScheme: ColorScheme
@@ -39,6 +45,9 @@ interface EditorPrefs {
   /** Show light and dark previews side by side. */
   split: boolean
   template: PreviewTemplate
+  viewport: PreviewViewport
+  /** The editor's own color scheme (independent of the theme being designed). */
+  uiTheme: UiTheme
 }
 
 function readStorage(key: string): string | null {
@@ -69,7 +78,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', viewport: 'full', uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -77,6 +86,8 @@ function loadPrefs(): EditorPrefs {
       section: EDITOR_SECTIONS.includes(raw?.section as EditorSection) ? raw!.section! : fallback.section,
       split: typeof raw?.split === 'boolean' ? raw.split : fallback.split,
       template: PREVIEW_TEMPLATES.includes(raw?.template as PreviewTemplate) ? raw!.template! : fallback.template,
+      viewport: PREVIEW_VIEWPORTS.includes(raw?.viewport as PreviewViewport) ? raw!.viewport! : fallback.viewport,
+      uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }
   }
   catch {
@@ -181,7 +192,18 @@ export const useEditorStore = defineStore('editor', () => {
     update(draft => Object.assign(draft, resetSection(draft, section)))
   }
 
-  const exportCode = computed(() => (basePreset.value ? generatePresetCode(theme.value, basePreset.value) : ''))
+  const exportInfo = computed(() => {
+    const base = basePreset.value
+    const identifier = presetIdentifier(activeDoc.value.name)
+    const fileBase = presetFileBase(activeDoc.value.name)
+    if (!base) return { identifier, fileBase, code: '', tokenCount: 0 }
+    return {
+      identifier,
+      fileBase,
+      code: generatePresetCode(theme.value, base, { name: identifier }),
+      tokenCount: countTokens(buildPresetOverrides(theme.value, base)),
+    }
+  })
 
   // --- Theme management ------------------------------------------------------------
 
@@ -239,7 +261,7 @@ export const useEditorStore = defineStore('editor', () => {
     contrastIssues,
     modifiedSections,
     resetSection: resetDesignSection,
-    exportCode,
+    exportInfo,
     canUndo: computed(() => canUndo(history.value)),
     canRedo: computed(() => canRedo(history.value)),
     update,

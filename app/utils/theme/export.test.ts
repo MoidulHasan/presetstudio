@@ -1,7 +1,7 @@
 import Lara from '@primeuix/themes/lara'
 import { describe, expect, it } from 'vitest'
 import { buildPresetOverrides } from './build'
-import { formatObject, generatePresetCode, quoteString } from './export'
+import { countTokens, formatObject, generateNuxtSnippets, generatePresetCode, generateVueSnippet, presetFileBase, presetIdentifier, quoteString } from './export'
 import { createDefaultDesign, createDefaultThemeState, SHADES, type ThemeState, type TokenTree } from './types'
 
 const evalLiteral = (code: string): unknown => new Function(`return (${code})`)()
@@ -81,5 +81,34 @@ describe('generatePresetCode', () => {
   it('supports a custom name and falls back on invalid ones', () => {
     expect(generatePresetCode(state, lara, { name: 'BrandPreset' })).toContain('const BrandPreset = definePreset(')
     expect(generatePresetCode(state, lara, { name: '1bad name' })).toContain('const MyPreset = definePreset(')
+  })
+})
+
+describe('naming and snippets', () => {
+  it('derives a valid identifier and file name from the theme name', () => {
+    expect(presetIdentifier('Brand theme')).toBe('BrandThemePreset')
+    expect(presetIdentifier('acme preset')).toBe('AcmePreset')
+    expect(presetIdentifier('2025 café-UI!')).toBe('CafeUIPreset')
+    expect(presetIdentifier('  ')).toBe('MyPreset')
+    expect(presetFileBase('Brand theme')).toBe('brand-theme')
+    expect(presetFileBase('!!!')).toBe('my-preset')
+  })
+
+  it('generates Nuxt snippets with a { preset, options } theme module', () => {
+    const { themeFile, config } = generateNuxtSnippets('BrandPreset', 'brand')
+    expect(themeFile).toContain('import BrandPreset from \'./brand\'')
+    expect(themeFile).toContain('preset: BrandPreset,')
+    expect(config).toContain('importTheme: { as: \'AppTheme\', from: \'~/themes/theme.ts\' }')
+  })
+
+  it('generates a Vue setup snippet', () => {
+    const code = generateVueSnippet('BrandPreset', 'brand')
+    expect(code).toContain('import BrandPreset from \'./themes/brand\'')
+    expect(code).toContain('preset: BrandPreset,')
+  })
+
+  it('counts changed tokens', () => {
+    expect(countTokens({})).toBe(0)
+    expect(countTokens({ semantic: { primary: { 500: '#000', 600: '#111' }, x: '1' } })).toBe(3)
   })
 })
