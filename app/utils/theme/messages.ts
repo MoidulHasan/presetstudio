@@ -1,0 +1,49 @@
+import { parseThemeState } from './serialize'
+import type { ThemeState } from './types'
+
+// Typed postMessage protocol between /editor (parent) and /preview (iframe).
+export const MESSAGE_CHANNEL = 'presetstudio'
+
+export type EditorToPreviewMessage = { channel: typeof MESSAGE_CHANNEL, type: 'theme:apply', state: ThemeState }
+
+export type PreviewToEditorMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
+
+interface MessageEventLike {
+  origin: string
+  data: unknown
+}
+
+/** Same-origin check. Both sides must call this before trusting `event.data`. */
+export function isSameOrigin(event: Pick<MessageEventLike, 'origin'>, expectedOrigin: string): boolean {
+  return event.origin === expectedOrigin && expectedOrigin !== 'null'
+}
+
+function hasChannel(data: unknown): data is { channel: string, type: unknown } & Record<string, unknown> {
+  return typeof data === 'object' && data !== null && (data as { channel?: unknown }).channel === MESSAGE_CHANNEL
+}
+
+/** Parses a message received by the preview. Returns null if untrusted or malformed. */
+export function parseEditorMessage(event: MessageEventLike, expectedOrigin: string): EditorToPreviewMessage | null {
+  if (!isSameOrigin(event, expectedOrigin) || !hasChannel(event.data)) return null
+  if (event.data.type === 'theme:apply') {
+    const state = parseThemeState(event.data.state)
+    return state ? { channel: MESSAGE_CHANNEL, type: 'theme:apply', state } : null
+  }
+  return null
+}
+
+/** Parses a message received by the editor. Returns null if untrusted or malformed. */
+export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: string): PreviewToEditorMessage | null {
+  if (!isSameOrigin(event, expectedOrigin) || !hasChannel(event.data)) return null
+  if (event.data.type === 'preview:ready') return { channel: MESSAGE_CHANNEL, type: 'preview:ready' }
+  return null
+}
+
+export function createApplyMessage(state: ThemeState): EditorToPreviewMessage {
+  // Plain clone so reactive proxies never cross the postMessage boundary.
+  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)) }
+}
+
+export function createReadyMessage(): PreviewToEditorMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:ready' }
+}
