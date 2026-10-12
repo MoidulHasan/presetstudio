@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { useThemeStore } from '~/stores/theme'
+import { useEditorStore } from '~/stores/editor'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
-const store = useThemeStore()
+const store = useEditorStore()
 const toast = useToast()
 
 async function copy() {

@@ -1,0 +1,227 @@
+import { defineStore } from 'pinia'
+import { buildEffectivePreset } from '~/utils/theme/build'
+import { checkContrast, type ContrastResult } from '~/utils/theme/contrast'
+import { generatePresetCode } from '~/utils/theme/export'
+import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
+import { loadBasePreset } from '~/utils/theme/presets'
+import {
+  createThemeDocument,
+  createWorkspace,
+  deserializeThemeState,
+  deserializeWorkspace,
+  sanitizeThemeName,
+} from '~/utils/theme/serialize'
+import { createResolver, type TokenResolver } from '~/utils/theme/tokens'
+import {
+  COLOR_SCHEMES,
+  SHADES,
+  createDefaultThemeState,
+  type ColorPalette,
+  type ColorScheme,
+  type ThemeState,
+  type TokenTree,
+  type Workspace,
+} from '~/utils/theme/types'
+
+const WORKSPACE_KEY = 'presetstudio:workspace'
+const LEGACY_THEME_KEY = 'presetstudio:theme'
+const PREFS_KEY = 'presetstudio:prefs'
+
+export const EDITOR_SECTIONS = ['primary', 'surface', 'shape', 'density', 'focus', 'accessibility'] as const
+export type EditorSection = (typeof EDITOR_SECTIONS)[number]
+
+interface EditorPrefs {
+  colorScheme: ColorScheme
+  section: EditorSection
+}
+
+function readStorage(key: string): string | null {
+  if (!import.meta.client) return null
+  try {
+    return window.localStorage.getItem(key)
+  }
+  catch {
+    return null
+  }
+}
+
+function writeStorage(key: string, value: string): void {
+  if (!import.meta.client) return
+  try {
+    window.localStorage.setItem(key, value)
+  }
+  catch {
+    // Persistence is best-effort (private mode, quota, blocked storage).
+  }
+}
+
+function loadWorkspace(): Workspace {
+  const saved = deserializeWorkspace(readStorage(WORKSPACE_KEY))
+  if (saved) return saved
+  // Migrate the single v1 theme, if any.
+  return createWorkspace(deserializeThemeState(readStorage(LEGACY_THEME_KEY)) ?? undefined)
+}
+
+function loadPrefs(): EditorPrefs {
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'primary' }
+  try {
+    const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
+    return {
+      colorScheme: COLOR_SCHEMES.includes(raw?.colorScheme as ColorScheme) ? raw!.colorScheme! : fallback.colorScheme,
+      section: EDITOR_SECTIONS.includes(raw?.section as EditorSection) ? raw!.section! : fallback.section,
+    }
+  }
+  catch {
+    return fallback
+  }
+}
+
+const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
+
+export const useEditorStore = defineStore('editor', () => {
+  const workspace = ref<Workspace>(loadWorkspace())
+  const prefs = ref<EditorPrefs>(loadPrefs())
+
+  const activeDoc = computed(() => workspace.value.themes.find(t => t.id === workspace.value.activeId) ?? workspace.value.themes[0]!)
+
+  // Undo history for the active theme; reset when switching themes.
+  const history = shallowRef<History<ThemeState>>(createHistory(clone(activeDoc.value.theme)))
+  const theme = computed(() => history.value.present)
+
+  function syncActiveDoc() {
+    const doc = activeDoc.value
+    doc.theme = clone(history.value.present)
+    doc.updatedAt = Date.now()
+  }
+
+  /**
+   * Applies a change to the active theme as one undo step.
+   * `key` coalesces rapid edits of the same control (e.g. dragging a slider).
+   */
+  function update(mutate: (draft: ThemeState) => void, key: string | null = null) {
+    const draft = clone(history.value.present)
+    mutate(draft)
+    if (JSON.stringify(draft) === JSON.stringify(history.value.present)) return
+    history.value = commit(history.value, draft, key)
+    syncActiveDoc()
+  }
+
+  function undoChange() {
+    history.value = undo(history.value)
+    syncActiveDoc()
+  }
+
+  function redoChange() {
+    history.value = redo(history.value)
+    syncActiveDoc()
+  }
+
+  // --- Base preset + derived data ------------------------------------------------
+
+  const basePreset = shallowRef<TokenTree | null>(null)
+  let loadToken = 0
+  watch(
+    () => theme.value.basePreset,
+    async (name) => {
+      const token = ++loadToken
+      const preset = (await loadBasePreset(name)) as unknown as TokenTree
+      if (token === loadToken) basePreset.value = preset
+    },
+    { immediate: true },
+  )
+
+  const effectivePreset = computed(() => (basePreset.value ? buildEffectivePreset(theme.value, basePreset.value) : null))
+
+  const resolvers = computed<Record<ColorScheme, TokenResolver> | null>(() => {
+    const preset = effectivePreset.value
+    if (!preset) return null
+    return { light: createResolver(preset, 'light'), dark: createResolver(preset, 'dark') }
+  })
+
+  /** Resolved 50–950 scale of a palette token group (e.g. 'primary', 'surface') for a scheme. */
+  function resolvedScale(group: string, scheme: ColorScheme = prefs.value.colorScheme): ColorPalette | null {
+    const resolver = resolvers.value?.[scheme]
+    if (!resolver) return null
+    return Object.fromEntries(SHADES.map(s => [s, resolver.resolve(`${group}-${s}`)?.value ?? 'transparent'])) as ColorPalette
+  }
+
+  const contrast = computed<Record<ColorScheme, ContrastResult[]> | null>(() => {
+    const r = resolvers.value
+    return r ? { light: checkContrast(r.light), dark: checkContrast(r.dark) } : null
+  })
+
+  const contrastIssues = computed(() => {
+    const c = contrast.value
+    return c ? [...c.light, ...c.dark].filter(r => r.pass === false).length : 0
+  })
+
+  const exportCode = computed(() => (basePreset.value ? generatePresetCode(theme.value, basePreset.value) : ''))
+
+  // --- Theme management ------------------------------------------------------------
+
+  function switchTheme(id: string) {
+    if (!workspace.value.themes.some(t => t.id === id) || id === workspace.value.activeId) return
+    workspace.value.activeId = id
+    history.value = createHistory(clone(activeDoc.value.theme))
+  }
+
+  function createTheme(name: string, from: 'blank' | 'duplicate' = 'blank') {
+    const base = from === 'duplicate' ? clone(theme.value) : createDefaultThemeState(theme.value.basePreset)
+    const doc = createThemeDocument(sanitizeThemeName(name), base)
+    workspace.value.themes.push(doc)
+    switchTheme(doc.id)
+  }
+
+  function renameTheme(id: string, name: string) {
+    const doc = workspace.value.themes.find(t => t.id === id)
+    if (doc) doc.name = sanitizeThemeName(name, doc.name)
+  }
+
+  function deleteTheme(id: string) {
+    const themes = workspace.value.themes
+    if (themes.length <= 1) return
+    const index = themes.findIndex(t => t.id === id)
+    if (index < 0) return
+    themes.splice(index, 1)
+    if (workspace.value.activeId === id) {
+      workspace.value.activeId = ''
+      switchTheme(themes[Math.max(0, index - 1)]!.id)
+    }
+  }
+
+  function resetTheme() {
+    update(draft => Object.assign(draft, createDefaultThemeState(draft.basePreset)))
+  }
+
+  // --- Persistence -------------------------------------------------------------------
+
+  let saveTimer: ReturnType<typeof setTimeout> | undefined
+  watch(workspace, (value) => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => writeStorage(WORKSPACE_KEY, JSON.stringify(value)), 250)
+  }, { deep: true })
+  watch(prefs, value => writeStorage(PREFS_KEY, JSON.stringify(value)), { deep: true })
+
+  return {
+    workspace,
+    prefs,
+    activeDoc,
+    theme,
+    basePreset,
+    resolvers,
+    contrast,
+    contrastIssues,
+    exportCode,
+    canUndo: computed(() => canUndo(history.value)),
+    canRedo: computed(() => canRedo(history.value)),
+    update,
+    undo: undoChange,
+    redo: redoChange,
+    resolvedScale,
+    switchTheme,
+    createTheme,
+    renameTheme,
+    deleteTheme,
+    resetTheme,
+  }
+})

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { useThemeStore } from '~/stores/theme'
+import { useEditorStore } from '~/stores/editor'
 import { createApplyMessage, parsePreviewMessage } from '~/utils/theme/messages'
 
-const store = useThemeStore()
+const store = useEditorStore()
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
@@ -13,7 +13,7 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    target.postMessage(createApplyMessage(store.state), window.location.origin)
+    target.postMessage(createApplyMessage(store.theme, store.prefs.colorScheme), window.location.origin)
   })
 }
 
@@ -33,7 +33,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch(() => store.state, sendState, { deep: true })
+watch([() => store.theme, () => store.prefs.colorScheme], sendState)
 </script>
 
 <template>
