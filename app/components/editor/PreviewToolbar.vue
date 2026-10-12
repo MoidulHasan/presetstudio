@@ -12,10 +12,23 @@ const templates: Array<{ value: PreviewTemplate, label: string, icon: string }> 
   { value: 'settings', label: 'Settings', icon: 'pi pi-cog' },
 ]
 
-const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> = [
+type PreviewMode = ColorScheme | 'split'
+
+const modeOptions: Array<{ value: PreviewMode, label: string, icon: string }> = [
   { value: 'light', label: 'Light', icon: 'pi pi-sun' },
   { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
+  { value: 'split', label: 'Side by side', icon: 'pi pi-objects-column' },
 ]
+
+// One control for what the preview shows. In side-by-side mode the edited scheme
+// (prefs.colorScheme) is kept and can be switched from the pane headers.
+const mode = computed<PreviewMode>({
+  get: () => (store.prefs.split ? 'split' : store.prefs.colorScheme),
+  set: (value) => {
+    store.prefs.split = value === 'split'
+    if (value !== 'split') store.prefs.colorScheme = value
+  },
+})
 
 const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: string }> = [
   { value: 'full', label: 'Full width', icon: 'pi pi-desktop' },
@@ -75,33 +88,23 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       </template>
     </SelectButton>
 
-    <div class="ml-auto flex items-center gap-2">
-      <SelectButton
-        v-model="store.prefs.colorScheme"
-        :options="schemeOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        :aria-label="store.prefs.split ? 'Color scheme being edited' : 'Preview color scheme'"
-        size="small"
-      >
-        <template #option="{ option }">
-          <i
-            :class="option.icon"
-            aria-hidden="true"
-          />
-          <span>{{ option.label }}</span>
-        </template>
-      </SelectButton>
-      <ToggleButton
-        v-model="store.prefs.split"
-        v-tooltip.bottom="'Show light and dark side by side'"
-        on-label="Side by side"
-        off-label="Side by side"
-        on-icon="pi pi-objects-column"
-        off-icon="pi pi-objects-column"
-        size="small"
-      />
-    </div>
+    <SelectButton
+      v-model="mode"
+      :options="modeOptions"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      aria-label="Preview mode"
+      size="small"
+      class="ml-auto"
+    >
+      <template #option="{ option }">
+        <i
+          :class="option.icon"
+          aria-hidden="true"
+        />
+        <span>{{ option.label }}</span>
+      </template>
+    </SelectButton>
   </div>
 </template>
