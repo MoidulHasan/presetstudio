@@ -70,6 +70,11 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
       <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
         {{ meta.description }}
       </p>
+      <!-- Panels can teleport sticky controls (search, filters) here. -->
+      <div
+        id="inspector-toolbar"
+        class="mt-3 flex flex-col gap-2 empty:hidden"
+      />
     </header>
 
     <div

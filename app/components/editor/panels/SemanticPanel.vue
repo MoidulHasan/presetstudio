@@ -64,7 +64,11 @@ function toggle(token: TokenDescriptor) {
 
 <template>
   <div class="flex flex-col gap-4">
-    <div class="sticky top-0 z-[1] -mx-5 -mt-5 flex flex-col gap-2 border-b border-surface-200 bg-surface-0 px-5 py-3 dark:border-surface-800 dark:bg-surface-900">
+    <!-- Sticky controls live in the inspector header, so they never scroll away or overlap it. -->
+    <Teleport
+      defer
+      to="#inspector-toolbar"
+    >
       <SelectButton
         v-model="scheme"
         :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
@@ -98,7 +102,7 @@ function toggle(token: TokenDescriptor) {
         />
         <span class="text-xs text-surface-500">{{ total }} token{{ total === 1 ? '' : 's' }}</span>
       </div>
-    </div>
+    </Teleport>
 
     <p
       v-if="!groups.length"
@@ -111,7 +115,6 @@ function toggle(token: TokenDescriptor) {
       v-else
       v-model:value="accordionValue"
       multiple
-      class="-mx-1"
     >
       <AccordionPanel
         v-for="group in groups"

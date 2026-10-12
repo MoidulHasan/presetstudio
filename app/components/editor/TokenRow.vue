@@ -90,6 +90,7 @@ const inputId = useId()
       <span class="flex min-w-0 flex-1 flex-col">
         <span class="truncate text-sm text-surface-900 dark:text-surface-0">{{ props.label }}</span>
         <span class="truncate font-mono text-[11px] text-surface-500">{{ raw }}</span>
+
       </span>
       <span
         v-if="source !== 'base'"
@@ -111,16 +112,19 @@ const inputId = useId()
       class="flex flex-col gap-3 px-2 pb-3 pt-1"
     >
       <div class="flex items-center gap-2 text-xs text-surface-500">
-        <code class="truncate font-mono">--p-{{ props.token.name }}</code>
+        <code
+          v-tooltip.top="`--p-${props.token.name}`"
+          class="min-w-0 flex-1 truncate font-mono"
+        >--p-{{ props.token.name }}</code>
         <Tag
           :value="props.token.scheme ? `${props.token.scheme === 'light' ? 'Light' : 'Dark'} only` : 'Both modes'"
           severity="secondary"
-          class="!px-1.5 !py-0 !text-[10px]"
+          class="shrink-0 !px-1.5 !py-0 !text-[10px]"
         />
         <Tag
           :value="SOURCE_LABEL[source]"
           :severity="source === 'custom' ? 'contrast' : 'secondary'"
-          class="!px-1.5 !py-0 !text-[10px]"
+          class="shrink-0 !px-1.5 !py-0 !text-[10px]"
         />
       </div>
 
@@ -176,17 +180,17 @@ const inputId = useId()
             class="pi pi-arrow-right text-[9px] text-surface-400"
             aria-hidden="true"
           />
-          <code class="rounded bg-surface-100 px-1 py-0.5 font-mono dark:bg-surface-700">{{ step }}</code>
+          <code class="max-w-full break-all rounded bg-surface-100 px-1 py-0.5 font-mono dark:bg-surface-700">{{ step }}</code>
         </template>
         <i
           class="pi pi-arrow-right text-[9px] text-surface-400"
           aria-hidden="true"
         />
-        <code class="font-mono font-semibold">{{ resolved?.value }}</code>
+        <code class="max-w-full break-all font-mono font-semibold">{{ resolved?.value }}</code>
       </div>
       <p
         v-else-if="resolved && resolved.value !== raw"
-        class="font-mono text-[11px] text-surface-500"
+        class="break-all font-mono text-[11px] text-surface-500"
       >
         = {{ resolved.value }}
       </p>

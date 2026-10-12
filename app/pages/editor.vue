@@ -68,7 +68,7 @@ onBeforeUnmount(() => {
       </section>
 
       <aside
-        class="w-full shrink-0 overflow-y-auto border-surface-200 md:w-[24rem] md:border-l dark:border-surface-800"
+        class="w-full shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 md:w-[24rem] md:border-l dark:border-surface-800"
         aria-label="Inspector"
       >
         <EditorInspector />
