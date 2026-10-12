@@ -1,21 +1,22 @@
 import Aura from '@primeuix/themes/aura'
 import { definePreset } from '@primeuix/themes'
 
-// Fixed preset for the editor chrome. Never changed at runtime.
+const zinc = (shade: number) => `{zinc.${shade}}`
+
+// Fixed preset for the editor chrome. Deliberately neutral (no hue), so the
+// theme being designed is the only real color on screen.
 const EditorPreset = definePreset(Aura, {
   semantic: {
-    primary: {
-      50: '{violet.50}',
-      100: '{violet.100}',
-      200: '{violet.200}',
-      300: '{violet.300}',
-      400: '{violet.400}',
-      500: '{violet.500}',
-      600: '{violet.600}',
-      700: '{violet.700}',
-      800: '{violet.800}',
-      900: '{violet.900}',
-      950: '{violet.950}',
+    primary: Object.fromEntries([50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map(s => [s, zinc(s)])),
+    colorScheme: {
+      light: {
+        primary: { color: zinc(900), contrastColor: '#ffffff', hoverColor: zinc(800), activeColor: zinc(700) },
+        highlight: { background: zinc(100), focusBackground: zinc(200), color: zinc(900), focusColor: zinc(950) },
+      },
+      dark: {
+        primary: { color: zinc(50), contrastColor: zinc(950), hoverColor: zinc(200), activeColor: zinc(300) },
+        highlight: { background: 'rgba(255,255,255,.1)', focusBackground: 'rgba(255,255,255,.16)', color: '#ffffff', focusColor: '#ffffff' },
+      },
     },
   },
 })

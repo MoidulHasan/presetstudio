@@ -3,14 +3,15 @@
     to="/"
     class="flex items-center gap-2 font-semibold tracking-tight"
   >
+    <!-- Brand mark uses fixed colors so it never follows the editor/preview themes. -->
     <span
-      class="grid grid-cols-2 gap-0.5 size-6"
+      class="grid size-6 grid-cols-2 gap-0.5"
       aria-hidden="true"
     >
-      <span class="rounded-sm bg-primary-300" />
-      <span class="rounded-sm bg-primary-500" />
-      <span class="rounded-sm bg-primary-700" />
-      <span class="rounded-sm bg-primary-900" />
+      <span class="rounded-sm bg-[#a78bfa]" />
+      <span class="rounded-sm bg-[#38bdf8]" />
+      <span class="rounded-sm bg-[#34d399]" />
+      <span class="rounded-sm bg-[#fbbf24]" />
     </span>
     Preset Studio
   </NuxtLink>
