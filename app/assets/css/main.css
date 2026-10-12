@@ -1,0 +1,12 @@
+@layer theme, base, primevue, components, utilities;
+
+@import 'tailwindcss';
+@import 'tailwindcss-primeui';
+
+@custom-variant dark (&:where(.ps-dark, .ps-dark *));
+
+html,
+body {
+  @apply bg-surface-0 text-surface-900 dark:bg-surface-950 dark:text-surface-0;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}

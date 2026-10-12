@@ -10,7 +10,16 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@pinia/nuxt": "1.0.2",
+    "@primeuix/themes": "2.0.3",
+    "@primevue/nuxt-module": "4.5.5",
+    "@tailwindcss/vite": "4.3.3",
     "nuxt": "^4.6.1",
+    "pinia": "4.0.3",
+    "primeicons": "7.0.0",
+    "primevue": "4.5.5",
+    "tailwindcss": "4.3.3",
+    "tailwindcss-primeui": "0.6.1",
     "vue": "^3.5.43",
     "vue-router": "^5.4.0"
   },
@@ -18,5 +27,37 @@
   "engines": {
     "node": ">=24.0.0"
   },
-  "packageManager": "pnpm@10.24.0"
+  "packageManager": "pnpm@10.24.0",
+  "overrides": {
+    "@primeuix/forms": "0.1.0",
+    "@primeuix/styled": "0.7.4",
+    "@primeuix/styles": "2.0.3",
+    "@primeuix/themes": "2.0.3",
+    "@primeuix/utils": "0.6.4",
+    "@primevue/auto-import-resolver": "4.5.5",
+    "@primevue/core": "4.5.5",
+    "@primevue/forms": "4.5.5",
+    "@primevue/icons": "4.5.5",
+    "@primevue/metadata": "4.5.5",
+    "@primevue/nuxt-module": "4.5.5",
+    "primeicons": "7.0.0",
+    "primevue": "4.5.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "@primeuix/forms": "0.1.0",
+      "@primeuix/styled": "0.7.4",
+      "@primeuix/styles": "2.0.3",
+      "@primeuix/themes": "2.0.3",
+      "@primeuix/utils": "0.6.4",
+      "@primevue/auto-import-resolver": "4.5.5",
+      "@primevue/core": "4.5.5",
+      "@primevue/forms": "4.5.5",
+      "@primevue/icons": "4.5.5",
+      "@primevue/metadata": "4.5.5",
+      "@primevue/nuxt-module": "4.5.5",
+      "primeicons": "7.0.0",
+      "primevue": "4.5.5"
+    }
+  }
 }
