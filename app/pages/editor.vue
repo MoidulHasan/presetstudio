@@ -26,8 +26,25 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+// The editor's own light/dark mode. The preview iframe has its own document, so it's unaffected.
+const systemDark = ref(false)
+let media: MediaQueryList | undefined
+const onMediaChange = (event: MediaQueryListEvent) => (systemDark.value = event.matches)
+const uiDark = computed(() => store.prefs.uiTheme === 'dark' || (store.prefs.uiTheme === 'system' && systemDark.value))
+watch(uiDark, dark => document.documentElement.classList.toggle('ps-dark', dark))
+
+onMounted(() => {
+  window.addEventListener('keydown', onKeydown)
+  media = window.matchMedia('(prefers-color-scheme: dark)')
+  systemDark.value = media.matches
+  media.addEventListener('change', onMediaChange)
+  document.documentElement.classList.toggle('ps-dark', uiDark.value)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown)
+  media?.removeEventListener('change', onMediaChange)
+  document.documentElement.classList.remove('ps-dark')
+})
 </script>
 
 <template>
@@ -47,46 +64,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         aria-label="Preview"
       >
         <EditorPreviewToolbar />
-        <div
-          v-if="store.prefs.split"
-          class="grid min-h-0 flex-1 grid-cols-1 gap-px bg-surface-200 xl:grid-cols-2 dark:bg-surface-800"
-        >
-          <div
-            v-for="scheme in (['light', 'dark'] as const)"
-            :key="scheme"
-            class="flex min-h-0 flex-col bg-surface-0 dark:bg-surface-900"
-          >
-            <Button
-              :icon="scheme === 'light' ? 'pi pi-sun' : 'pi pi-moon'"
-              :label="scheme === 'light' ? 'Light' : 'Dark'"
-              :badge="store.prefs.colorScheme === scheme ? 'editing' : undefined"
-              badge-severity="secondary"
-              severity="secondary"
-              size="small"
-              text
-              class="!h-8 !justify-start !rounded-none !px-3"
-              :class="store.prefs.colorScheme === scheme ? '!font-semibold' : ''"
-              :aria-pressed="store.prefs.colorScheme === scheme"
-              :aria-label="`Edit ${scheme} mode`"
-              @click="store.prefs.colorScheme = scheme"
-            />
-            <div class="min-h-0 flex-1">
-              <EditorPreviewFrame
-                :color-scheme="scheme"
-                :label="`${scheme} mode preview`"
-              />
-            </div>
-          </div>
-        </div>
-        <div
-          v-else
-          class="min-h-0 flex-1"
-        >
-          <EditorPreviewFrame
-            :color-scheme="store.prefs.colorScheme"
-            label="Theme preview"
-          />
-        </div>
+        <EditorPreviewStage />
       </section>
 
       <aside

@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useEditorStore, type PreviewViewport } from '~/stores/editor'
 import type { PreviewTemplate } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const store = useEditorStore()
 
 const templates: Array<{ value: PreviewTemplate, label: string, icon: string }> = [
-  { value: 'components', label: 'Components', icon: 'pi pi-th-large' },
+  { value: 'components', label: 'All components', icon: 'pi pi-th-large' },
   { value: 'dashboard', label: 'Dashboard', icon: 'pi pi-chart-bar' },
   { value: 'form', label: 'Form', icon: 'pi pi-pen-to-square' },
   { value: 'settings', label: 'Settings', icon: 'pi pi-cog' },
@@ -16,6 +16,14 @@ const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> 
   { value: 'light', label: 'Light', icon: 'pi pi-sun' },
   { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
 ]
+
+const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: string }> = [
+  { value: 'full', label: 'Full width', icon: 'pi pi-desktop' },
+  { value: 'tablet', label: 'Tablet (768px)', icon: 'pi pi-tablet' },
+  { value: 'mobile', label: 'Mobile (390px)', icon: 'pi pi-mobile' },
+]
+
+const currentTemplate = computed(() => templates.find(t => t.value === store.prefs.template)!)
 </script>
 
 <template>
@@ -27,15 +35,15 @@ const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> 
       option-value="value"
       aria-label="Preview page"
       size="small"
-      class="w-40"
+      class="w-44"
     >
-      <template #value="{ value }">
+      <template #value>
         <span class="flex items-center gap-2">
           <i
-            :class="templates.find(t => t.value === value)?.icon"
+            :class="currentTemplate.icon"
             aria-hidden="true"
           />
-          {{ templates.find(t => t.value === value)?.label }}
+          {{ currentTemplate.label }}
         </span>
       </template>
       <template #option="{ option }">
@@ -49,10 +57,29 @@ const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> 
       </template>
     </Select>
 
+    <SelectButton
+      v-model="store.prefs.viewport"
+      :options="viewportOptions"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      aria-label="Preview width"
+      size="small"
+    >
+      <template #option="{ option }">
+        <i
+          v-tooltip.bottom="option.label"
+          :class="option.icon"
+          :aria-label="option.label"
+        />
+      </template>
+    </SelectButton>
+
     <div class="ml-auto flex items-center gap-2">
       <SelectButton
         v-model="store.prefs.colorScheme"
         :options="schemeOptions"
+        option-label="label"
         option-value="value"
         :allow-empty="false"
         :aria-label="store.prefs.split ? 'Color scheme being edited' : 'Preview color scheme'"
@@ -74,7 +101,6 @@ const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> 
         on-icon="pi pi-objects-column"
         off-icon="pi pi-objects-column"
         size="small"
-        aria-label="Show light and dark side by side"
       />
     </div>
   </div>

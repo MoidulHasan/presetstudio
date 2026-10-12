@@ -3,6 +3,8 @@ import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore } from '~/stores/editor'
 
 const store = useEditorStore()
+const toast = useToast()
+const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
 
 const menu = ref<{ toggle: (event: Event) => void } | null>(null)
 
@@ -22,7 +24,10 @@ function submitDialog() {
   const name = nameInput.value.trim()
   if (!name || !dialog.value) return
   if (dialog.value === 'rename') store.renameTheme(store.activeDoc.id, name)
-  else store.createTheme(name, dialog.value === 'duplicate' ? 'duplicate' : 'blank')
+  else {
+    store.createTheme(name, dialog.value === 'duplicate' ? 'duplicate' : 'blank')
+    toast.add({ severity: 'success', summary: `Created “${store.activeDoc.name}”`, life: 2500 })
+  }
   dialog.value = null
 }
 
@@ -31,7 +36,10 @@ const items = computed<MenuItem[]>(() => [
   { label: 'Duplicate', icon: 'pi pi-copy', command: () => openDialog('duplicate') },
   { label: 'Rename', icon: 'pi pi-pencil', command: () => openDialog('rename') },
   { separator: true },
-  { label: 'Reset to base preset', icon: 'pi pi-refresh', command: () => store.resetTheme() },
+  { label: 'Reset to base preset', icon: 'pi pi-refresh', command: () => {
+    store.resetTheme()
+    toast.add({ severity: 'secondary', summary: 'Theme reset to the base preset', detail: `Press ${undoHint} to undo.`, life: 3000 })
+  } },
   {
     label: 'Delete',
     icon: 'pi pi-trash',
@@ -41,7 +49,9 @@ const items = computed<MenuItem[]>(() => [
 ])
 
 function confirmDelete() {
+  const name = store.activeDoc.name
   store.deleteTheme(store.activeDoc.id)
+  toast.add({ severity: 'secondary', summary: `Deleted “${name}”`, life: 2500 })
   deleteVisible.value = false
 }
 </script>

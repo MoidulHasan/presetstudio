@@ -27,20 +27,21 @@ const isModified = (section: EditorSection) => store.modifiedSections.has(sectio
 
 <template>
   <nav
-    class="p-3"
+    class="px-2 py-3"
     aria-label="Editor sections"
   >
     <Menu
       :model="model"
-      class="!w-full !border-0 !bg-transparent !p-0"
+      class="!w-full !min-w-0 !border-0 !bg-transparent !p-0"
+      :pt="{ list: { class: '!gap-0.5' }, submenuLabel: { class: '!px-2 !pb-1 !pt-3 first:!pt-0' } }"
     >
       <template #submenulabel="{ item }">
-        <span class="text-xs font-semibold uppercase tracking-wide text-surface-500">{{ item.label }}</span>
+        <span class="text-[11px] font-semibold uppercase tracking-wider text-surface-500">{{ item.label }}</span>
       </template>
       <template #item="{ item, props }">
         <a
           v-bind="props.action"
-          class="flex items-center gap-3 rounded-md"
+          class="flex items-center gap-2.5 rounded-md !px-2 !py-1.5 text-sm"
           :class="store.prefs.section === item.key ? 'bg-surface-100 font-medium text-surface-900 dark:bg-surface-800 dark:text-surface-0' : ''"
           :aria-current="store.prefs.section === item.key ? 'page' : undefined"
         >

@@ -4,11 +4,18 @@ import { SECTION_META } from '~/utils/editor-sections'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
+const toast = useToast()
+const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
 const meta = computed(() => SECTION_META[store.prefs.section])
 const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_META[value].label }))
 
 const designSection = computed(() =>
   (DESIGN_SECTIONS as readonly string[]).includes(store.prefs.section) ? (store.prefs.section as DesignSection) : null)
+function reset(section: DesignSection) {
+  store.resetSection(section)
+  toast.add({ severity: 'secondary', summary: `${SECTION_META[section].label} reset`, detail: `Back to the base preset. Press ${undoHint} to undo.`, life: 3000 })
+}
+
 const canReset = computed(() => !!designSection.value && store.modifiedSections.has(designSection.value))
 
 // Scroll the panel back to the top when switching sections.
@@ -44,7 +51,7 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
           size="small"
           text
           class="-my-1"
-          @click="store.resetSection(designSection!)"
+          @click="reset(designSection!)"
         />
       </div>
       <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">

@@ -19,8 +19,11 @@ Preset Studio is built only on the last MIT-licensed releases (`primevue` 4.5.5,
 - **Focus ring:** keep the preset's own style or switch to a custom outline (width, offset, color)
 - **Accessibility:** live WCAG contrast checks for key color pairs in both color schemes, with a one-click fix for primary button text
 - **Live, isolated preview:** the theme renders in an iframe with its own PrimeVue instance, so the editor UI never changes
-- **Multiple themes** with undo/redo (⌘Z / ⇧⌘Z), saved in your browser
-- **Code export:** a minimal `definePreset(...)` module with a copy button
+- **Every component:** a gallery of about 80 PrimeVue components in 10 categories, plus realistic dashboard, form and settings pages
+- **Light and dark side by side,** at desktop, tablet or mobile widths
+- **Quick start:** base style, brand color, corners and neutrals in four steps
+- **Multiple themes** with undo/redo (⌘Z / ⇧⌘Z), saved in your browser. The editor itself has light and dark modes
+- **Code export:** a minimal `definePreset(...)` module named after your theme, plus ready-made Nuxt and Vue setup snippets, with copy and download
 
 Planned: semantic and component token editors with an inspect mode, token search, page templates, and import/share.
 
