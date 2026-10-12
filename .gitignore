@@ -22,3 +22,9 @@ logs
 .env
 .env.*
 !.env.example
+
+# Vercel
+.vercel
+
+# Test coverage
+coverage
