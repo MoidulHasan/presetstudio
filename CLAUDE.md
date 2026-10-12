@@ -39,5 +39,7 @@ Trademark: the product is "Preset Studio" (`presetstudio` in code/URLs). Never u
 ## Conventions
 
 - Commands: `pnpm dev`, `pnpm lint`, `pnpm test`, `pnpm build`, `pnpm license:check`. All four must pass before committing.
+- UI: use PrimeVue components for every interactive control (Button, RadioButton, Menu, SelectButton, …), including links styled as buttons (`Button :as="NuxtLink"` / `as="a"`). Native elements only for semantic markup (lists, fieldset, inline text links, the `<a v-bind="props.action">` inside Menu item templates). Shared editor controls: `EditorOptionCard` (radio card), `EditorColorSwatch`.
+- The `primevue.importTheme` module must export `{ preset, options }`, not a bare preset (otherwise no CSS variables are generated).
 - Conventional Commits, small and logical. Don't push without the owner's review.
 - Footer/README disclaimer must stay: "PrimeVue is a trademark of PrimeTek Informatics. Preset Studio is an independent open-source project and is not affiliated with or endorsed by PrimeTek."

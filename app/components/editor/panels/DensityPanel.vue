@@ -42,6 +42,8 @@ const samples = computed(() => {
         <EditorOptionCard
           v-for="option in options"
           :key="option.value"
+          name="density"
+          :value="option.value"
           :selected="store.theme.design.density === option.value"
           :label="option.label"
           :hint="option.hint"

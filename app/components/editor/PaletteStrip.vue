@@ -30,20 +30,18 @@ function textClass(color: string): string {
       v-for="shade in SHADES"
       :key="shade"
     >
-      <component
-        :is="props.selectable ? 'button' : 'div'"
-        :type="props.selectable ? 'button' : undefined"
-        class="relative flex h-12 flex-col items-center justify-end pb-1 text-[10px] font-medium leading-none outline-none transition"
+      <Button
+        v-if="props.selectable"
+        v-tooltip.top="props.palette ? `${shade}: ${props.palette[shade]}` : shade"
+        :aria-label="`Edit shade ${shade}`"
+        :aria-pressed="props.selected === shade"
+        class="relative !h-12 !flex-col !justify-end !gap-0 !rounded-none !border-0 !px-0 !pb-1 !text-[10px] !font-medium !leading-none hover:brightness-95"
         :class="[
           props.palette ? textClass(props.palette[shade]) : '',
-          props.selectable ? 'cursor-pointer hover:brightness-95 focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary' : '',
           props.selected === shade ? 'z-10 ring-2 ring-inset ring-surface-900 dark:ring-surface-0' : '',
         ]"
         :style="{ backgroundColor: props.palette?.[shade] ?? 'transparent' }"
-        :title="props.palette ? `${shade}: ${props.palette[shade]}` : shade"
-        :aria-label="props.selectable ? `Edit shade ${shade}` : undefined"
-        :aria-pressed="props.selectable ? props.selected === shade : undefined"
-        @click="props.selectable && emit('select', shade)"
+        @click="emit('select', shade)"
       >
         <span
           v-if="props.edited?.includes(shade)"
@@ -51,7 +49,16 @@ function textClass(color: string): string {
           aria-hidden="true"
         />
         {{ shade }}
-      </component>
+      </Button>
+      <div
+        v-else
+        class="flex h-12 flex-col items-center justify-end pb-1 text-[10px] font-medium leading-none"
+        :class="props.palette ? textClass(props.palette[shade]) : ''"
+        :style="{ backgroundColor: props.palette?.[shade] ?? 'transparent' }"
+        :title="props.palette ? `${shade}: ${props.palette[shade]}` : shade"
+      >
+        {{ shade }}
+      </div>
     </template>
   </div>
 </template>

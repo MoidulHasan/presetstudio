@@ -51,21 +51,17 @@ const pickerColor = computed({
 <template>
   <div class="flex flex-col gap-3">
     <div
-      class="flex flex-wrap gap-2"
-      role="radiogroup"
+      class="grid grid-cols-12 gap-1.5"
+      role="group"
       aria-label="Suggested brand colors"
     >
-      <button
+      <EditorColorSwatch
         v-for="color in SUGGESTIONS"
         :key="color.value"
-        v-tooltip.top="color.name"
-        type="button"
-        role="radio"
-        :aria-checked="props.modelValue === color.value"
-        :aria-label="color.name"
-        class="size-7 rounded-full ring-offset-2 ring-offset-surface-0 transition hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-surface-900 dark:ring-offset-surface-900"
-        :class="{ 'ring-2 ring-surface-900 dark:ring-surface-0': props.modelValue === color.value }"
-        :style="{ backgroundColor: color.value }"
+        :color="color.value"
+        :label="color.name"
+        :selected="props.modelValue === color.value"
+        class="aspect-square !h-auto !w-full"
         @click="emitHex(color.value)"
       />
     </div>

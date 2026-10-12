@@ -94,6 +94,8 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         <EditorOptionCard
           v-for="name in BASE_PRESETS"
           :key="name"
+          name="start-base"
+          :value="name"
           :selected="store.theme.basePreset === name"
           :label="BASE_PRESET_LABELS[name]"
           :hint="presetHints[name]"
@@ -119,24 +121,24 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         role="radiogroup"
         aria-label="Corner style"
       >
-        <button
+        <EditorOptionCard
           v-for="option in corners"
           :key="option.value"
-          type="button"
-          role="radio"
-          :aria-checked="design.radius === option.value"
-          class="flex flex-col items-center gap-2 rounded-lg border p-2 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          :class="design.radius === option.value
-            ? 'border-surface-900 bg-surface-50 dark:border-surface-0 dark:bg-surface-800'
-            : 'border-surface-200 hover:border-surface-400 dark:border-surface-700'"
-          @click="setRadius(option.value)"
+          name="start-radius"
+          :value="option.value"
+          :label="option.label"
+          :selected="design.radius === option.value"
+          layout="stacked"
+          @select="setRadius(option.value)"
         >
-          <span
-            class="h-6 w-10 border-2 border-surface-500 bg-surface-100 dark:bg-surface-800"
-            :style="{ borderRadius: cornerPreview(option.value) }"
-          />
-          {{ option.label }}
-        </button>
+          <template #visual>
+            <span
+              class="h-6 w-10 border-2 border-surface-500 bg-surface-100 dark:bg-surface-800"
+              :style="{ borderRadius: cornerPreview(option.value) }"
+              aria-hidden="true"
+            />
+          </template>
+        </EditorOptionCard>
       </div>
     </EditorInspectorGroup>
 
@@ -149,31 +151,30 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         role="radiogroup"
         aria-label="Neutral palette"
       >
-        <button
+        <EditorOptionCard
           v-for="option in neutrals"
           :key="option.id"
-          type="button"
-          role="radio"
-          :aria-checked="activeNeutral === option.id"
-          class="flex flex-col items-center gap-2 rounded-lg border p-2 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          :class="activeNeutral === option.id
-            ? 'border-surface-900 bg-surface-50 dark:border-surface-0 dark:bg-surface-800'
-            : 'border-surface-200 hover:border-surface-400 dark:border-surface-700'"
-          @click="setNeutral(option.value)"
+          name="start-neutral"
+          :value="option.id"
+          :label="option.label"
+          :selected="activeNeutral === option.id"
+          layout="stacked"
+          @select="setNeutral(option.value)"
         >
-          <span
-            class="flex overflow-hidden rounded"
-            aria-hidden="true"
-          >
+          <template #visual>
             <span
-              v-for="shade in ['200', '500', '800']"
-              :key="shade"
-              class="h-6 w-2"
-              :style="{ backgroundColor: neutralSwatch(option, shade) }"
-            />
-          </span>
-          {{ option.label }}
-        </button>
+              class="flex overflow-hidden rounded"
+              aria-hidden="true"
+            >
+              <span
+                v-for="shade in ['200', '500', '800']"
+                :key="shade"
+                class="h-6 w-2"
+                :style="{ backgroundColor: neutralSwatch(option, shade) }"
+              />
+            </span>
+          </template>
+        </EditorOptionCard>
       </div>
       <p
         v-if="activeNeutral === null"
@@ -183,20 +184,21 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
       </p>
     </EditorInspectorGroup>
 
-    <div class="flex flex-col gap-2 rounded-lg border border-surface-200 p-4 text-sm dark:border-surface-700">
-      <p class="font-medium">
+    <div class="flex flex-col gap-1 rounded-lg border border-surface-200 p-3 text-sm dark:border-surface-700">
+      <p class="px-3 pt-1 font-medium">
         Next steps
       </p>
-      <button
-        type="button"
-        class="flex items-center gap-2 text-left text-surface-600 hover:text-surface-900 dark:text-surface-300 dark:hover:text-surface-0"
+      <Button
+        severity="secondary"
+        text
+        class="!justify-start"
         @click="store.prefs.section = 'accessibility'"
       >
         <i
           class="pi pi-eye"
           aria-hidden="true"
         />
-        <span class="flex-1">Check contrast</span>
+        <span class="flex-1 text-left">Check contrast</span>
         <Tag
           v-if="store.contrastIssues"
           :value="`${store.contrastIssues} issue${store.contrastIssues === 1 ? '' : 's'}`"
@@ -207,18 +209,15 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
           value="All good"
           severity="success"
         />
-      </button>
-      <button
-        type="button"
-        class="flex items-center gap-2 text-left text-surface-600 hover:text-surface-900 dark:text-surface-300 dark:hover:text-surface-0"
+      </Button>
+      <Button
+        label="Fine-tune palettes, density and focus"
+        icon="pi pi-sliders-h"
+        severity="secondary"
+        text
+        class="!justify-start"
         @click="store.prefs.section = 'primary'"
-      >
-        <i
-          class="pi pi-sliders-h"
-          aria-hidden="true"
-        />
-        Fine-tune palettes, density and focus
-      </button>
+      />
     </div>
   </div>
 </template>

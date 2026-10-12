@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NuxtLink } from '#components'
 import { REPO_URL } from '~/utils/site'
 
 useSeoMeta({
@@ -28,21 +29,14 @@ const features = [
         Pick a base preset, tune your colors, preview real components and export the code.
       </p>
       <div class="flex flex-wrap justify-center gap-3">
-        <NuxtLink
-          v-slot="{ navigate, href }"
+        <Button
+          :as="NuxtLink"
           to="/editor"
-          custom
-        >
-          <Button
-            as="a"
-            :href="href"
-            label="Open editor"
-            icon="pi pi-arrow-right"
-            icon-pos="right"
-            size="large"
-            @click="navigate"
-          />
-        </NuxtLink>
+          label="Open editor"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
+          size="large"
+        />
         <Button
           as="a"
           :href="REPO_URL"

@@ -41,24 +41,24 @@ const resolved = computed(() => steps.map(step => ({
         role="radiogroup"
         aria-label="Corner radius scale"
       >
-        <button
+        <EditorOptionCard
           v-for="option in options"
           :key="option.value"
-          type="button"
-          role="radio"
-          :aria-checked="store.theme.design.radius === option.value"
-          class="flex flex-col items-center gap-2 rounded-lg border p-2 text-xs transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-          :class="store.theme.design.radius === option.value
-            ? 'border-primary bg-primary-50 dark:bg-primary-950'
-            : 'border-surface-200 hover:border-surface-400 dark:border-surface-700'"
-          @click="setRadius(option.value)"
+          name="radius"
+          :value="option.value"
+          :label="option.label"
+          :selected="store.theme.design.radius === option.value"
+          layout="stacked"
+          @select="setRadius(option.value)"
         >
-          <span
-            class="size-9 border-2 border-surface-500 bg-surface-100 dark:bg-surface-800"
-            :style="{ borderRadius: previewRadius(option.value) }"
-          />
-          {{ option.label }}
-        </button>
+          <template #visual>
+            <span
+              class="size-9 border-2 border-surface-500 bg-surface-100 dark:bg-surface-800"
+              :style="{ borderRadius: previewRadius(option.value) }"
+              aria-hidden="true"
+            />
+          </template>
+        </EditorOptionCard>
       </div>
       <p
         v-if="store.theme.design.radius === 'base'"

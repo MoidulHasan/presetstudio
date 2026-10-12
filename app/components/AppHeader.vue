@@ -1,35 +1,39 @@
 <script setup lang="ts">
+import { NuxtLink } from '#components'
 import { REPO_URL } from '~/utils/site'
 </script>
 
 <template>
   <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-surface-200 px-4 dark:border-surface-800">
     <AppLogo />
-    <nav class="flex items-center gap-1 text-sm">
-      <NuxtLink
+    <nav class="flex items-center gap-1">
+      <Button
+        :as="NuxtLink"
         to="/editor"
-        class="rounded-md px-3 py-1.5 hover:bg-surface-100 dark:hover:bg-surface-800"
-      >
-        Editor
-      </NuxtLink>
-      <NuxtLink
+        label="Editor"
+        severity="secondary"
+        size="small"
+        text
+      />
+      <Button
+        :as="NuxtLink"
         to="/docs"
-        class="rounded-md px-3 py-1.5 hover:bg-surface-100 dark:hover:bg-surface-800"
-      >
-        Docs
-      </NuxtLink>
-      <a
+        label="Docs"
+        severity="secondary"
+        size="small"
+        text
+      />
+      <Button
+        as="a"
         :href="REPO_URL"
         target="_blank"
         rel="noopener"
-        class="flex items-center gap-2 rounded-md px-3 py-1.5 hover:bg-surface-100 dark:hover:bg-surface-800"
-      >
-        <i
-          class="pi pi-github"
-          aria-hidden="true"
-        />
-        GitHub
-      </a>
+        label="GitHub"
+        icon="pi pi-github"
+        severity="secondary"
+        size="small"
+        text
+      />
     </nav>
   </header>
 </template>

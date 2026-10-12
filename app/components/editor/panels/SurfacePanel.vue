@@ -83,6 +83,8 @@ function setTint(value: number | number[]) {
         :aria-label="`${scheme} mode surface`"
       >
         <EditorOptionCard
+          :name="`surface-${scheme}`"
+          value="base"
           :selected="isSelected({ kind: 'base' })"
           :label="`${baseLabel} default`"
           @select="setSurface({ kind: 'base' })"
@@ -91,6 +93,8 @@ function setTint(value: number | number[]) {
           <EditorOptionCard
             v-for="name in NEUTRAL_COLORS"
             :key="name"
+            :name="`surface-${scheme}`"
+            :value="name"
             :selected="isSelected({ kind: 'palette', name })"
             :label="name.charAt(0).toUpperCase() + name.slice(1)"
             @select="setSurface({ kind: 'palette', name })"
@@ -107,6 +111,8 @@ function setTint(value: number | number[]) {
             </template>
           </EditorOptionCard>
           <EditorOptionCard
+            :name="`surface-${scheme}`"
+            value="tinted"
             :selected="isSelected({ kind: 'tinted', chroma: 0 })"
             label="Tinted"
             @select="setSurface({ kind: 'tinted', chroma: tint / 1000 })"

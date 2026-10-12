@@ -123,27 +123,24 @@ const usage = computed(() => {
       description="Palettes that ship with every base preset. The export references them, e.g. {indigo.500}."
     >
       <div
-        class="grid grid-cols-6 gap-2"
-        role="radiogroup"
+        class="grid grid-cols-6 gap-x-2 gap-y-3"
+        role="group"
         aria-label="Built-in palettes"
       >
-        <button
+        <div
           v-for="name in PRIMITIVE_COLORS"
           :key="name"
-          type="button"
-          role="radio"
-          :aria-checked="primary.name === name"
-          :title="name"
-          class="group flex flex-col items-center gap-1 rounded-md p-1 text-[10px] capitalize text-surface-600 outline-none focus-visible:ring-2 focus-visible:ring-primary dark:text-surface-300"
-          @click="setPrimary({ kind: 'palette', name })"
+          class="flex flex-col items-center gap-1 text-[10px] capitalize text-surface-600 dark:text-surface-300"
         >
-          <span
-            class="size-8 rounded-full ring-offset-2 ring-offset-surface-0 transition group-hover:scale-110 dark:ring-offset-surface-900"
-            :class="{ 'ring-2 ring-surface-900 dark:ring-surface-0': primary.name === name }"
-            :style="{ backgroundColor: swatch(name) }"
+          <EditorColorSwatch
+            :color="swatch(name)"
+            :label="name"
+            :selected="primary.kind === 'palette' && primary.name === name"
+            class="size-8"
+            @click="setPrimary({ kind: 'palette', name })"
           />
-          {{ name }}
-        </button>
+          <span aria-hidden="true">{{ name }}</span>
+        </div>
       </div>
     </EditorInspectorGroup>
 

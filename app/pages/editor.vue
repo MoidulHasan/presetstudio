@@ -56,23 +56,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
             :key="scheme"
             class="flex min-h-0 flex-col bg-surface-0 dark:bg-surface-900"
           >
-            <button
-              type="button"
-              class="flex h-8 shrink-0 items-center gap-2 px-3 text-left text-xs"
-              :class="store.prefs.colorScheme === scheme ? 'font-semibold text-surface-900 dark:text-surface-0' : 'text-surface-500 hover:text-surface-900'"
+            <Button
+              :icon="scheme === 'light' ? 'pi pi-sun' : 'pi pi-moon'"
+              :label="scheme === 'light' ? 'Light' : 'Dark'"
+              :badge="store.prefs.colorScheme === scheme ? 'editing' : undefined"
+              badge-severity="secondary"
+              severity="secondary"
+              size="small"
+              text
+              class="!h-8 !justify-start !rounded-none !px-3"
+              :class="store.prefs.colorScheme === scheme ? '!font-semibold' : ''"
               :aria-pressed="store.prefs.colorScheme === scheme"
+              :aria-label="`Edit ${scheme} mode`"
               @click="store.prefs.colorScheme = scheme"
-            >
-              <i
-                :class="scheme === 'light' ? 'pi pi-sun' : 'pi pi-moon'"
-                aria-hidden="true"
-              />
-              {{ scheme === 'light' ? 'Light' : 'Dark' }}
-              <span
-                v-if="store.prefs.colorScheme === scheme"
-                class="font-normal text-surface-500"
-              >· editing</span>
-            </button>
+            />
             <div class="min-h-0 flex-1">
               <EditorPreviewFrame
                 :color-scheme="scheme"
