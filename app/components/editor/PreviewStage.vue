@@ -3,6 +3,7 @@ import { useEditorStore, type PreviewViewport } from '~/stores/editor'
 import type { ColorScheme } from '~/utils/theme/types'
 
 // The preview area: one frame or light/dark side by side, at the chosen viewport width.
+// Scheme-aware inspector panels have their own light/dark switch for what to edit.
 const store = useEditorStore()
 
 const VIEWPORT_WIDTH: Record<PreviewViewport, string | null> = { full: null, tablet: '768px', mobile: '390px' }
@@ -21,21 +22,6 @@ const width = computed(() => VIEWPORT_WIDTH[store.prefs.viewport])
       :key="scheme"
       class="flex min-h-0 min-w-0 flex-col bg-surface-100 dark:bg-surface-950"
     >
-      <Button
-        v-if="store.prefs.split"
-        :icon="scheme === 'light' ? 'pi pi-sun' : 'pi pi-moon'"
-        :label="scheme === 'light' ? 'Light' : 'Dark'"
-        :badge="store.prefs.colorScheme === scheme ? 'editing' : undefined"
-        badge-severity="secondary"
-        severity="secondary"
-        size="small"
-        text
-        class="!h-8 shrink-0 !justify-start !rounded-none !bg-surface-0 !px-3 dark:!bg-surface-900"
-        :class="store.prefs.colorScheme === scheme ? '!font-semibold' : ''"
-        :aria-pressed="store.prefs.colorScheme === scheme"
-        :aria-label="`Edit ${scheme} mode`"
-        @click="store.prefs.colorScheme = scheme"
-      />
       <div
         class="flex min-h-0 flex-1 justify-center overflow-auto"
         :class="width ? 'p-4' : ''"

@@ -7,12 +7,17 @@ export const MESSAGE_CHANNEL = 'presetstudio'
 export const PREVIEW_TEMPLATES = ['components', 'dashboard', 'form', 'settings'] as const
 export type PreviewTemplate = (typeof PREVIEW_TEMPLATES)[number]
 
+/** Component gallery categories (the 'components' template). */
+export const PREVIEW_CATEGORIES = ['form', 'button', 'data', 'panel', 'overlay', 'menu', 'messages', 'media', 'file', 'misc'] as const
+export type PreviewCategory = (typeof PREVIEW_CATEGORIES)[number]
+
 export type EditorToPreviewMessage = {
   channel: typeof MESSAGE_CHANNEL
   type: 'theme:apply'
   state: ThemeState
   colorScheme: ColorScheme
   template: PreviewTemplate
+  category: PreviewCategory
 }
 
 export type PreviewToEditorMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
@@ -39,8 +44,17 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     const scheme = event.data.colorScheme
     const template = event.data.template
     if (!state || !(COLOR_SCHEMES as readonly unknown[]).includes(scheme)) return null
+    const category = event.data.category
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
-    return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state, colorScheme: scheme as ColorScheme, template: template as PreviewTemplate }
+    if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
+    return {
+      channel: MESSAGE_CHANNEL,
+      type: 'theme:apply',
+      state,
+      colorScheme: scheme as ColorScheme,
+      template: template as PreviewTemplate,
+      category: category as PreviewCategory,
+    }
   }
   return null
 }
@@ -52,9 +66,14 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   return null
 }
 
-export function createApplyMessage(state: ThemeState, colorScheme: ColorScheme, template: PreviewTemplate = 'components'): EditorToPreviewMessage {
+export function createApplyMessage(
+  state: ThemeState,
+  colorScheme: ColorScheme,
+  template: PreviewTemplate = 'components',
+  category: PreviewCategory = 'form',
+): EditorToPreviewMessage {
   // Plain clone so reactive proxies never cross the postMessage boundary.
-  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme, template }
+  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme, template, category }
 }
 
 export function createReadyMessage(): PreviewToEditorMessage {

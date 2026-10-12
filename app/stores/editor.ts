@@ -3,7 +3,7 @@ import { buildEffectivePreset, buildPresetOverrides } from '~/utils/theme/build'
 import { checkContrast, classifyContrast, type ClassifiedContrast } from '~/utils/theme/contrast'
 import { countTokens, generatePresetCode, presetFileBase, presetIdentifier } from '~/utils/theme/export'
 import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
-import { PREVIEW_TEMPLATES, type PreviewTemplate } from '~/utils/theme/messages'
+import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { DESIGN_SECTIONS, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
 import {
@@ -45,6 +45,8 @@ interface EditorPrefs {
   /** Show light and dark previews side by side. */
   split: boolean
   template: PreviewTemplate
+  /** Gallery category for the 'components' template; shared by both side-by-side panes. */
+  category: PreviewCategory
   viewport: PreviewViewport
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
@@ -78,7 +80,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', viewport: 'full', uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -86,6 +88,7 @@ function loadPrefs(): EditorPrefs {
       section: EDITOR_SECTIONS.includes(raw?.section as EditorSection) ? raw!.section! : fallback.section,
       split: typeof raw?.split === 'boolean' ? raw.split : fallback.split,
       template: PREVIEW_TEMPLATES.includes(raw?.template as PreviewTemplate) ? raw!.template! : fallback.template,
+      category: PREVIEW_CATEGORIES.includes(raw?.category as PreviewCategory) ? raw!.category! : fallback.category,
       viewport: PREVIEW_VIEWPORTS.includes(raw?.viewport as PreviewViewport) ? raw!.viewport! : fallback.viewport,
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }

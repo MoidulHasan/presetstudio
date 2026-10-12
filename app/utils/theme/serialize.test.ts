@@ -108,7 +108,7 @@ describe('messages', () => {
   const origin = 'https://presetstudio.example'
 
   it('accepts same-origin, well-formed messages', () => {
-    const msg = createApplyMessage(custom, 'dark', 'dashboard')
+    const msg = createApplyMessage(custom, 'dark', 'components', 'data')
     expect(parseEditorMessage({ origin, data: msg }, origin)).toEqual(msg)
     expect(parsePreviewMessage({ origin, data: createReadyMessage() }, origin)).toEqual(createReadyMessage())
   })
@@ -121,6 +121,14 @@ describe('messages', () => {
     expect(parseEditorMessage({ origin, data: { ...msg, state: { version: 99 } } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, colorScheme: 'sepia' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, template: '../admin' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...msg, category: 'nope' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: msg }, origin)).toBeNull()
+  })
+})
+
+describe('override sanitization', () => {
+  it('drops unsafe override values from untrusted state', () => {
+    const parsed = parseThemeState({ ...createDefaultThemeState(), overrides: { semantic: { text: { color: 'red;} body{display:none' }, list: { gap: '4px' } } } })!
+    expect(parsed.overrides).toEqual({ semantic: { list: { gap: '4px' } } })
   })
 })

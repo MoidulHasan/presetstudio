@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore, type PreviewViewport } from '~/stores/editor'
-import type { PreviewTemplate } from '~/utils/theme/messages'
+import { CATEGORY_META } from '~/utils/preview-categories'
+import { PREVIEW_CATEGORIES, type PreviewTemplate } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const store = useEditorStore()
@@ -36,6 +37,8 @@ const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: stri
   { value: 'mobile', label: 'Mobile (390px)', icon: 'pi pi-mobile' },
 ]
 
+const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_META[value] }))
+
 const currentTemplate = computed(() => templates.find(t => t.value === store.prefs.template)!)
 </script>
 
@@ -66,6 +69,41 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
             aria-hidden="true"
           />
           {{ option.label }}
+        </span>
+      </template>
+    </Select>
+
+    <Select
+      v-if="store.prefs.template === 'components'"
+      v-model="store.prefs.category"
+      :options="categoryOptions"
+      option-label="label"
+      option-value="value"
+      aria-label="Component category"
+      size="small"
+      class="w-40"
+    >
+      <template #value>
+        <span class="flex items-center gap-2">
+          <i
+            :class="CATEGORY_META[store.prefs.category].icon"
+            aria-hidden="true"
+          />
+          {{ CATEGORY_META[store.prefs.category].label }}
+        </span>
+      </template>
+      <template #option="{ option }">
+        <span class="flex w-full items-center gap-2">
+          <i
+            :class="option.icon"
+            aria-hidden="true"
+          />
+          <span class="flex-1">{{ option.label }}</span>
+          <Badge
+            :value="option.count"
+            severity="secondary"
+            size="small"
+          />
         </span>
       </template>
     </Select>

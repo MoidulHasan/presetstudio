@@ -1,44 +1,39 @@
 <script setup lang="ts">
-// Every themable PrimeVue component, grouped like the PrimeVue docs.
-// Only the active category renders, which keeps theme updates fast.
-const categories = [
-  { value: 'form', label: 'Form', icon: 'pi pi-pen-to-square', count: 28 },
-  { value: 'button', label: 'Button', icon: 'pi pi-stop', count: 4 },
-  { value: 'data', label: 'Data', icon: 'pi pi-table', count: 10 },
-  { value: 'panel', label: 'Panel', icon: 'pi pi-window-maximize', count: 10 },
-  { value: 'overlay', label: 'Overlay', icon: 'pi pi-clone', count: 6 },
-  { value: 'menu', label: 'Menu', icon: 'pi pi-bars', count: 8 },
-  { value: 'messages', label: 'Messages', icon: 'pi pi-comment', count: 2 },
-  { value: 'media', label: 'Media', icon: 'pi pi-image', count: 4 },
-  { value: 'file', label: 'File', icon: 'pi pi-upload', count: 1 },
-  { value: 'misc', label: 'Misc', icon: 'pi pi-th-large', count: 14 },
-] as const
+import { CATEGORY_META } from '~/utils/preview-categories'
+import { PREVIEW_CATEGORIES, type PreviewCategory } from '~/utils/theme/messages'
 
-const active = ref<string>('form')
+// Every themable PrimeVue component, grouped like the PrimeVue docs. Only the
+// active category renders, which keeps theme updates fast. Inside the editor the
+// category comes from the editor toolbar (so side-by-side panes stay in sync);
+// opened standalone, the gallery shows its own tabs.
+const props = defineProps<{ category?: PreviewCategory }>()
+
+const local = ref<PreviewCategory>('form')
+const active = computed(() => props.category ?? local.value)
 </script>
 
 <template>
   <div class="mx-auto flex max-w-6xl flex-col gap-4">
-    <!-- Tabs used as navigation only; the active category renders below. -->
     <Tabs
-      v-model:value="active"
+      v-if="!props.category"
+      v-model:value="local"
       scrollable
       class="sticky top-0 z-10"
     >
       <TabList>
         <Tab
-          v-for="category in categories"
-          :key="category.value"
-          :value="category.value"
+          v-for="id in PREVIEW_CATEGORIES"
+          :key="id"
+          :value="id"
           class="flex items-center gap-2"
         >
           <i
-            :class="category.icon"
+            :class="CATEGORY_META[id].icon"
             aria-hidden="true"
           />
-          {{ category.label }}
+          {{ CATEGORY_META[id].label }}
           <Badge
-            :value="category.count"
+            :value="CATEGORY_META[id].count"
             severity="secondary"
             size="small"
           />
@@ -46,7 +41,7 @@ const active = ref<string>('form')
       </TabList>
     </Tabs>
 
-    <div role="tabpanel">
+    <div :aria-label="`${CATEGORY_META[active].label} components`">
       <PreviewGalleryForm v-if="active === 'form'" />
       <PreviewGalleryButtons v-else-if="active === 'button'" />
       <PreviewGalleryData v-else-if="active === 'data'" />

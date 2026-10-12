@@ -16,7 +16,7 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    target.postMessage(createApplyMessage(store.theme, props.colorScheme, store.prefs.template), window.location.origin)
+    target.postMessage(createApplyMessage(store.theme, props.colorScheme, store.prefs.template, store.prefs.category), window.location.origin)
   })
 }
 
@@ -36,7 +36,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category], sendState)
 </script>
 
 <template>

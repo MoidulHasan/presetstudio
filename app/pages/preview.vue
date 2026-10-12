@@ -2,7 +2,7 @@
 import { definePreset, usePreset } from '@primeuix/themes'
 import type { Preset } from '@primeuix/themes/types'
 import { buildPresetOverrides } from '~/utils/theme/build'
-import { createReadyMessage, parseEditorMessage, type PreviewTemplate } from '~/utils/theme/messages'
+import { createReadyMessage, parseEditorMessage, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -14,6 +14,7 @@ useSeoMeta({ title: 'Preview · Preset Studio', robots: 'noindex, nofollow' })
 const embedded = import.meta.client && window.parent !== window
 
 const template = ref<PreviewTemplate>('components')
+const category = ref<PreviewCategory>('form')
 // Until the first theme arrives the app's default (editor) theme is active; don't show it.
 const themed = ref(false)
 
@@ -35,6 +36,7 @@ function onMessage(event: MessageEvent) {
   const message = parseEditorMessage(event, window.location.origin)
   if (message?.type !== 'theme:apply') return
   template.value = message.template
+  category.value = message.category
   void applyTheme(message.state, message.colorScheme)
 }
 
@@ -65,7 +67,10 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     <PreviewDashboard v-if="template === 'dashboard'" />
     <PreviewForm v-else-if="template === 'form'" />
     <PreviewSettings v-else-if="template === 'settings'" />
-    <PreviewGallery v-else />
+    <PreviewGallery
+      v-else
+      :category="embedded ? category : undefined"
+    />
     <Toast />
   </div>
 </template>
