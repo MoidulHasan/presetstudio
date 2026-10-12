@@ -1,6 +1,7 @@
+import type { Preset } from '@primeuix/themes/types'
 import type { BasePresetName } from './types'
 
-type PresetModule = { default: Record<string, unknown> }
+type PresetModule = { default: Preset }
 
 const loaders: Record<BasePresetName, () => Promise<PresetModule>> = {
   aura: () => import('@primeuix/themes/aura'),
@@ -10,6 +11,6 @@ const loaders: Record<BasePresetName, () => Promise<PresetModule>> = {
 }
 
 /** Lazily loads a base preset so the preview only ships the presets it uses. */
-export async function loadBasePreset(name: BasePresetName): Promise<Record<string, unknown>> {
+export async function loadBasePreset(name: BasePresetName): Promise<Preset> {
   return (await loaders[name]()).default
 }
