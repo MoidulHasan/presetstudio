@@ -43,11 +43,11 @@ export function formatObject(tree: TokenTree, depth = 0, indent = '  '): string 
 }
 
 /** Generates a ready-to-paste ES module that defines the preset. */
-export function generatePresetCode(state: ThemeState, options: ExportOptions = {}): string {
+export function generatePresetCode(state: ThemeState, base: TokenTree, options: ExportOptions = {}): string {
   const name = options.name && IDENTIFIER_RE.test(options.name) ? options.name : 'MyPreset'
   const indent = options.indent ?? '  '
   const baseImport = BASE_PRESET_LABELS[state.basePreset]
-  const overrides = buildPresetOverrides(state)
+  const overrides = buildPresetOverrides(state, base)
 
   return [
     `import { definePreset } from '@primeuix/themes'`,

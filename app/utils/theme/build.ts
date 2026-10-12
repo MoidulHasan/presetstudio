@@ -1,16 +1,16 @@
+import { designToTokens } from './design'
 import { mergeOverrides, pruneEmpty } from './merge'
-import { generatePalette } from './palette'
 import type { ThemeState, TokenTree } from './types'
 
 /**
  * The full set of overrides to pass to `definePreset(base, overrides)`:
- * generated values first, explicit user overrides on top.
+ * design decisions first, explicit token overrides on top.
  */
-export function buildPresetOverrides(state: Pick<ThemeState, 'primaryColor' | 'overrides'>): TokenTree {
-  const generated: TokenTree = {
-    semantic: {
-      primary: { ...generatePalette(state.primaryColor) },
-    },
-  }
-  return pruneEmpty(mergeOverrides(generated, state.overrides))
+export function buildPresetOverrides(state: Pick<ThemeState, 'design' | 'overrides'>, base: TokenTree): TokenTree {
+  return pruneEmpty(mergeOverrides(designToTokens(state.design, base), state.overrides))
+}
+
+/** Base preset with overrides applied, as plain token data (for resolving and inspecting). */
+export function buildEffectivePreset(state: Pick<ThemeState, 'design' | 'overrides'>, base: TokenTree): TokenTree {
+  return mergeOverrides(base, buildPresetOverrides(state, base))
 }

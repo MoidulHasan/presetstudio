@@ -1,10 +1,15 @@
 import { parseThemeState } from './serialize'
-import type { ThemeState } from './types'
+import { COLOR_SCHEMES, type ColorScheme, type ThemeState } from './types'
 
 // Typed postMessage protocol between /editor (parent) and /preview (iframe).
 export const MESSAGE_CHANNEL = 'presetstudio'
 
-export type EditorToPreviewMessage = { channel: typeof MESSAGE_CHANNEL, type: 'theme:apply', state: ThemeState }
+export type EditorToPreviewMessage = {
+  channel: typeof MESSAGE_CHANNEL
+  type: 'theme:apply'
+  state: ThemeState
+  colorScheme: ColorScheme
+}
 
 export type PreviewToEditorMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
 
@@ -27,7 +32,9 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
   if (!isSameOrigin(event, expectedOrigin) || !hasChannel(event.data)) return null
   if (event.data.type === 'theme:apply') {
     const state = parseThemeState(event.data.state)
-    return state ? { channel: MESSAGE_CHANNEL, type: 'theme:apply', state } : null
+    const scheme = event.data.colorScheme
+    if (!state || !(COLOR_SCHEMES as readonly unknown[]).includes(scheme)) return null
+    return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state, colorScheme: scheme as ColorScheme }
   }
   return null
 }
@@ -39,9 +46,9 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   return null
 }
 
-export function createApplyMessage(state: ThemeState): EditorToPreviewMessage {
+export function createApplyMessage(state: ThemeState, colorScheme: ColorScheme): EditorToPreviewMessage {
   // Plain clone so reactive proxies never cross the postMessage boundary.
-  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)) }
+  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme }
 }
 
 export function createReadyMessage(): PreviewToEditorMessage {
