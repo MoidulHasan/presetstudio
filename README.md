@@ -12,14 +12,17 @@ Preset Studio is built only on the last MIT-licensed releases (`primevue` 4.5.5,
 
 ## Features
 
-- **Base presets:** Aura, Lara, Nora and Material
-- **Primary palette from one color:** a full 50–950 scale, generated with `palette()` from `@primeuix/themes`
+- **Base presets:** Aura, Lara, Nora and Material. A new theme starts identical to its base, and every control can reset back to it
+- **Primary color:** use the preset default, pick one of the 22 built-in palettes, or enter a custom color. Custom colors get a perceptual (OKLCH) or classic 50–950 scale, and any shade can be fine-tuned by hand
+- **Surfaces:** neutral palettes chosen separately for light and dark mode, including a neutral tinted with your primary hue
+- **Shape and density:** corner-radius scales, plus compact/comfortable spacing across inputs, buttons, lists, overlays, cards and tables
+- **Focus ring:** keep the preset's own style or switch to a custom outline (width, offset, color)
+- **Accessibility:** live WCAG contrast checks for key color pairs in both color schemes, with a one-click fix for primary button text
 - **Live, isolated preview:** the theme renders in an iframe with its own PrimeVue instance, so the editor UI never changes
-- **Light/dark preview** for checking both color schemes
-- **Code export:** a `definePreset(...)` module with a copy button
-- **Autosave:** your work is kept in localStorage
+- **Multiple themes** with undo/redo (⌘Z / ⇧⌘Z), saved in your browser
+- **Code export:** a minimal `definePreset(...)` module with a copy button
 
-Planned: surface palettes, semantic and component token editing, and shareable links.
+Planned: semantic and component token editors with an inspect mode, token search, page templates, and import/share.
 
 ## Usage of the exported preset
 

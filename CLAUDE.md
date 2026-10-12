@@ -30,8 +30,11 @@ Trademark: the product is "Preset Studio" (`presetstudio` in code/URLs). Never u
 
 - Routes (`routeRules`): `/` prerender (landing), `/docs/**` prerender, `/editor` `ssr: false`, `/preview` `ssr: false` (only ever rendered in an iframe inside `/editor`, no layout).
 - Preview isolation: the editor UI uses its own fixed PrimeVue theme. The theme being designed is applied only inside the `/preview` iframe (its own PrimeVue instance) via `usePreset`. Editor → iframe communication is a typed postMessage protocol (`app/utils/theme/messages.ts`) with same-origin checks on both sides. Preview dark mode = `.ps-dark` class on the iframe's `<html>` (`darkModeSelector`).
-- State: a single `ThemeState` (base preset `aura|lara|nora|material`, token overrides, color scheme) in a Pinia store, persisted to localStorage (always wrapped in try/catch).
-- Pure logic (palette, override merging, code export, serialization) lives in framework-free TS modules in `app/utils/theme/` with unit tests next to them (`*.test.ts`). These must not import Vue/Nuxt.
+- Theming model (from the preset source): 3 layers (primitive → semantic → components, ~3k tokens/preset), `{a.b}` references compile to `--p-a-b` CSS vars, light/dark values under `colorScheme` at any layer. Token naming rules live in `tokens.ts`; `tokens.test.ts` checks the resolver against the engine's `$dt` for every token of all 4 presets.
+- State (`ThemeState` v2): `basePreset` + `design` (high-level decisions: primary, surface per scheme, radius, density, focus ring; each defaults to `{ kind: 'base' }`/`'base'` = inherit) + raw `overrides` (win last). `build.ts`: `designToTokens` → merge overrides → `definePreset(base, …)`. Bump the version and add a migration in `serialize.ts` for any shape change.
+- Editor store (`app/stores/editor.ts`): workspace of multiple themes (localStorage, v1 key migrated), snapshot undo/redo per theme with key-based coalescing for drags, derived resolvers/contrast/export. Preview color scheme and section are editor prefs, not theme data. Change themes only through `store.update(mutator, coalesceKey)`.
+- Editor UI: three panes (section nav · preview iframe · inspector). Panels live in `app/components/editor/panels/`.
+- Pure logic (color/OKLCH, palettes, resolver, schema, design mapping, merging, export, serialization, history, contrast) lives in framework-free TS modules in `app/utils/theme/` with unit tests next to them (`*.test.ts`). These must not import Vue/Nuxt.
 
 ## Conventions
 
