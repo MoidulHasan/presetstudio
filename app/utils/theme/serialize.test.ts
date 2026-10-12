@@ -108,7 +108,7 @@ describe('messages', () => {
   const origin = 'https://presetstudio.example'
 
   it('accepts same-origin, well-formed messages', () => {
-    const msg = createApplyMessage(custom, 'dark', 'components', 'data')
+    const msg = createApplyMessage(custom, 'dark', { template: 'components', category: 'data', hideScrollbar: true })
     expect(parseEditorMessage({ origin, data: msg }, origin)).toEqual(msg)
     expect(parsePreviewMessage({ origin, data: createReadyMessage() }, origin)).toEqual(createReadyMessage())
   })
@@ -122,6 +122,7 @@ describe('messages', () => {
     expect(parseEditorMessage({ origin, data: { ...msg, colorScheme: 'sepia' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, template: '../admin' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, category: 'nope' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...msg, hideScrollbar: 'yes' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: msg }, origin)).toBeNull()
   })
 })

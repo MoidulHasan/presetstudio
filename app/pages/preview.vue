@@ -69,6 +69,7 @@ function onMessage(event: MessageEvent) {
   if (message?.type !== 'theme:apply') return
   template.value = message.template
   category.value = message.category
+  document.documentElement.classList.toggle('ps-no-scrollbar', message.hideScrollbar)
   void applyTheme(message.state, message.colorScheme)
 }
 

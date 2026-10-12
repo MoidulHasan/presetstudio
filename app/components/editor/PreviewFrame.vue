@@ -3,7 +3,7 @@ import { useEditorStore } from '~/stores/editor'
 import { createApplyMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
-const props = defineProps<{ colorScheme: ColorScheme, label: string }>()
+const props = defineProps<{ colorScheme: ColorScheme, label: string, hideScrollbar?: boolean }>()
 const emit = defineEmits<{ scroll: [position: ScrollPosition] }>()
 
 const store = useEditorStore()
@@ -17,7 +17,11 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    target.postMessage(createApplyMessage(store.theme, props.colorScheme, store.prefs.template, store.prefs.category), window.location.origin)
+    target.postMessage(createApplyMessage(store.theme, props.colorScheme, {
+      template: store.prefs.template,
+      category: store.prefs.category,
+      hideScrollbar: props.hideScrollbar,
+    }), window.location.origin)
   })
 }
 
@@ -47,7 +51,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar], sendState)
 </script>
 
 <template>

@@ -10,3 +10,12 @@ body {
   @apply bg-surface-0 text-surface-900 dark:bg-surface-950 dark:text-surface-0;
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Side-by-side preview: the panes scroll together, so only one shows a scrollbar. */
+html.ps-no-scrollbar {
+  scrollbar-width: none;
+}
+
+html.ps-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

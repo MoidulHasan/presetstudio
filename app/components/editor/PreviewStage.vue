@@ -49,6 +49,7 @@ function onScroll(from: ColorScheme, position: ScrollPosition) {
             :ref="handle => setFrame(scheme, handle)"
             :color-scheme="scheme"
             :label="`${scheme} mode preview`"
+            :hide-scrollbar="store.prefs.split && scheme === 'light'"
             @scroll="position => onScroll(scheme, position)"
           />
         </div>

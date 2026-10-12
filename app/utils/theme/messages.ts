@@ -11,14 +11,22 @@ export type PreviewTemplate = (typeof PREVIEW_TEMPLATES)[number]
 export const PREVIEW_CATEGORIES = ['form', 'button', 'data', 'panel', 'overlay', 'menu', 'messages', 'media', 'file', 'misc'] as const
 export type PreviewCategory = (typeof PREVIEW_CATEGORIES)[number]
 
+/** How the preview should present itself (not part of the theme). */
+export interface PreviewView {
+  template: PreviewTemplate
+  category: PreviewCategory
+  /** Side by side, only one pane shows a scrollbar (the panes scroll together). */
+  hideScrollbar: boolean
+}
+
 export type ApplyMessage = {
   channel: typeof MESSAGE_CHANNEL
   type: 'theme:apply'
   state: ThemeState
   colorScheme: ColorScheme
-  template: PreviewTemplate
-  category: PreviewCategory
-}
+} & PreviewView
+
+const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false }
 
 /** Scroll position of a preview (side-by-side panes scroll together). */
 export interface ScrollPosition {
@@ -66,6 +74,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     const category = event.data.category
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
+    if (typeof event.data.hideScrollbar !== 'boolean') return null
     return {
       channel: MESSAGE_CHANNEL,
       type: 'theme:apply',
@@ -73,6 +82,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       colorScheme: scheme as ColorScheme,
       template: template as PreviewTemplate,
       category: category as PreviewCategory,
+      hideScrollbar: event.data.hideScrollbar,
     }
   }
   if (event.data.type === 'preview:scroll-to') {
@@ -93,14 +103,16 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   return null
 }
 
-export function createApplyMessage(
-  state: ThemeState,
-  colorScheme: ColorScheme,
-  template: PreviewTemplate = 'components',
-  category: PreviewCategory = 'form',
-): ApplyMessage {
+export function createApplyMessage(state: ThemeState, colorScheme: ColorScheme, view: Partial<PreviewView> = {}): ApplyMessage {
   // Plain clone so reactive proxies never cross the postMessage boundary.
-  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme, template, category }
+  return {
+    channel: MESSAGE_CHANNEL,
+    type: 'theme:apply',
+    state: JSON.parse(JSON.stringify(state)),
+    colorScheme,
+    ...DEFAULT_VIEW,
+    ...view,
+  }
 }
 
 export function createReadyMessage(): ReadyMessage {
