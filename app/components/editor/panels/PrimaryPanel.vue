@@ -35,33 +35,12 @@ const swatch = (name: string) => store.resolvers?.light.resolve(`${name}-500`)?.
 // --- Custom color --------------------------------------------------------------------
 const custom = computed(() => (primary.value.kind === 'custom' ? primary.value : null))
 
-const hexInput = ref('')
-watch(() => custom.value?.color, (value) => {
-  if (value) hexInput.value = value
-}, { immediate: true })
-const hexInvalid = computed(() => normalizeHex(hexInput.value) === null)
-
 function setColor(value: string, key = 'primary.color') {
   const hex = normalizeHex(value)
   const c = custom.value
   if (!hex || !c) return
   setPrimary({ ...c, color: hex }, key)
 }
-
-function onHexInput(value: string | undefined) {
-  hexInput.value = value ?? ''
-  if (/^#?[0-9a-f]{6}$/i.test(hexInput.value)) setColor(hexInput.value, 'primary.hex')
-}
-
-function commitHexInput() {
-  if (hexInvalid.value) hexInput.value = custom.value?.color ?? ''
-  else setColor(hexInput.value, 'primary.hex')
-}
-
-const pickerColor = computed({
-  get: () => custom.value?.color.slice(1) ?? '000000',
-  set: (value: string) => setColor(value),
-})
 
 function setAlgorithm(algorithm: PaletteAlgorithm) {
   const c = custom.value
@@ -173,22 +152,11 @@ const usage = computed(() => {
         title="Brand color"
         description="Becomes shade 500. The other shades are generated from it."
       >
-        <div class="flex items-center gap-2">
-          <ColorPicker
-            v-model="pickerColor"
-            aria-label="Pick brand color"
-          />
-          <InputText
-            :model-value="hexInput"
-            :invalid="hexInvalid"
-            aria-label="Brand color hex value"
-            class="w-32 font-mono"
-            maxlength="7"
-            @update:model-value="onHexInput"
-            @blur="commitHexInput"
-            @keydown.enter="commitHexInput"
-          />
-        </div>
+        <EditorBrandColorField
+          :model-value="custom.color"
+          show-picker
+          @update:model-value="color => setColor(color)"
+        />
         <Message
           v-if="lightnessWarning"
           severity="warn"

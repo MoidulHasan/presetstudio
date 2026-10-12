@@ -7,6 +7,11 @@ export interface SectionMeta {
 }
 
 export const SECTION_META: Record<EditorSection, SectionMeta> = {
+  start: {
+    label: 'Quick start',
+    icon: 'pi pi-bolt',
+    description: 'Four decisions that get you most of the way. Fine-tune each one in the sections below.',
+  },
   primary: {
     label: 'Primary color',
     icon: 'pi pi-palette',

@@ -40,7 +40,8 @@ function setBase(value: BasePresetName) {
         />
         <Button
           v-tooltip.bottom="`Redo (${isMac ? '⇧⌘Z' : 'Ctrl+Y'})`"
-          icon="pi pi-refresh"
+          icon="pi pi-undo"
+          :pt="{ icon: { class: '-scale-x-100' } }"
           severity="secondary"
           size="small"
           text

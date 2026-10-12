@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { createApplyMessage, parsePreviewMessage } from '~/utils/theme/messages'
+import type { ColorScheme } from '~/utils/theme/types'
+
+const props = defineProps<{ colorScheme: ColorScheme, label: string }>()
 
 const store = useEditorStore()
 const frame = ref<HTMLIFrameElement | null>(null)
@@ -13,7 +16,7 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    target.postMessage(createApplyMessage(store.theme, store.prefs.colorScheme), window.location.origin)
+    target.postMessage(createApplyMessage(store.theme, props.colorScheme, store.prefs.template), window.location.origin)
   })
 }
 
@@ -33,7 +36,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => store.prefs.colorScheme], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template], sendState)
 </script>
 
 <template>
@@ -41,7 +44,7 @@ watch([() => store.theme, () => store.prefs.colorScheme], sendState)
     <iframe
       ref="frame"
       src="/preview"
-      title="Theme preview"
+      :title="props.label"
       class="h-full w-full border-0"
     />
     <div

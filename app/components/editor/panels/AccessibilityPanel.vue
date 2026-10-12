@@ -1,15 +1,14 @@
 <script setup lang="ts">
 import { useEditorStore, type EditorSection } from '~/stores/editor'
 import { contrastRatio, parseColor } from '~/utils/theme/color'
-import type { ContrastResult } from '~/utils/theme/contrast'
-import type { ColorScheme } from '~/utils/theme/types'
+import type { ClassifiedContrast, ContrastStatus } from '~/utils/theme/contrast'
+import { BASE_PRESET_LABELS, type ColorScheme } from '~/utils/theme/types'
 
 const store = useEditorStore()
+const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
-const schemes: Array<{ value: ColorScheme, label: string }> = [
-  { value: 'light', label: 'Light mode' },
-  { value: 'dark', label: 'Dark mode' },
-]
+// The previewed scheme first.
+const schemes = computed<ColorScheme[]>(() => (store.prefs.colorScheme === 'dark' ? ['dark', 'light'] : ['light', 'dark']))
 
 // Where to go to fix each pair.
 const fixSection: Record<string, EditorSection> = {
@@ -43,33 +42,66 @@ function fixPrimaryText(scheme: ColorScheme) {
   const value = bestPrimaryText(scheme)
   if (!value) return
   store.update((d) => {
-    const cs = (d.overrides.semantic ??= {}) as Record<string, unknown>
-    const schemes = (cs.colorScheme ??= {}) as Record<string, Record<string, Record<string, string>>>
-    const s = (schemes[scheme] ??= {})
+    const semantic = (d.overrides.semantic ??= {}) as Record<string, unknown>
+    const schemesTree = (semantic.colorScheme ??= {}) as Record<string, Record<string, Record<string, string>>>
+    const s = (schemesTree[scheme] ??= {})
     s.primary = { ...s.primary, contrastColor: value }
   })
 }
 
-function badge(result: ContrastResult) {
-  if (result.pass === null) return { severity: 'secondary', value: 'n/a' }
-  return result.pass ? { severity: 'success', value: 'Pass' } : { severity: 'danger', value: 'Fail' }
+const STATUS: Record<ContrastStatus, { severity: string, value: string, tooltip?: string }> = {
+  pass: { severity: 'success', value: 'Pass' },
+  introduced: { severity: 'danger', value: 'Fail' },
+  inherited: { severity: 'secondary', value: 'Preset', tooltip: 'The base preset fails this too. Your theme didn\'t make it worse.' },
+  advisory: { severity: 'warn', value: 'Advisory', tooltip: 'Only required when the border alone identifies the input.' },
+  unknown: { severity: 'secondary', value: 'n/a', tooltip: 'This value can\'t be evaluated statically.' },
 }
+
+const counts = computed(() => {
+  const all = [...(store.contrast?.light ?? []), ...(store.contrast?.dark ?? [])]
+  return {
+    introduced: all.filter(r => r.status === 'introduced').length,
+    inherited: all.filter(r => r.status === 'inherited').length,
+  }
+})
+
+const canFix = (result: ClassifiedContrast, scheme: ColorScheme) =>
+  result.pair.id === 'primary' && (result.status === 'introduced' || result.status === 'inherited') && !!bestPrimaryText(scheme)
 </script>
 
 <template>
   <div class="flex flex-col gap-8">
-    <p class="text-xs text-surface-500 dark:text-surface-400">
-      Text needs 4.5:1 (WCAG 1.4.3). Borders and other UI parts need 3:1 (WCAG 1.4.11).
-    </p>
+    <div
+      class="flex flex-col gap-1 rounded-lg p-3 text-sm"
+      :class="counts.introduced ? 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100' : 'bg-surface-50 dark:bg-surface-800'"
+    >
+      <p class="font-medium">
+        <template v-if="counts.introduced">
+          {{ counts.introduced }} contrast issue{{ counts.introduced === 1 ? '' : 's' }} introduced by your changes
+        </template>
+        <template v-else>
+          No new contrast issues
+        </template>
+      </p>
+      <p
+        v-if="counts.inherited"
+        class="text-xs opacity-80"
+      >
+        {{ counts.inherited }} check{{ counts.inherited === 1 ? '' : 's' }} also fail in stock {{ baseLabel }}. You can still fix them.
+      </p>
+      <p class="text-xs opacity-80">
+        Text needs 4.5:1 (WCAG 1.4.3). Other UI parts need 3:1 (WCAG 1.4.11).
+      </p>
+    </div>
 
     <EditorInspectorGroup
       v-for="scheme in schemes"
-      :key="scheme.value"
-      :title="scheme.label"
+      :key="scheme"
+      :title="scheme === 'light' ? 'Light mode' : 'Dark mode'"
     >
       <ul class="flex flex-col divide-y divide-surface-200 rounded-lg border border-surface-200 dark:divide-surface-700 dark:border-surface-700">
         <li
-          v-for="result in store.contrast?.[scheme.value] ?? []"
+          v-for="result in store.contrast?.[scheme] ?? []"
           :key="result.pair.id"
           class="flex items-center gap-3 p-2"
         >
@@ -81,19 +113,24 @@ function badge(result: ContrastResult) {
           <span class="flex min-w-0 flex-1 flex-col">
             <span class="truncate text-sm">{{ result.pair.label }}</span>
             <span class="font-mono text-xs text-surface-500">
-              {{ result.ratio === null ? 'can\'t evaluate' : `${result.ratio.toFixed(2)}:1` }}
+              {{ result.ratio === null ? '–' : `${result.ratio.toFixed(2)}:1` }}
               <span class="text-surface-400">/ {{ result.pair.minimum }}</span>
+              <span
+                v-if="result.baselineRatio !== null && result.ratio !== null && Math.abs(result.ratio - result.baselineRatio) >= 0.05"
+                class="text-surface-400"
+              >· was {{ result.baselineRatio.toFixed(2) }}</span>
             </span>
           </span>
           <Button
-            v-if="result.pass === false && result.pair.id === 'primary' && bestPrimaryText(scheme.value)"
+            v-if="canFix(result, scheme)"
+            v-tooltip.left="'Use the best-contrast text color'"
             label="Fix"
             size="small"
             text
-            @click="fixPrimaryText(scheme.value)"
+            @click="fixPrimaryText(scheme)"
           />
           <Button
-            v-else-if="result.pass === false && fixSection[result.pair.id]"
+            v-else-if="result.status === 'introduced' && fixSection[result.pair.id]"
             v-tooltip.left="'Adjust in another section'"
             icon="pi pi-arrow-right"
             size="small"
@@ -103,8 +140,9 @@ function badge(result: ContrastResult) {
             @click="store.prefs.section = fixSection[result.pair.id]!"
           />
           <Tag
-            :severity="badge(result).severity"
-            :value="badge(result).value"
+            v-tooltip.left="STATUS[result.status].tooltip"
+            :severity="STATUS[result.status].severity"
+            :value="STATUS[result.status].value"
           />
         </li>
       </ul>

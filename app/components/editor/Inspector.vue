@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { EDITOR_SECTIONS, useEditorStore } from '~/stores/editor'
 import { SECTION_META } from '~/utils/editor-sections'
+import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 const meta = computed(() => SECTION_META[store.prefs.section])
 const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_META[value].label }))
+
+const designSection = computed(() =>
+  (DESIGN_SECTIONS as readonly string[]).includes(store.prefs.section) ? (store.prefs.section as DesignSection) : null)
+const canReset = computed(() => !!designSection.value && store.modifiedSections.has(designSection.value))
+
+// Scroll the panel back to the top when switching sections.
+const body = ref<HTMLElement | null>(null)
+watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ top: 0 }))
 </script>
 
 <template>
-  <div class="flex flex-col">
+  <div
+    ref="body"
+    class="flex flex-col"
+  >
     <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
       <!-- On narrow screens the section nav is hidden; pick sections here instead. -->
       <Select
@@ -19,9 +31,22 @@ const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_MET
         aria-label="Editor section"
         class="mb-3 w-full lg:hidden"
       />
-      <h2 class="text-base font-semibold">
-        {{ meta.label }}
-      </h2>
+      <div class="flex items-start justify-between gap-2">
+        <h2 class="text-base font-semibold">
+          {{ meta.label }}
+        </h2>
+        <Button
+          v-if="canReset"
+          v-tooltip.left="'Back to the base preset\'s values'"
+          label="Reset"
+          icon="pi pi-undo"
+          severity="secondary"
+          size="small"
+          text
+          class="-my-1"
+          @click="store.resetSection(designSection!)"
+        />
+      </div>
       <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
         {{ meta.description }}
       </p>
@@ -40,7 +65,8 @@ const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_MET
       v-else
       class="p-5"
     >
-      <EditorPanelsPrimaryPanel v-if="store.prefs.section === 'primary'" />
+      <EditorPanelsQuickStartPanel v-if="store.prefs.section === 'start'" />
+      <EditorPanelsPrimaryPanel v-else-if="store.prefs.section === 'primary'" />
       <EditorPanelsSurfacePanel v-else-if="store.prefs.section === 'surface'" />
       <EditorPanelsShapePanel v-else-if="store.prefs.section === 'shape'" />
       <EditorPanelsDensityPanel v-else-if="store.prefs.section === 'density'" />

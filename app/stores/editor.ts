@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { buildEffectivePreset } from '~/utils/theme/build'
-import { checkContrast, type ContrastResult } from '~/utils/theme/contrast'
+import { checkContrast, classifyContrast, type ClassifiedContrast } from '~/utils/theme/contrast'
 import { generatePresetCode } from '~/utils/theme/export'
 import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
+import { PREVIEW_TEMPLATES, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
+import { DESIGN_SECTIONS, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
 import {
   createThemeDocument,
   createWorkspace,
@@ -27,12 +29,16 @@ const WORKSPACE_KEY = 'presetstudio:workspace'
 const LEGACY_THEME_KEY = 'presetstudio:theme'
 const PREFS_KEY = 'presetstudio:prefs'
 
-export const EDITOR_SECTIONS = ['primary', 'surface', 'shape', 'density', 'focus', 'accessibility'] as const
+export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
 interface EditorPrefs {
+  /** Scheme shown in the preview and edited by scheme-aware panels. */
   colorScheme: ColorScheme
   section: EditorSection
+  /** Show light and dark previews side by side. */
+  split: boolean
+  template: PreviewTemplate
 }
 
 function readStorage(key: string): string | null {
@@ -63,12 +69,14 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'primary' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
       colorScheme: COLOR_SCHEMES.includes(raw?.colorScheme as ColorScheme) ? raw!.colorScheme! : fallback.colorScheme,
       section: EDITOR_SECTIONS.includes(raw?.section as EditorSection) ? raw!.section! : fallback.section,
+      split: typeof raw?.split === 'boolean' ? raw.split : fallback.split,
+      template: PREVIEW_TEMPLATES.includes(raw?.template as PreviewTemplate) ? raw!.template! : fallback.template,
     }
   }
   catch {
@@ -145,15 +153,33 @@ export const useEditorStore = defineStore('editor', () => {
     return Object.fromEntries(SHADES.map(s => [s, resolver.resolve(`${group}-${s}`)?.value ?? 'transparent'])) as ColorPalette
   }
 
-  const contrast = computed<Record<ColorScheme, ContrastResult[]> | null>(() => {
-    const r = resolvers.value
-    return r ? { light: checkContrast(r.light), dark: checkContrast(r.dark) } : null
+  // Contrast of the untouched base preset, to tell inherited problems from new ones.
+  const baselineContrast = computed(() => {
+    const base = basePreset.value
+    return base ? { light: checkContrast(createResolver(base, 'light')), dark: checkContrast(createResolver(base, 'dark')) } : null
   })
 
+  const contrast = computed<Record<ColorScheme, ClassifiedContrast[]> | null>(() => {
+    const r = resolvers.value
+    const baseline = baselineContrast.value
+    if (!r || !baseline) return null
+    return {
+      light: classifyContrast(checkContrast(r.light), baseline.light),
+      dark: classifyContrast(checkContrast(r.dark), baseline.dark),
+    }
+  })
+
+  /** Contrast failures introduced by this theme (not inherited from the base preset). */
   const contrastIssues = computed(() => {
     const c = contrast.value
-    return c ? [...c.light, ...c.dark].filter(r => r.pass === false).length : 0
+    return c ? [...c.light, ...c.dark].filter(r => r.status === 'introduced').length : 0
   })
+
+  const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
+
+  function resetDesignSection(section: DesignSection) {
+    update(draft => Object.assign(draft, resetSection(draft, section)))
+  }
 
   const exportCode = computed(() => (basePreset.value ? generatePresetCode(theme.value, basePreset.value) : ''))
 
@@ -211,6 +237,8 @@ export const useEditorStore = defineStore('editor', () => {
     resolvers,
     contrast,
     contrastIssues,
+    modifiedSections,
+    resetSection: resetDesignSection,
     exportCode,
     canUndo: computed(() => canUndo(history.value)),
     canRedo: computed(() => canRedo(history.value)),

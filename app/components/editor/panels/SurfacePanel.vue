@@ -1,83 +1,99 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { primaryHue } from '~/utils/theme/design'
+import { generateNeutralPalette } from '~/utils/theme/palette'
 import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type SurfaceDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
-const schemes: Array<{ value: ColorScheme, label: string }> = [
-  { value: 'light', label: 'Light mode' },
-  { value: 'dark', label: 'Dark mode' },
-]
+// The edited scheme is the previewed scheme: you always edit what you see.
+const scheme = computed<ColorScheme>({
+  get: () => store.prefs.colorScheme,
+  set: (value) => {
+    store.prefs.colorScheme = value
+  },
+})
+const other = computed<ColorScheme>(() => (scheme.value === 'light' ? 'dark' : 'light'))
+const current = computed(() => store.theme.design.surface[scheme.value])
 
-function setSurface(scheme: ColorScheme, value: SurfaceDesign, key: string | null = null) {
+const surfaceId = (s: SurfaceDesign) => (s.kind === 'palette' ? s.name : s.kind)
+const sameAsOther = computed(() => {
+  const o = store.theme.design.surface[other.value]
+  return surfaceId(current.value) === surfaceId(o) && (current.value.kind !== 'tinted' || o.kind !== 'tinted' || current.value.chroma === o.chroma)
+})
+
+function setSurface(value: SurfaceDesign, key: string | null = null) {
+  const target = scheme.value
   store.update((d) => {
-    d.design.surface[scheme] = value
+    d.design.surface[target] = value
   }, key)
 }
 
-function isSelected(scheme: ColorScheme, value: SurfaceDesign): boolean {
-  const current = store.theme.design.surface[scheme]
-  if (current.kind !== value.kind) return false
-  return current.kind !== 'palette' || (value.kind === 'palette' && current.name === value.name)
+function applyToOther() {
+  const target = other.value
+  const value = { ...current.value }
+  store.update((d) => {
+    d.design.surface[target] = value
+  })
 }
 
-function copyTo(target: ColorScheme) {
-  const source = target === 'dark' ? 'light' : 'dark'
-  setSurface(target, { ...store.theme.design.surface[source] })
-}
+const isSelected = (value: SurfaceDesign) => surfaceId(current.value) === surfaceId(value)
 
 const swatch = (name: string, shade: string) => store.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
 
-function tintChroma(scheme: ColorScheme): number {
-  const s = store.theme.design.surface[scheme]
-  return s.kind === 'tinted' ? Math.round(s.chroma * 1000) : 12
-}
+const tint = computed(() => (current.value.kind === 'tinted' ? Math.round(current.value.chroma * 1000) : 14))
 
-function setTint(scheme: ColorScheme, value: number | number[]) {
+const tintedPreview = computed(() =>
+  store.basePreset ? generateNeutralPalette(primaryHue(store.theme.design.primary, store.basePreset), tint.value / 1000) : null)
+
+function setTint(value: number | number[]) {
   const n = Array.isArray(value) ? value[0]! : value
-  setSurface(scheme, { kind: 'tinted', chroma: n / 1000 }, `surface.${scheme}.tint`)
+  setSurface({ kind: 'tinted', chroma: n / 1000 }, `surface.${scheme.value}.tint`)
 }
 </script>
 
 <template>
   <div class="flex flex-col gap-8">
     <EditorInspectorGroup
-      v-for="scheme in schemes"
-      :key="scheme.value"
-      :title="scheme.label"
+      title="Editing"
+      description="The preview switches with this toggle."
     >
-      <template #actions>
-        <Button
-          :label="`Copy from ${scheme.value === 'dark' ? 'light' : 'dark'}`"
-          size="small"
-          text
-          @click="copyTo(scheme.value)"
-        />
-      </template>
+      <SelectButton
+        v-model="scheme"
+        :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-label="Color scheme to edit"
+        class="w-full"
+        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+      />
+    </EditorInspectorGroup>
 
+    <EditorInspectorGroup title="Palette">
       <EditorPaletteStrip
-        :label="`${scheme.label} surface palette`"
-        :palette="store.resolvedScale('surface', scheme.value)"
+        :label="`${scheme} mode surface palette`"
+        :palette="store.resolvedScale('surface', scheme)"
       />
 
       <div
         class="flex flex-col gap-2"
         role="radiogroup"
-        :aria-label="`${scheme.label} surface`"
+        :aria-label="`${scheme} mode surface`"
       >
         <EditorOptionCard
-          :selected="isSelected(scheme.value, { kind: 'base' })"
+          :selected="isSelected({ kind: 'base' })"
           :label="`${baseLabel} default`"
-          @select="setSurface(scheme.value, { kind: 'base' })"
+          @select="setSurface({ kind: 'base' })"
         />
         <div class="grid grid-cols-2 gap-2">
           <EditorOptionCard
             v-for="name in NEUTRAL_COLORS"
             :key="name"
-            :selected="isSelected(scheme.value, { kind: 'palette', name })"
+            :selected="isSelected({ kind: 'palette', name })"
             :label="name.charAt(0).toUpperCase() + name.slice(1)"
-            @select="setSurface(scheme.value, { kind: 'palette', name })"
+            @select="setSurface({ kind: 'palette', name })"
           >
             <template #visual>
               <span class="flex overflow-hidden rounded">
@@ -91,32 +107,57 @@ function setTint(scheme: ColorScheme, value: number | number[]) {
             </template>
           </EditorOptionCard>
           <EditorOptionCard
-            :selected="isSelected(scheme.value, { kind: 'tinted', chroma: 0 })"
+            :selected="isSelected({ kind: 'tinted', chroma: 0 })"
             label="Tinted"
-            hint="Neutral with a hint of your primary"
-            @select="setSurface(scheme.value, { kind: 'tinted', chroma: tintChroma(scheme.value) / 1000 })"
-          />
+            @select="setSurface({ kind: 'tinted', chroma: tint / 1000 })"
+          >
+            <template #visual>
+              <span class="flex overflow-hidden rounded">
+                <span
+                  v-for="shade in ['200', '500', '800']"
+                  :key="shade"
+                  class="h-5 w-2.5"
+                  :style="{ backgroundColor: tintedPreview?.[shade as '500'] }"
+                />
+              </span>
+            </template>
+          </EditorOptionCard>
         </div>
         <div
-          v-if="store.theme.design.surface[scheme.value].kind === 'tinted'"
+          v-if="current.kind === 'tinted'"
           class="flex flex-col gap-2 rounded-lg border border-surface-200 p-3 dark:border-surface-700"
         >
           <label
-            :id="`tint-${scheme.value}`"
+            id="tint-strength"
             class="flex justify-between text-xs font-medium"
           >
-            Tint strength <span class="font-mono text-surface-500">{{ tintChroma(scheme.value) }}</span>
+            Tint strength <span class="font-mono text-surface-500">{{ tint }}</span>
           </label>
           <Slider
-            :model-value="tintChroma(scheme.value)"
+            :model-value="tint"
             :min="0"
             :max="40"
             :step="1"
-            :aria-labelledby="`tint-${scheme.value}`"
-            @update:model-value="value => setTint(scheme.value, value)"
+            aria-labelledby="tint-strength"
+            @update:model-value="setTint"
           />
+          <p class="text-xs text-surface-500 dark:text-surface-400">
+            A neutral with a hint of your primary hue.
+          </p>
         </div>
       </div>
     </EditorInspectorGroup>
+
+    <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-50 p-3 text-xs dark:bg-surface-800">
+      <span v-if="sameAsOther">Same as {{ other }} mode.</span>
+      <span v-else>{{ other === 'dark' ? 'Dark' : 'Light' }} mode uses a different neutral.</span>
+      <Button
+        v-if="!sameAsOther"
+        :label="`Use in ${other} mode too`"
+        size="small"
+        text
+        @click="applyToOther"
+      />
+    </div>
   </div>
 </template>

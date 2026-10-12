@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import type { ColorScheme } from '~/utils/theme/types'
 
 definePageMeta({ layout: 'editor' })
 useSeoMeta({ title: 'Editor · Preset Studio', robots: 'noindex' })
 
 const store = useEditorStore()
 const exportVisible = ref(false)
-
-const schemeOptions: Array<{ value: ColorScheme, label: string, icon: string }> = [
-  { value: 'light', label: 'Light', icon: 'pi pi-sun' },
-  { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
-]
 
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null
@@ -52,29 +46,49 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
         class="flex min-h-[28rem] min-w-0 flex-1 flex-col bg-surface-50 dark:bg-surface-950"
         aria-label="Preview"
       >
-        <div class="flex items-center justify-between gap-3 border-b border-surface-200 bg-surface-0 px-4 py-2 dark:border-surface-800 dark:bg-surface-900">
-          <SelectButton
-            v-model="store.prefs.colorScheme"
-            :options="schemeOptions"
-            option-value="value"
-            :allow-empty="false"
-            aria-label="Preview color scheme"
-            size="small"
+        <EditorPreviewToolbar />
+        <div
+          v-if="store.prefs.split"
+          class="grid min-h-0 flex-1 grid-cols-1 gap-px bg-surface-200 xl:grid-cols-2 dark:bg-surface-800"
+        >
+          <div
+            v-for="scheme in (['light', 'dark'] as const)"
+            :key="scheme"
+            class="flex min-h-0 flex-col bg-surface-0 dark:bg-surface-900"
           >
-            <template #option="{ option }">
+            <button
+              type="button"
+              class="flex h-8 shrink-0 items-center gap-2 px-3 text-left text-xs"
+              :class="store.prefs.colorScheme === scheme ? 'font-semibold text-surface-900 dark:text-surface-0' : 'text-surface-500 hover:text-surface-900'"
+              :aria-pressed="store.prefs.colorScheme === scheme"
+              @click="store.prefs.colorScheme = scheme"
+            >
               <i
-                :class="option.icon"
+                :class="scheme === 'light' ? 'pi pi-sun' : 'pi pi-moon'"
                 aria-hidden="true"
               />
-              <span>{{ option.label }}</span>
-            </template>
-          </SelectButton>
-          <span class="hidden text-xs text-surface-500 xl:inline">
-            Preview of “{{ store.activeDoc.name }}”
-          </span>
+              {{ scheme === 'light' ? 'Light' : 'Dark' }}
+              <span
+                v-if="store.prefs.colorScheme === scheme"
+                class="font-normal text-surface-500"
+              >· editing</span>
+            </button>
+            <div class="min-h-0 flex-1">
+              <EditorPreviewFrame
+                :color-scheme="scheme"
+                :label="`${scheme} mode preview`"
+              />
+            </div>
+          </div>
         </div>
-        <div class="min-h-0 flex-1">
-          <EditorPreviewFrame />
+        <div
+          v-else
+          class="min-h-0 flex-1"
+        >
+          <EditorPreviewFrame
+            :color-scheme="store.prefs.colorScheme"
+            label="Theme preview"
+          />
         </div>
       </section>
 
