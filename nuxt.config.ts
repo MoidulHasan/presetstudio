@@ -2,12 +2,9 @@
 import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
-  compatibilityDate: '2025-07-15',
+
+  modules: ['@nuxt/eslint', '@primevue/nuxt-module', '@pinia/nuxt'],
   devtools: { enabled: true },
-
-  modules: ['@primevue/nuxt-module', '@pinia/nuxt'],
-
-  css: ['~/assets/css/main.css', 'primeicons/primeicons.css'],
 
   app: {
     head: {
@@ -17,6 +14,30 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Preset Studio: an open-source visual theme (preset) generator for PrimeVue 4.' },
       ],
       link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    },
+  },
+
+  css: ['~/assets/css/main.css', 'primeicons/primeicons.css'],
+
+  routeRules: {
+    '/': { prerender: true },
+    '/docs/**': { prerender: true },
+    '/editor': { ssr: false },
+    '/preview': { ssr: false },
+  },
+  compatibilityDate: '2025-07-15',
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  typescript: {
+    strict: true,
+  },
+
+  eslint: {
+    config: {
+      stylistic: true,
     },
   },
 
@@ -32,20 +53,5 @@ export default defineNuxtConfig({
         },
       },
     },
-  },
-
-  routeRules: {
-    '/': { prerender: true },
-    '/docs/**': { prerender: true },
-    '/editor': { ssr: false },
-    '/preview': { ssr: false },
-  },
-
-  typescript: {
-    strict: true,
-  },
-
-  vite: {
-    plugins: [tailwindcss()],
   },
 })
