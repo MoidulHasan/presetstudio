@@ -358,6 +358,5 @@ function showToast(severity: 'success' | 'info' | 'warn' | 'error') {
         />
       </div>
     </Dialog>
-    <Toast />
   </div>
 </template>

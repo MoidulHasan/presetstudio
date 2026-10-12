@@ -4,11 +4,15 @@ import { COLOR_SCHEMES, type ColorScheme, type ThemeState } from './types'
 // Typed postMessage protocol between /editor (parent) and /preview (iframe).
 export const MESSAGE_CHANNEL = 'presetstudio'
 
+export const PREVIEW_TEMPLATES = ['components', 'dashboard', 'form', 'settings'] as const
+export type PreviewTemplate = (typeof PREVIEW_TEMPLATES)[number]
+
 export type EditorToPreviewMessage = {
   channel: typeof MESSAGE_CHANNEL
   type: 'theme:apply'
   state: ThemeState
   colorScheme: ColorScheme
+  template: PreviewTemplate
 }
 
 export type PreviewToEditorMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
@@ -33,8 +37,10 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
   if (event.data.type === 'theme:apply') {
     const state = parseThemeState(event.data.state)
     const scheme = event.data.colorScheme
+    const template = event.data.template
     if (!state || !(COLOR_SCHEMES as readonly unknown[]).includes(scheme)) return null
-    return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state, colorScheme: scheme as ColorScheme }
+    if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
+    return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state, colorScheme: scheme as ColorScheme, template: template as PreviewTemplate }
   }
   return null
 }
@@ -46,9 +52,9 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   return null
 }
 
-export function createApplyMessage(state: ThemeState, colorScheme: ColorScheme): EditorToPreviewMessage {
+export function createApplyMessage(state: ThemeState, colorScheme: ColorScheme, template: PreviewTemplate = 'components'): EditorToPreviewMessage {
   // Plain clone so reactive proxies never cross the postMessage boundary.
-  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme }
+  return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme, template }
 }
 
 export function createReadyMessage(): PreviewToEditorMessage {

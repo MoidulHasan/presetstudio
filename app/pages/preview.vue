@@ -2,7 +2,7 @@
 import { definePreset, usePreset } from '@primeuix/themes'
 import type { Preset } from '@primeuix/themes/types'
 import { buildPresetOverrides } from '~/utils/theme/build'
-import { createReadyMessage, parseEditorMessage } from '~/utils/theme/messages'
+import { createReadyMessage, parseEditorMessage, type PreviewTemplate } from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -12,6 +12,10 @@ definePageMeta({ layout: false })
 useSeoMeta({ title: 'Preview · Preset Studio', robots: 'noindex, nofollow' })
 
 const embedded = import.meta.client && window.parent !== window
+
+const template = ref<PreviewTemplate>('components')
+// Until the first theme arrives the app's default (editor) theme is active; don't show it.
+const themed = ref(false)
 
 let applyId = 0
 async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
@@ -23,12 +27,15 @@ async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
   // never leaves stale tokens behind.
   usePreset(definePreset(base, buildPresetOverrides(state, base as unknown as TokenTree) as Preset))
   document.documentElement.classList.toggle('ps-dark', colorScheme === 'dark')
+  themed.value = true
 }
 
 function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return
   const message = parseEditorMessage(event, window.location.origin)
-  if (message?.type === 'theme:apply') void applyTheme(message.state, message.colorScheme)
+  if (message?.type !== 'theme:apply') return
+  template.value = message.template
+  void applyTheme(message.state, message.colorScheme)
 }
 
 onMounted(() => {
@@ -40,7 +47,10 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
 </script>
 
 <template>
-  <div class="min-h-screen bg-surface-50 p-6 text-surface-700 dark:bg-surface-950 dark:text-surface-200">
+  <div
+    class="min-h-screen bg-surface-50 p-6 text-surface-700 transition-opacity duration-150 dark:bg-surface-950 dark:text-surface-200"
+    :class="themed ? 'opacity-100' : 'opacity-0'"
+  >
     <Message
       v-if="!embedded"
       severity="info"
@@ -52,6 +62,10 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
         class="underline"
       >Preset Studio editor</NuxtLink> and is meant to be shown inside it.
     </Message>
-    <PreviewGallery />
+    <PreviewDashboard v-if="template === 'dashboard'" />
+    <PreviewForm v-else-if="template === 'form'" />
+    <PreviewSettings v-else-if="template === 'settings'" />
+    <PreviewGallery v-else />
+    <Toast />
   </div>
 </template>
