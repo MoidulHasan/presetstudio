@@ -42,16 +42,11 @@ export default defineNuxtConfig({
   },
 
   primevue: {
-    // The editor's own fixed theme. The theme being designed lives only in the /preview iframe.
-    importTheme: { as: 'EditorPreset', from: '~/themes/editor-preset.ts' },
+    // The editor's own fixed theme ({ preset, options }). The theme being designed
+    // lives only in the /preview iframe.
+    importTheme: { as: 'EditorTheme', from: '~/themes/editor-theme.ts' },
     options: {
       ripple: false,
-      theme: {
-        options: {
-          darkModeSelector: '.ps-dark',
-          cssLayer: { name: 'primevue', order: 'theme, base, primevue' },
-        },
-      },
     },
   },
 })
