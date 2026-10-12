@@ -11,7 +11,7 @@ export type PreviewTemplate = (typeof PREVIEW_TEMPLATES)[number]
 export const PREVIEW_CATEGORIES = ['form', 'button', 'data', 'panel', 'overlay', 'menu', 'messages', 'media', 'file', 'misc'] as const
 export type PreviewCategory = (typeof PREVIEW_CATEGORIES)[number]
 
-export type EditorToPreviewMessage = {
+export type ApplyMessage = {
   channel: typeof MESSAGE_CHANNEL
   type: 'theme:apply'
   state: ThemeState
@@ -20,7 +20,26 @@ export type EditorToPreviewMessage = {
   category: PreviewCategory
 }
 
-export type PreviewToEditorMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
+/** Scroll position of a preview (side-by-side panes scroll together). */
+export interface ScrollPosition {
+  x: number
+  y: number
+}
+
+export type ScrollToMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll-to' } & ScrollPosition
+export type EditorToPreviewMessage = ApplyMessage | ScrollToMessage
+
+export type ReadyMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
+export type ScrollMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll' } & ScrollPosition
+export type PreviewToEditorMessage = ReadyMessage | ScrollMessage
+
+const MAX_SCROLL = 1_000_000
+
+function parseScroll(data: Record<string, unknown>): ScrollPosition | null {
+  const { x, y } = data
+  if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y)) return null
+  return { x: Math.min(Math.max(x, 0), MAX_SCROLL), y: Math.min(Math.max(y, 0), MAX_SCROLL) }
+}
 
 interface MessageEventLike {
   origin: string
@@ -56,6 +75,10 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       category: category as PreviewCategory,
     }
   }
+  if (event.data.type === 'preview:scroll-to') {
+    const position = parseScroll(event.data)
+    return position ? { channel: MESSAGE_CHANNEL, type: 'preview:scroll-to', ...position } : null
+  }
   return null
 }
 
@@ -63,6 +86,10 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
 export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: string): PreviewToEditorMessage | null {
   if (!isSameOrigin(event, expectedOrigin) || !hasChannel(event.data)) return null
   if (event.data.type === 'preview:ready') return { channel: MESSAGE_CHANNEL, type: 'preview:ready' }
+  if (event.data.type === 'preview:scroll') {
+    const position = parseScroll(event.data)
+    return position ? { channel: MESSAGE_CHANNEL, type: 'preview:scroll', ...position } : null
+  }
   return null
 }
 
@@ -71,11 +98,19 @@ export function createApplyMessage(
   colorScheme: ColorScheme,
   template: PreviewTemplate = 'components',
   category: PreviewCategory = 'form',
-): EditorToPreviewMessage {
+): ApplyMessage {
   // Plain clone so reactive proxies never cross the postMessage boundary.
   return { channel: MESSAGE_CHANNEL, type: 'theme:apply', state: JSON.parse(JSON.stringify(state)), colorScheme, template, category }
 }
 
-export function createReadyMessage(): PreviewToEditorMessage {
+export function createReadyMessage(): ReadyMessage {
   return { channel: MESSAGE_CHANNEL, type: 'preview:ready' }
+}
+
+export function createScrollMessage({ x, y }: ScrollPosition): ScrollMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:scroll', x, y }
+}
+
+export function createScrollToMessage({ x, y }: ScrollPosition): ScrollToMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:scroll-to', x, y }
 }

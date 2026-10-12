@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApplyMessage, createReadyMessage, parseEditorMessage, parsePreviewMessage } from './messages'
+import { createApplyMessage, createReadyMessage, createScrollMessage, createScrollToMessage, parseEditorMessage, parsePreviewMessage } from './messages'
 import { generateClassicPalette, normalizeHex } from './palette'
 import {
   createWorkspace,
@@ -130,5 +130,23 @@ describe('override sanitization', () => {
   it('drops unsafe override values from untrusted state', () => {
     const parsed = parseThemeState({ ...createDefaultThemeState(), overrides: { semantic: { text: { color: 'red;} body{display:none' }, list: { gap: '4px' } } } })!
     expect(parsed.overrides).toEqual({ semantic: { list: { gap: '4px' } } })
+  })
+})
+
+describe('scroll sync messages', () => {
+  const origin = 'https://presetstudio.example'
+
+  it('round-trips scroll and scroll-to messages', () => {
+    const scroll = createScrollMessage({ x: 0, y: 420 })
+    expect(parsePreviewMessage({ origin, data: scroll }, origin)).toEqual(scroll)
+    const scrollTo = createScrollToMessage({ x: 10, y: 420 })
+    expect(parseEditorMessage({ origin, data: scrollTo }, origin)).toEqual(scrollTo)
+  })
+
+  it('clamps and validates positions', () => {
+    expect(parsePreviewMessage({ origin, data: { ...createScrollMessage({ x: 0, y: 0 }), y: -5 } }, origin)).toMatchObject({ y: 0 })
+    expect(parsePreviewMessage({ origin, data: { ...createScrollMessage({ x: 0, y: 0 }), y: 'x' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...createScrollToMessage({ x: 0, y: 0 }), y: Number.NaN } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin: 'https://evil.example', data: createScrollToMessage({ x: 0, y: 1 }) }, origin)).toBeNull()
   })
 })

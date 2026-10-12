@@ -2,7 +2,14 @@
 import { definePreset, usePreset } from '@primeuix/themes'
 import type { Preset } from '@primeuix/themes/types'
 import { buildPresetOverrides } from '~/utils/theme/build'
-import { createReadyMessage, parseEditorMessage, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
+import {
+  createReadyMessage,
+  createScrollMessage,
+  parseEditorMessage,
+  type PreviewCategory,
+  type PreviewTemplate,
+  type ScrollPosition,
+} from '~/utils/theme/messages'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -31,9 +38,34 @@ async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
   themed.value = true
 }
 
+// --- Scroll sync (side-by-side panes) ---------------------------------------------
+// Report user scrolls to the editor, which mirrors them to the other pane. Scrolls
+// performed on the editor's behalf aren't reported back, to avoid ping-pong.
+let programmatic: ScrollPosition | null = null
+let scrollFrame = 0
+
+const near = (a: ScrollPosition, b: ScrollPosition) => Math.abs(a.x - b.x) < 2 && Math.abs(a.y - b.y) < 2
+
+function onScroll() {
+  cancelAnimationFrame(scrollFrame)
+  scrollFrame = requestAnimationFrame(() => {
+    const position = { x: window.scrollX, y: window.scrollY }
+    const echo = programmatic && near(programmatic, position)
+    programmatic = null
+    if (!echo) window.parent.postMessage(createScrollMessage(position), window.location.origin)
+  })
+}
+
+function scrollTo(position: ScrollPosition) {
+  if (near(position, { x: window.scrollX, y: window.scrollY })) return
+  programmatic = position
+  window.scrollTo({ left: position.x, top: position.y, behavior: 'instant' })
+}
+
 function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return
   const message = parseEditorMessage(event, window.location.origin)
+  if (message?.type === 'preview:scroll-to') return scrollTo(message)
   if (message?.type !== 'theme:apply') return
   template.value = message.template
   category.value = message.category
@@ -42,10 +74,19 @@ function onMessage(event: MessageEvent) {
 
 onMounted(() => {
   window.addEventListener('message', onMessage)
-  if (embedded) window.parent.postMessage(createReadyMessage(), window.location.origin)
-  else void applyTheme(createDefaultThemeState(), 'light')
+  if (embedded) {
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.parent.postMessage(createReadyMessage(), window.location.origin)
+  }
+  else {
+    void applyTheme(createDefaultThemeState(), 'light')
+  }
 })
-onBeforeUnmount(() => window.removeEventListener('message', onMessage))
+onBeforeUnmount(() => {
+  window.removeEventListener('message', onMessage)
+  window.removeEventListener('scroll', onScroll)
+  cancelAnimationFrame(scrollFrame)
+})
 </script>
 
 <template>

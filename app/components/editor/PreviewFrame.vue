@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { createApplyMessage, parsePreviewMessage } from '~/utils/theme/messages'
+import { createApplyMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const props = defineProps<{ colorScheme: ColorScheme, label: string }>()
+const emit = defineEmits<{ scroll: [position: ScrollPosition] }>()
 
 const store = useEditorStore()
 const frame = ref<HTMLIFrameElement | null>(null)
@@ -28,7 +29,17 @@ function onMessage(event: MessageEvent) {
     ready.value = true
     sendState()
   }
+  else if (message?.type === 'preview:scroll') {
+    emit('scroll', { x: message.x, y: message.y })
+  }
 }
+
+/** Scrolls the preview without it reporting the scroll back (used to sync panes). */
+function scrollTo(position: ScrollPosition) {
+  if (ready.value) frame.value?.contentWindow?.postMessage(createScrollToMessage(position), window.location.origin)
+}
+
+defineExpose({ scrollTo })
 
 onMounted(() => window.addEventListener('message', onMessage))
 onBeforeUnmount(() => {

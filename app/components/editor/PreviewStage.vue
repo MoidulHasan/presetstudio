@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore, type PreviewViewport } from '~/stores/editor'
+import type { ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 // The preview area: one frame or light/dark side by side, at the chosen viewport width.
@@ -10,6 +11,19 @@ const VIEWPORT_WIDTH: Record<PreviewViewport, string | null> = { full: null, tab
 
 const panes = computed<ColorScheme[]>(() => (store.prefs.split ? ['light', 'dark'] : [store.prefs.colorScheme]))
 const width = computed(() => VIEWPORT_WIDTH[store.prefs.viewport])
+
+// Side by side, both panes scroll together so the same component is always compared.
+type FrameHandle = { scrollTo: (position: ScrollPosition) => void }
+const frames: Record<ColorScheme, FrameHandle | null> = { light: null, dark: null }
+
+function setFrame(scheme: ColorScheme, handle: unknown) {
+  frames[scheme] = (handle as FrameHandle | null) ?? null
+}
+
+function onScroll(from: ColorScheme, position: ScrollPosition) {
+  if (!store.prefs.split) return
+  frames[from === 'light' ? 'dark' : 'light']?.scrollTo(position)
+}
 </script>
 
 <template>
@@ -32,8 +46,10 @@ const width = computed(() => VIEWPORT_WIDTH[store.prefs.viewport])
           :style="width ? { maxWidth: width } : undefined"
         >
           <EditorPreviewFrame
+            :ref="handle => setFrame(scheme, handle)"
             :color-scheme="scheme"
             :label="`${scheme} mode preview`"
+            @scroll="position => onScroll(scheme, position)"
           />
         </div>
       </div>
