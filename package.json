@@ -12,7 +12,8 @@
     "lint:fix": "eslint . --fix",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "license:check": "node scripts/check-licenses.mjs"
   },
   "dependencies": {
     "@pinia/nuxt": "1.0.2",

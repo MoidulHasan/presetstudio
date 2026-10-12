@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    ignore:
+      # PrimeVue 5+ and newer PrimeTek packages are proprietary.
+      # Stay on the last MIT versions; never take major updates.
+      - dependency-name: primevue
+        update-types: [version-update:semver-major]
+      - dependency-name: "@primevue/*"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@primeuix/*"
+        update-types: [version-update:semver-major]
+      - dependency-name: primeicons
+        update-types: [version-update:semver-major]
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
