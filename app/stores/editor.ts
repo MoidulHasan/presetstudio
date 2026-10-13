@@ -340,6 +340,14 @@ export const useEditorStore = defineStore('editor', () => {
     if (studio !== component) revealComponent(component)
   }
 
+  /** Opens the list of every component, with the whole component gallery in the preview. */
+  function openComponentList() {
+    prefs.value.section = 'components'
+    prefs.value.component = null
+    prefs.value.template = 'components'
+    prefs.value.category = 'all'
+  }
+
   // --- Component studio ----------------------------------------------------------------
 
   /** Component whose visual editor is open (its stage is available), if any. */
@@ -458,6 +466,7 @@ export const useEditorStore = defineStore('editor', () => {
     revealComponent,
     reportRevealed,
     openComponent,
+    openComponentList,
     activeStage,
     stageComponent,
     stagePick,

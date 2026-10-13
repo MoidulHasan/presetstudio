@@ -42,10 +42,7 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
         key: 'components',
         label: SECTION_META.components.label,
         icon: SECTION_META.components.icon,
-        open: () => {
-          store.prefs.section = 'components'
-          store.prefs.component = null
-        },
+        open: () => store.openComponentList(),
         active: store.prefs.section === 'components' && !openStudio.value,
         modified: store.componentOverrideCount > 0,
         count: COMPONENT_NAMES.length,

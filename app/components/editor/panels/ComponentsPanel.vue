@@ -137,7 +137,7 @@ watch(component, () => {
 }, { immediate: true })
 
 function back() {
-  store.prefs.component = null
+  store.openComponentList()
   query.value = ''
 }
 

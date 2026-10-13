@@ -26,7 +26,7 @@ const sectionValue = computed({
     : store.prefs.section),
   set: (value: string) => {
     if (value.startsWith('component:')) return store.openComponent(value.slice('component:'.length))
-    if (value === 'components') store.prefs.component = null
+    if (value === 'components') return store.openComponentList()
     store.prefs.section = value as EditorSection
   },
 })
