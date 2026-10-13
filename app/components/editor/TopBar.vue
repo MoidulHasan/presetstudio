@@ -33,10 +33,13 @@ function setBase(value: BasePresetName) {
 
 <template>
   <header class="flex h-14 shrink-0 items-center gap-2 border-b border-surface-200 px-3 sm:gap-3 dark:border-surface-800">
-    <AppLogo class="hidden whitespace-nowrap lg:flex" />
+    <!-- From xl the logo cell is exactly as wide as the section nav below it, so their borders line up. -->
+    <div class="hidden h-full shrink-0 items-center border-surface-200 lg:flex xl:-ml-3 xl:w-56 xl:border-r xl:px-4 dark:border-surface-800">
+      <AppLogo class="whitespace-nowrap" />
+    </div>
     <Divider
       layout="vertical"
-      class="!mx-1 hidden lg:block"
+      class="!mx-1 hidden lg:block xl:!hidden"
     />
     <EditorThemeSwitcher class="min-w-0" />
 
