@@ -28,6 +28,7 @@ const openStudio = computed(() =>
 const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
   { label: 'Start', items: [sectionItem('start')] },
   { label: 'Global design', items: DESIGN_SECTIONS.map(sectionItem) },
+  { label: 'Tokens', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
   {
     label: 'Components',
     items: [
@@ -53,7 +54,6 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
       })),
     ],
   },
-  { label: 'Tokens', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
   { label: 'Review', items: [sectionItem('accessibility')] },
 ])
 
