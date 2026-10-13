@@ -4,6 +4,7 @@ import { parseColor } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
+import { hasPath } from '~/utils/theme/tree'
 import type { ColorScheme } from '~/utils/theme/types'
 import { referenceFor, sanitizeTokenValue } from '~/utils/theme/values'
 
@@ -17,6 +18,7 @@ const resolver = computed(() => store.resolvers?.[props.token.scheme ?? props.sc
 const resolved = computed(() => resolver.value?.resolve(props.token.name) ?? null)
 const raw = computed(() => String(resolved.value?.raw ?? props.token.defaultValue))
 const source = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens))
+const hasDesignValue = computed(() => hasPath(store.designTokens, props.token.path))
 const isColor = computed(() => props.token.kind === 'color')
 const swatch = computed(() => (isColor.value && resolved.value && parseColor(resolved.value.value) ? resolved.value.value : null))
 
@@ -74,38 +76,52 @@ const inputId = useId()
     class="rounded-md"
     :class="props.expanded ? 'bg-surface-50 ring-1 ring-surface-200 dark:bg-surface-800 dark:ring-surface-700' : ''"
   >
-    <Button
-      severity="secondary"
-      text
-      class="!w-full !justify-start !gap-2.5 !px-2 !py-1.5 text-left"
-      :aria-expanded="props.expanded"
-      @click="emit('toggle')"
-    >
-      <span
-        v-if="isColor"
-        class="size-5 shrink-0 rounded border border-surface-300 dark:border-surface-600"
-        :style="{ background: swatch ?? 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,.15) 3px 6px)' }"
-        aria-hidden="true"
+    <div class="flex items-center">
+      <Button
+        severity="secondary"
+        text
+        class="!min-w-0 !flex-1 !justify-start !gap-2.5 !px-2 !py-1.5 text-left"
+        :aria-expanded="props.expanded"
+        @click="emit('toggle')"
+      >
+        <span
+          v-if="isColor"
+          class="size-5 shrink-0 rounded border border-surface-300 dark:border-surface-600"
+          :style="{ background: swatch ?? 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,.15) 3px 6px)' }"
+          aria-hidden="true"
+        />
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="truncate text-sm text-surface-900 dark:text-surface-0">{{ props.label }}</span>
+          <span class="truncate font-mono text-[11px] text-surface-500">{{ raw }}</span>
+        </span>
+        <span
+          v-if="source !== 'base'"
+          v-tooltip.left="SOURCE_LABEL[source]"
+          class="size-2 shrink-0 rounded-full"
+          :class="source === 'custom' ? 'bg-surface-900 dark:bg-surface-0' : 'border border-surface-500'"
+          role="img"
+          :aria-label="SOURCE_LABEL[source]"
+        />
+        <i
+          class="pi text-xs text-surface-400"
+          :class="props.expanded ? 'pi-chevron-up' : 'pi-chevron-down'"
+          aria-hidden="true"
+        />
+      </Button>
+      <!-- Reset sits on the row itself, so a custom value can be undone without expanding. -->
+      <Button
+        v-if="source === 'custom'"
+        v-tooltip.left="'Reset to ' + (hasDesignValue ? 'design setting' : 'base preset')"
+        icon="pi pi-undo"
+        severity="secondary"
+        size="small"
+        text
+        rounded
+        class="shrink-0"
+        :aria-label="`Reset ${props.label}`"
+        @click="store.resetToken(props.token.path)"
       />
-      <span class="flex min-w-0 flex-1 flex-col">
-        <span class="truncate text-sm text-surface-900 dark:text-surface-0">{{ props.label }}</span>
-        <span class="truncate font-mono text-[11px] text-surface-500">{{ raw }}</span>
-
-      </span>
-      <span
-        v-if="source !== 'base'"
-        v-tooltip.left="SOURCE_LABEL[source]"
-        class="size-2 shrink-0 rounded-full"
-        :class="source === 'custom' ? 'bg-surface-900 dark:bg-surface-0' : 'border border-surface-500'"
-        role="img"
-        :aria-label="SOURCE_LABEL[source]"
-      />
-      <i
-        class="pi text-xs text-surface-400"
-        :class="props.expanded ? 'pi-chevron-up' : 'pi-chevron-down'"
-        aria-hidden="true"
-      />
-    </Button>
+    </div>
 
     <div
       v-if="props.expanded"
@@ -194,18 +210,6 @@ const inputId = useId()
       >
         = {{ resolved.value }}
       </p>
-
-      <div class="flex justify-end">
-        <Button
-          v-if="source === 'custom'"
-          label="Reset"
-          icon="pi pi-undo"
-          severity="secondary"
-          size="small"
-          text
-          @click="store.resetToken(props.token.path)"
-        />
-      </div>
     </div>
   </div>
 </template>
