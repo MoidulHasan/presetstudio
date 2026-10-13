@@ -41,7 +41,7 @@ const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_ME
 
 const stageMeta = computed(() => (store.stageName ? { label: store.stageLabel } : null))
 const stageOptions = computed(() => [
-  { value: true, label: 'Stage', icon: 'pi pi-th-large', hint: `Every ${stageMeta.value?.label ?? ''} variant and state, light and dark` },
+  { value: true, label: 'Stage', icon: 'pi pi-th-large', hint: `What ${stageMeta.value?.label ?? 'this'} affects, every state, light and dark` },
   { value: false, label: 'In context', icon: 'pi pi-window-maximize', hint: 'The usual preview pages' },
 ])
 

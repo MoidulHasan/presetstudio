@@ -15,6 +15,22 @@ import {
 } from '~/utils/theme/types'
 
 const store = useEditorStore()
+
+// Clicks on the Status stage bring that severity into view.
+const sections = ref<Record<string, HTMLElement | null>>({})
+const highlighted = ref<string | null>(null)
+watch(() => store.stagePick, async (pick) => {
+  if (!pick) return
+  store.stagePick = null
+  const [kind, severity] = pick.target.split(':')
+  if (kind !== 'status' || !severity) return
+  await nextTick()
+  sections.value[severity]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  highlighted.value = severity
+  setTimeout(() => {
+    if (highlighted.value === severity) highlighted.value = null
+  }, 1600)
+}, { immediate: true })
 const usedBy = computed(() => (store.basePreset ? statusComponents(store.basePreset) : []))
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
@@ -101,12 +117,14 @@ const preview = computed(() => {
 <template>
   <div class="flex flex-col gap-4">
     <p class="text-xs text-surface-500 dark:text-surface-400">
-      Each severity keeps the preset's shades, so light backgrounds, borders and text stay balanced. Pick
-      the Messages or Button category in the preview to see every use.
+      Each severity keeps the preset's shades, so light backgrounds, borders and text stay balanced.
+      Click a row on the stage to jump to its severity.
     </p>
     <section
       v-for="kind in STATUS_KINDS"
       :key="kind"
+      :ref="el => (sections[kind] = el as HTMLElement | null)"
+      :class="highlighted === kind ? '!border-surface-900 dark:!border-surface-0' : ''"
       class="flex flex-col gap-3 rounded-lg border border-surface-200 p-3 dark:border-surface-700"
       :aria-label="`${META[kind].label} color`"
     >

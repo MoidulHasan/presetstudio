@@ -9,6 +9,7 @@ import type { DesignSection } from '~/utils/theme/sections'
 const store = useEditorStore()
 
 const MAX_SIDEBAR_STUDIOS = 8
+const OVERVIEW_SECTIONS: EditorSection[] = ['start', 'semantic', 'accessibility']
 
 // Components with a visual editor are listed by name, so their stage is one click away.
 
@@ -18,7 +19,11 @@ const sectionItem = (section: EditorSection): NavItem => ({
   key: section,
   label: SECTION_META[section].label,
   icon: SECTION_META[section].icon,
-  open: () => (store.prefs.section = section),
+  open: () => {
+    store.prefs.section = section
+    // Overview sections look at everything.
+    if (OVERVIEW_SECTIONS.includes(section)) store.showAllComponents()
+  },
   active: store.prefs.section === section,
   modified: section === 'semantic'
     ? store.semanticOverrideCount > 0

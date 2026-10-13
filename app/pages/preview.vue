@@ -154,6 +154,11 @@ onBeforeUnmount(() => {
       v-else-if="stage === 'badge'"
       @pick="sendStagePick"
     />
+    <PreviewStageFoundation
+      v-else-if="stage?.startsWith('foundation-')"
+      :stage="stage"
+      @pick="sendStagePick"
+    />
     <PreviewStageSemantic
       v-else-if="stage?.startsWith('semantic-')"
       :stage="stage"

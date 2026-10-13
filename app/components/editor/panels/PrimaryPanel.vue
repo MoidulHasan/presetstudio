@@ -9,6 +9,16 @@ const store = useEditorStore()
 
 const usedBy = computed(() => semanticUsedBy(store.descriptors, 'primary'))
 
+// Clicks on the Primary stage select the matching state cell.
+const grid = ref<{ focus: (row: string, column?: string) => Promise<void> } | null>(null)
+watch(() => store.stagePick, async (pick) => {
+  if (!pick) return
+  store.stagePick = null
+  const [kind, row, column] = pick.target.split(':')
+  await nextTick()
+  if (kind === 'cell' && row) await grid.value?.focus(row, column)
+}, { immediate: true })
+
 const stateGrid = computed(() => {
   const config = semanticStudio('primary')
   if (!config?.rows || !config.columns) return null
@@ -245,6 +255,7 @@ const usage = computed(() => {
       description="The colors buttons, links and selections use at rest, hovered and pressed, and the text on them. They point at the palette above; select one to change it."
     >
       <EditorStudioTokenGrid
+        ref="grid"
         :columns="stateGrid.columns"
         :rows="stateGrid.rows"
         title="Primary"

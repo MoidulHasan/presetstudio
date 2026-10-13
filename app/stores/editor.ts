@@ -22,7 +22,9 @@ import {
   deserializeWorkspace,
   sanitizeThemeName,
 } from '~/utils/theme/serialize'
+import { FOUNDATION_STAGES, type FoundationSection } from '~/utils/theme/stages'
 import { createResolver, type TokenResolver } from '~/utils/theme/tokens'
+import { SECTION_META } from '~/utils/editor-sections'
 import {
   COLOR_SCHEMES,
   SHADES,
@@ -287,10 +289,9 @@ export const useEditorStore = defineStore('editor', () => {
   /** Semantic group edited by the current section (pattern sections and Text), if any. */
   const sectionGroup = computed(() => PATTERN_SECTIONS[prefs.value.section as PatternSection] ?? null)
 
-  /** Switches a pattern section between its visual editor (with stage) and its token list. */
+  /** Switches a pattern section's panel between its visual editor and its token list (the preview keeps its stage). */
   function setSemanticView(view: 'design' | 'tokens') {
     prefs.value.semanticView = view
-    if (view === 'design') prefs.value.stage = true
   }
 
   // --- Component tokens ---------------------------------------------------------------
@@ -347,7 +348,6 @@ export const useEditorStore = defineStore('editor', () => {
     prefs.value.component = studio ?? component
     if (studio) {
       prefs.value.componentView = 'design'
-      prefs.value.stage = true
       // A family member opens its section of the editor.
       if (studio !== component) pickOnStage(`family:${component}`)
     }
@@ -365,33 +365,42 @@ export const useEditorStore = defineStore('editor', () => {
   function openComponentList() {
     prefs.value.section = 'components'
     prefs.value.component = null
-    prefs.value.template = 'components'
-    prefs.value.category = 'all'
+    showAllComponents()
   }
 
   // --- Component studio ----------------------------------------------------------------
 
-  /** Component whose visual editor is open (its stage is available), if any. */
+  /** Component with a visual editor that's open (its stage is available, in either view), if any. */
   const stageComponent = computed(() => {
     const component = prefs.value.component
-    return prefs.value.section === 'components' && prefs.value.componentView === 'design'
-      && component && STUDIO_COMPONENTS.includes(component)
-      ? component
-      : null
+    return prefs.value.section === 'components' && component && STUDIO_COMPONENTS.includes(component) ? component : null
   })
 
-  /** Semantic group whose visual editor is open, if any. */
-  const stageSemanticGroup = computed(() => (prefs.value.semanticView === 'design' ? sectionGroup.value : null))
+  /** Semantic group of the current pattern section (or Text), if any. */
+  const stageSemanticGroup = computed(() => sectionGroup.value)
 
-  /** Stage available for the open visual editor ('button', 'semantic-formfield'), if any. */
-  const stageName = computed(() =>
-    stageComponent.value ?? (stageSemanticGroup.value ? semanticStageName(stageSemanticGroup.value) : null))
+  /**
+   * Stage available for the current section ('button', 'semantic-formfield', 'foundation-shape').
+   * Independent of the panel's Design / All tokens view: both edit what the stage shows.
+   */
+  const stageName = computed(() => {
+    if (stageComponent.value) return stageComponent.value
+    if (stageSemanticGroup.value) return semanticStageName(stageSemanticGroup.value)
+    return FOUNDATION_STAGES[prefs.value.section as FoundationSection] ?? null
+  })
 
   /** What the stage shows, for the preview toolbar. */
   const stageLabel = computed(() => {
     if (stageComponent.value) return COMPONENT_META[stageComponent.value]?.label ?? stageComponent.value
-    return stageSemanticGroup.value ? semanticStudio(stageSemanticGroup.value)?.label ?? '' : ''
+    if (stageSemanticGroup.value) return semanticStudio(stageSemanticGroup.value)?.label ?? ''
+    return SECTION_META[prefs.value.section]?.label ?? ''
   })
+
+  /** Shows every component in the gallery (overview sections: Quick start, catalogs). */
+  function showAllComponents() {
+    prefs.value.template = 'components'
+    prefs.value.category = 'all'
+  }
 
   /** Stage the preview shows, if any (the user can switch to the pages). */
   const activeStage = computed(() => (prefs.value.stage ? stageName.value : null))
@@ -516,6 +525,7 @@ export const useEditorStore = defineStore('editor', () => {
     stageSemanticGroup,
     stageName,
     stageLabel,
+    showAllComponents,
     compareOverrides,
     semanticGroupCounts,
     sectionGroup,
