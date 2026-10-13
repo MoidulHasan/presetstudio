@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { PREVIEW_CATEGORIES, type PreviewCategory } from '~/utils/theme/messages'
+import { GALLERY_CATEGORIES, PREVIEW_CATEGORIES, type PreviewCategory } from '~/utils/theme/messages'
 
 // Every themable PrimeVue component, grouped like the PrimeVue docs. Only the
-// active category renders, which keeps theme updates fast. Inside the editor the
+// active category renders, which keeps theme updates fast; "All" stacks every
+// category and loads each one as it scrolls into view. Inside the editor the
 // category comes from the editor toolbar (so side-by-side panes stay in sync);
 // opened standalone, the gallery shows its own tabs.
 const props = defineProps<{ category?: PreviewCategory }>()
@@ -41,17 +42,33 @@ const active = computed(() => props.category ?? local.value)
       </TabList>
     </Tabs>
 
-    <div :aria-label="`${CATEGORY_META[active].label} components`">
-      <PreviewGalleryForm v-if="active === 'form'" />
-      <PreviewGalleryButtons v-else-if="active === 'button'" />
-      <PreviewGalleryData v-else-if="active === 'data'" />
-      <PreviewGalleryPanels v-else-if="active === 'panel'" />
-      <PreviewGalleryOverlays v-else-if="active === 'overlay'" />
-      <PreviewGalleryMenus v-else-if="active === 'menu'" />
-      <PreviewGalleryMessages v-else-if="active === 'messages'" />
-      <PreviewGalleryMedia v-else-if="active === 'media'" />
-      <PreviewGalleryFiles v-else-if="active === 'file'" />
-      <PreviewGalleryMisc v-else />
+    <div
+      v-if="active === 'all'"
+      class="flex flex-col gap-10"
+    >
+      <section
+        v-for="(id, index) in GALLERY_CATEGORIES"
+        :key="id"
+        :aria-label="`${CATEGORY_META[id].label} components`"
+      >
+        <h2 class="mb-3 flex items-center gap-2 text-sm font-semibold text-surface-900 dark:text-surface-0">
+          <i
+            :class="CATEGORY_META[id].icon"
+            class="text-surface-500"
+            aria-hidden="true"
+          />
+          {{ CATEGORY_META[id].label }}
+        </h2>
+        <PreviewLazySection :eager="index === 0">
+          <PreviewGalleryCategory :category="id" />
+        </PreviewLazySection>
+      </section>
+    </div>
+    <div
+      v-else
+      :aria-label="`${CATEGORY_META[active].label} components`"
+    >
+      <PreviewGalleryCategory :category="active" />
     </div>
   </div>
 </template>

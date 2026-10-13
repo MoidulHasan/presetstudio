@@ -1,7 +1,9 @@
-import type { PreviewCategory } from '~/utils/theme/messages'
+import type { GalleryCategory, PreviewCategory } from '~/utils/theme/messages'
+
+type CategoryMeta = { label: string, icon: string, count: number }
 
 // Labels for the component gallery categories (editor toolbar and standalone preview).
-export const CATEGORY_META: Record<PreviewCategory, { label: string, icon: string, count: number }> = {
+const GALLERY_META: Record<GalleryCategory, CategoryMeta> = {
   form: { label: 'Form', icon: 'pi pi-pen-to-square', count: 28 },
   button: { label: 'Button', icon: 'pi pi-stop', count: 4 },
   data: { label: 'Data', icon: 'pi pi-table', count: 10 },
@@ -12,4 +14,13 @@ export const CATEGORY_META: Record<PreviewCategory, { label: string, icon: strin
   media: { label: 'Media', icon: 'pi pi-image', count: 4 },
   file: { label: 'File', icon: 'pi pi-upload', count: 1 },
   misc: { label: 'Misc', icon: 'pi pi-th-large', count: 14 },
+}
+
+export const CATEGORY_META: Record<PreviewCategory, CategoryMeta> = {
+  all: {
+    label: 'All',
+    icon: 'pi pi-list',
+    count: Object.values(GALLERY_META).reduce((n, meta) => n + meta.count, 0),
+  },
+  ...GALLERY_META,
 }

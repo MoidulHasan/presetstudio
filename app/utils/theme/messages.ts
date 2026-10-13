@@ -8,7 +8,11 @@ export const PREVIEW_TEMPLATES = ['components', 'dashboard', 'form', 'settings']
 export type PreviewTemplate = (typeof PREVIEW_TEMPLATES)[number]
 
 /** Component gallery categories (the 'components' template). */
-export const PREVIEW_CATEGORIES = ['form', 'button', 'data', 'panel', 'overlay', 'menu', 'messages', 'media', 'file', 'misc'] as const
+export const GALLERY_CATEGORIES = ['form', 'button', 'data', 'panel', 'overlay', 'menu', 'messages', 'media', 'file', 'misc'] as const
+export type GalleryCategory = (typeof GALLERY_CATEGORIES)[number]
+
+/** What the gallery shows: one category, or every category (loaded as they scroll into view). */
+export const PREVIEW_CATEGORIES = ['all', ...GALLERY_CATEGORIES] as const
 export type PreviewCategory = (typeof PREVIEW_CATEGORIES)[number]
 
 /** How the preview should present itself (not part of the theme). */
