@@ -138,7 +138,7 @@ function toggle(token: TokenDescriptor) {
             />
           </span>
         </AccordionHeader>
-        <AccordionContent :pt="{ content: { class: '!px-0 !pb-3 !pt-0' } }">
+        <AccordionContent :pt="{ root: { class: '!grid-cols-[minmax(0,1fr)]' }, contentWrapper: { class: 'min-w-0' }, content: { class: '!px-0 !pb-3 !pt-0' } }">
           <p class="mb-2 px-1 text-xs text-surface-500">
             {{ group.description }}
           </p>
