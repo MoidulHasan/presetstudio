@@ -4,9 +4,9 @@ import Material from '@primeuix/themes/material'
 import Nora from '@primeuix/themes/nora'
 import { describe, expect, it } from 'vitest'
 import { buildEffectivePreset } from './build'
-import { clearRecolor, recolorOverrides, recolorValue, withoutComponent } from './recolor'
+import { clearRecolor, mainPalette, recolorChoice, recolorOverrides, recolorValue, withoutComponent } from './recolor'
 import { describePreset } from './schema'
-import { buttonVariants, propertyState, stateMatrix } from './studio'
+import { buttonVariants, propertyState, severityVariants, stateMatrix } from './studio'
 import { createResolver } from './tokens'
 import { createDefaultDesign, type TokenTree } from './types'
 
@@ -26,9 +26,11 @@ describe('buttonVariants', () => {
 
 describe('stateMatrix', () => {
   it('reads properties and states from token names', () => {
-    expect(propertyState(['root', 'info', 'hoverBorderColor'])).toEqual(['borderColor', 'hover'])
-    expect(propertyState(['root', 'info', 'focusRing', 'color'])).toEqual(['focusRing', 'default'])
-    expect(propertyState(['root', 'info', 'focusRing', 'shadow'])).toBeNull()
+    expect(propertyState(['hoverBorderColor'])).toEqual(['borderColor', 'hover'])
+    expect(propertyState(['focusRing', 'color'])).toEqual(['focusRing', 'default'])
+    expect(propertyState(['focusRing', 'shadow'])).toBeNull()
+    expect(propertyState(['closeButton', 'hoverBackground'])).toEqual(['closeButton.background', 'hover'])
+    expect(propertyState(['closeButton', 'focusRing', 'color'])).toEqual(['closeButton.focusRing', 'default'])
     const info = buttonVariants(describePreset(presets.aura!)).find(r => r.key === 'info')!
     const filled = stateMatrix(info.styles.root!)
     expect(filled.map(r => r.label)).toEqual(['Background', 'Border', 'Text', 'Focus ring'])
@@ -36,6 +38,23 @@ describe('stateMatrix', () => {
     expect(Object.keys(bg)).toEqual(['default', 'hover', 'active'])
     expect(bg.hover!.light!.path.at(-1)).toBe('hoverBackground')
     expect(bg.hover!.dark!.scheme).toBe('dark')
+  })
+})
+
+describe('severityVariants', () => {
+  it('reads severities and nested styles of severity-first components in every preset', () => {
+    for (const preset of Object.values(presets)) {
+      const descriptors = describePreset(preset)
+      const message = severityVariants(descriptors, 'message')
+      expect(message.map(r => r.key)).toEqual(['secondary', 'success', 'info', 'warn', 'error', 'contrast'])
+      expect(Object.keys(message[0]!.styles).sort()).toEqual(['outlined', 'root', 'simple'])
+      const labels = stateMatrix(message.find(r => r.key === 'info')!.styles.root!).map(r => r.label)
+      expect(labels).toEqual(expect.arrayContaining(['Background', 'Border', 'Text', 'Close button background', 'Close button focus ring']))
+      // Toast's scheme-wide blur isn't a variant.
+      expect(severityVariants(descriptors, 'toast').map(r => r.key)).not.toContain('root')
+      expect(severityVariants(descriptors, 'tag').map(r => r.key)).toEqual(['primary', 'secondary', 'success', 'info', 'warn', 'danger', 'contrast'])
+      expect(severityVariants(descriptors, 'badge')).toHaveLength(7)
+    }
   })
 })
 
@@ -74,6 +93,17 @@ describe('recolor', () => {
     }
   })
 
+  it('only moves the variant\'s own palette (neutral text stays neutral)', () => {
+    const descriptors = describePreset(aura)
+    const info = severityVariants(descriptors, 'toast').find(v => v.key === 'info')!
+    expect(mainPalette(info.tokens, resolvers)).toBe('blue')
+    const overrides = recolorOverrides({}, info.tokens, resolvers, 'toast', 'info', { kind: 'palette', name: 'rose' })
+    const after = createResolver(buildEffectivePreset({ design: createDefaultDesign(), overrides }, aura), 'light')
+    expect(after.resolve('toast-info-color')!.value).toBe(after.resolve('rose-600')!.value)
+    expect(after.resolve('toast-info-detail-color')!.value).toBe(resolvers.light.resolve('toast-info-detail-color')!.value)
+    expect(recolorChoice(overrides, info.tokens, 'toast', 'info')).toEqual({ kind: 'palette', name: 'rose' })
+  })
+
   it('generates a palette for custom colors and strips it for comparing', () => {
     const descriptors = describePreset(aura)
     const info = buttonVariants(descriptors).find(v => v.key === 'info')!
@@ -81,5 +111,6 @@ describe('recolor', () => {
     const after = createResolver(buildEffectivePreset({ design: createDefaultDesign(), overrides }, aura), 'light')
     expect(after.resolve('button-info-background')!.value).toBe('#7c3aed')
     expect(withoutComponent(overrides, 'button')).toEqual({})
+    expect(recolorChoice(overrides, info.tokens, 'button', 'info')).toEqual({ kind: 'custom', color: '#7c3aed' })
   })
 })
