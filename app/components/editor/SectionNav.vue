@@ -2,14 +2,14 @@
 import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore, type EditorSection } from '~/stores/editor'
 import { SECTION_META } from '~/utils/editor-sections'
-import { COMPONENT_META, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
+import { COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 
 // Components with a visual editor are listed by name, so their stage is one click away.
 
-type NavItem = { key: string, label: string, icon: string, open: () => void, active: boolean, modified: boolean, badge?: number, visual?: boolean }
+type NavItem = { key: string, label: string, icon: string, open: () => void, active: boolean, modified: boolean, badge?: number, visual?: boolean, count?: number }
 
 const sectionItem = (section: EditorSection): NavItem => ({
   key: section,
@@ -48,6 +48,7 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
         },
         active: store.prefs.section === 'components' && !openStudio.value,
         modified: store.componentOverrideCount > 0,
+        count: COMPONENT_NAMES.length,
       },
     ],
   },
@@ -86,6 +87,11 @@ const model = computed<MenuItem[]>(() => groups.value.map(group => ({
             aria-hidden="true"
           />
           <span class="flex-1">{{ item.label }}</span>
+          <span
+            v-if="item.data.count"
+            v-tooltip.right="'Every component, with all its tokens'"
+            class="text-xs text-surface-400"
+          >{{ item.data.count }}</span>
           <Tag
             v-if="item.data.visual"
             v-tooltip.right="'Visual editor with a live stage'"

@@ -40,33 +40,42 @@ const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: stri
 
 const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_META[value] }))
 
-const stageMeta = computed(() => (store.activeStage ? COMPONENT_META[store.activeStage] ?? null : null))
+const stageMeta = computed(() => (store.stageComponent ? COMPONENT_META[store.stageComponent] ?? null : null))
+const stageOptions = computed(() => [
+  { value: true, label: 'Stage', icon: 'pi pi-th-large', hint: `Every ${stageMeta.value?.label ?? ''} variant and state, light and dark` },
+  { value: false, label: 'In context', icon: 'pi pi-window-maximize', hint: 'The usual preview pages' },
+])
 
 const currentTemplate = computed(() => templates.find(t => t.value === store.prefs.template)!)
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-2 border-b border-surface-200 bg-surface-0 px-3 py-2 dark:border-surface-800 dark:bg-surface-900">
-    <!-- A component stage replaces the page; it shows light and dark itself. -->
-    <template v-if="stageMeta">
-      <span class="flex items-center gap-2 px-1 text-sm font-medium">
-        <i
-          class="pi pi-box text-surface-500"
-          aria-hidden="true"
-        />
-        {{ stageMeta.label }} stage
-      </span>
-      <Button
-        v-tooltip.bottom="'Show the preview page instead of the stage'"
-        label="Show page"
-        icon="pi pi-external-link"
-        severity="secondary"
-        size="small"
-        text
-        @click="store.prefs.stage = false"
-      />
-    </template>
-    <template v-else>
+    <!-- With a visual editor open, the preview shows its stage or the usual pages. -->
+    <SelectButton
+      v-if="stageMeta"
+      v-model="store.prefs.stage"
+      :options="stageOptions"
+      option-label="label"
+      option-value="value"
+      :allow-empty="false"
+      aria-label="What the preview shows"
+      size="small"
+    >
+      <template #option="{ option }">
+        <span
+          v-tooltip.bottom="option.hint"
+          class="flex items-center gap-2"
+        >
+          <i
+            :class="option.icon"
+            aria-hidden="true"
+          />
+          {{ option.label }}
+        </span>
+      </template>
+    </SelectButton>
+    <template v-if="!store.activeStage">
       <Select
         v-model="store.prefs.template"
         :options="templates"
@@ -174,7 +183,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         aria-label="Show focus states"
       />
       <SelectButton
-        v-if="!stageMeta"
+        v-if="!store.activeStage"
         v-model="mode"
         :options="modeOptions"
         option-label="label"

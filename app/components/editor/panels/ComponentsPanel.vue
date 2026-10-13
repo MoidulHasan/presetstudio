@@ -505,19 +505,6 @@ function showInGallery() {
     </div>
 
     <template v-if="designView">
-      <p
-        v-if="!store.prefs.stage"
-        class="flex flex-wrap items-center gap-x-2 text-xs text-surface-500"
-      >
-        The preview shows the page, not the {{ meta.label }} stage.
-        <Button
-          label="Show the stage"
-          size="small"
-          text
-          class="!p-0"
-          @click="store.prefs.stage = true"
-        />
-      </p>
       <EditorStudioButton v-if="component === 'button'" />
       <EditorStudioSeverity
         v-else

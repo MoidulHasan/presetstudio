@@ -342,14 +342,17 @@ export const useEditorStore = defineStore('editor', () => {
 
   // --- Component studio ----------------------------------------------------------------
 
-  /** Component whose stage the preview shows, if any. */
-  const activeStage = computed(() => {
+  /** Component whose visual editor is open (its stage is available), if any. */
+  const stageComponent = computed(() => {
     const component = prefs.value.component
-    return prefs.value.section === 'components' && prefs.value.stage && prefs.value.componentView === 'design'
+    return prefs.value.section === 'components' && prefs.value.componentView === 'design'
       && component && STUDIO_COMPONENTS.includes(component)
       ? component
       : null
   })
+
+  /** Component whose stage the preview shows, if any (the user can switch to the pages). */
+  const activeStage = computed(() => (prefs.value.stage ? stageComponent.value : null))
 
   /** Latest click on the stage ('root:danger:hover'); the id makes repeats observable. */
   const stagePick = shallowRef<{ target: string, id: number } | null>(null)
@@ -456,6 +459,7 @@ export const useEditorStore = defineStore('editor', () => {
     reportRevealed,
     openComponent,
     activeStage,
+    stageComponent,
     stagePick,
     pickOnStage,
     recolorGroup,
