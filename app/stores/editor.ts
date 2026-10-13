@@ -70,6 +70,8 @@ interface EditorPrefs {
   componentView: 'design' | 'tokens'
   /** While held: preview the open component without its edits. */
   compare: boolean
+  /** One-time tips the user has dismissed. */
+  dismissedTips: string[]
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
 }
@@ -102,7 +104,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -120,6 +122,7 @@ function loadPrefs(): EditorPrefs {
       stage: typeof raw?.stage === 'boolean' ? raw.stage : fallback.stage,
       componentView: raw?.componentView === 'tokens' ? 'tokens' : fallback.componentView,
       compare: fallback.compare,
+      dismissedTips: Array.isArray(raw?.dismissedTips) ? raw.dismissedTips.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }
   }
@@ -287,6 +290,11 @@ export const useEditorStore = defineStore('editor', () => {
     if (!isComponentName(component)) return
     prefs.value.section = 'components'
     prefs.value.component = component
+    // Components with a visual editor always open in it, with their stage in the preview.
+    if (STUDIO_COMPONENTS.includes(component)) {
+      prefs.value.componentView = 'design'
+      prefs.value.stage = true
+    }
     const { category } = COMPONENT_META[component]!
     // Keep "All"; otherwise switch the gallery to the component's category.
     if (prefs.value.template === 'components' && prefs.value.category !== 'all') prefs.value.category = category

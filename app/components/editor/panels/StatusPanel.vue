@@ -197,5 +197,10 @@ const preview = computed(() => {
         Button text contrast drops to {{ preview[kind].ratio?.toFixed(1) }}:1 (WCAG AA needs 4.5:1). Try a darker color.
       </Message>
     </section>
+
+    <EditorStudioLink
+      component="button"
+      text="Fine-tune how buttons use these colors"
+    />
   </div>
 </template>

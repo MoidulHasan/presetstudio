@@ -226,6 +226,11 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         />
         <span class="flex-1 text-left">Fine-tune colors, shape, density and focus</span>
       </Button>
+      <EditorStudioLink
+        component="button"
+        text="Customize buttons"
+        variant="row"
+      />
     </div>
   </div>
 </template>

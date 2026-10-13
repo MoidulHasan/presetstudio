@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { EDITOR_SECTIONS, useEditorStore } from '~/stores/editor'
+import { EDITOR_SECTIONS, useEditorStore, type EditorSection } from '~/stores/editor'
 import { SECTION_META } from '~/utils/editor-sections'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_META } from '~/utils/theme/components'
+import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
@@ -14,7 +14,22 @@ const openComponent = computed(() =>
 const meta = computed(() => openComponent.value
   ? { ...SECTION_META.components, label: openComponent.value.label, description: `In the ${CATEGORY_META[openComponent.value.category].label} group. Changes here apply only to ${openComponent.value.label}.` }
   : SECTION_META[store.prefs.section])
-const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_META[value].label }))
+// Same entries as the section nav: visual component editors are listed by name.
+const sectionOptions = EDITOR_SECTIONS.flatMap(value => [
+  ...(value === 'components' ? STUDIO_COMPONENTS.map(name => ({ value: `component:${name}`, label: `${COMPONENT_META[name]!.label} (visual editor)` })) : []),
+  { value, label: SECTION_META[value].label },
+])
+
+const sectionValue = computed({
+  get: () => (store.prefs.section === 'components' && store.prefs.component && STUDIO_COMPONENTS.includes(store.prefs.component)
+    ? `component:${store.prefs.component}`
+    : store.prefs.section),
+  set: (value: string) => {
+    if (value.startsWith('component:')) return store.openComponent(value.slice('component:'.length))
+    if (value === 'components') store.prefs.component = null
+    store.prefs.section = value as EditorSection
+  },
+})
 
 const designSection = computed(() =>
   (DESIGN_SECTIONS as readonly string[]).includes(store.prefs.section) ? (store.prefs.section as DesignSection) : null)
@@ -67,7 +82,7 @@ watch([() => store.prefs.section, () => store.prefs.component], () => body.value
     <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
       <!-- Below xl the section nav is hidden; pick sections here instead. -->
       <Select
-        v-model="store.prefs.section"
+        v-model="sectionValue"
         :options="sectionOptions"
         option-label="label"
         option-value="value"

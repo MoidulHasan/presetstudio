@@ -48,9 +48,9 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     description: 'Every semantic token of the preset. Edit a value or point it at another token.',
   },
   components: {
-    label: 'Component tokens',
-    icon: 'pi pi-box',
-    description: 'Fine-tune a single component. Click Inspect in the preview, then any component, to jump to its tokens.',
+    label: 'All components',
+    icon: 'pi pi-th-large',
+    description: 'Customize a single component. Components marked Visual have an editor with a live stage.',
   },
   accessibility: {
     label: 'Accessibility',

@@ -192,6 +192,71 @@ function showInGallery() {
       </div>
     </Teleport>
 
+    <!-- One-time tip: the preview is the fastest way to find a component. -->
+    <Message
+      v-if="!store.prefs.dismissedTips.includes('inspect')"
+      severity="secondary"
+      size="small"
+      closable
+      @close="store.prefs.dismissedTips = [...store.prefs.dismissedTips, 'inspect']"
+    >
+      <span class="text-xs">
+        Tip: click <span class="font-semibold"><i
+          class="pi pi-search text-[10px]"
+          aria-hidden="true"
+        /> Inspect</span> above the preview, then any component, to jump straight to it.
+      </span>
+    </Message>
+
+    <!-- Visual editors first: every variant and state on a live stage. -->
+    <section
+      v-if="!listQuery.trim() && listShow === 'all'"
+      aria-label="Visual editors"
+      class="flex flex-col gap-2"
+    >
+      <h3 class="flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-surface-500">
+        <i
+          class="pi pi-sparkles"
+          aria-hidden="true"
+        />
+        Visual editors
+      </h3>
+      <Button
+        v-for="name in STUDIO_COMPONENTS"
+        :key="name"
+        severity="secondary"
+        outlined
+        class="!w-full !min-w-0 !justify-start !gap-3 !p-3 text-left"
+        :aria-label="`Open the ${COMPONENT_META[name]!.label} visual editor`"
+        @click="open(name, false)"
+      >
+        <span
+          class="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-100 dark:bg-surface-800"
+          aria-hidden="true"
+        >
+          <i class="pi pi-stop text-surface-600 dark:text-surface-300" />
+        </span>
+        <span class="flex min-w-0 flex-1 flex-col">
+          <span class="text-sm font-semibold text-surface-900 dark:text-surface-0">{{ COMPONENT_META[name]!.label }}</span>
+          <span class="truncate text-xs text-surface-500">Every variant and state, light and dark</span>
+        </span>
+        <Badge
+          v-if="store.componentOverrideCounts[name]"
+          :value="`${store.componentOverrideCounts[name]} custom`"
+          severity="contrast"
+          size="small"
+          class="shrink-0"
+        />
+        <i
+          class="pi pi-arrow-right shrink-0 text-xs text-surface-400"
+          aria-hidden="true"
+        />
+      </Button>
+      <p class="px-2 text-xs text-surface-500">
+        More components get visual editors soon. Every component's tokens are below.
+      </p>
+    </section>
+
     <p
       v-if="!listGroups.length"
       class="py-8 text-center text-sm text-surface-500"
@@ -225,6 +290,13 @@ function showInGallery() {
             @click="open(item.name, !item.nameMatch)"
           >
             <span class="min-w-0 flex-1 truncate text-left text-sm text-surface-900 dark:text-surface-0">{{ item.meta.label }}</span>
+            <Tag
+              v-if="STUDIO_COMPONENTS.includes(item.name)"
+              v-tooltip.left="'Visual editor with a live stage'"
+              value="Visual"
+              severity="info"
+              class="shrink-0 !px-1.5 !py-0 !text-[10px]"
+            />
             <Tag
               v-if="item.meta.deprecated"
               v-tooltip.left="`Deprecated in PrimeVue 4. Use ${item.meta.deprecated}.`"

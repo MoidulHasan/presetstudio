@@ -221,5 +221,10 @@ const usage = computed(() => {
         {{ baseLabel }} uses shade {{ usage.light }} as the primary color in light mode and {{ usage.dark }} in dark mode.
       </p>
     </EditorInspectorGroup>
+
+    <EditorStudioLink
+      component="button"
+      text="Fine-tune how buttons use the primary color"
+    />
   </div>
 </template>
