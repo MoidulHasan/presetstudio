@@ -8,6 +8,7 @@ import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type Previ
 import { loadBasePreset } from '~/utils/theme/presets'
 import { describePreset } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
+import { COMPONENT_META, countComponentOverrides, isComponentName } from '~/utils/theme/components'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
 import { deletePath, setPath } from '~/utils/theme/tree'
 import { sanitizeTokenValue } from '~/utils/theme/values'
@@ -34,7 +35,7 @@ const WORKSPACE_KEY = 'presetstudio:workspace'
 const LEGACY_THEME_KEY = 'presetstudio:theme'
 const PREFS_KEY = 'presetstudio:prefs'
 
-export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'semantic', 'accessibility'] as const
+export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'semantic', 'components', 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
 export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
@@ -55,6 +56,12 @@ interface EditorPrefs {
   viewport: PreviewViewport
   /** Draw every preview component in its focused state. */
   showFocus: boolean
+  /** Component open in the component tokens editor (null: the component list). */
+  component: string | null
+  /** Inspect mode: click a component in the preview to open its tokens. */
+  inspect: boolean
+  /** Below lg only one pane shows at a time. */
+  pane: 'edit' | 'preview'
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
 }
@@ -87,7 +94,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -99,6 +106,9 @@ function loadPrefs(): EditorPrefs {
       viewport: PREVIEW_VIEWPORTS.includes(raw?.viewport as PreviewViewport) ? raw!.viewport! : fallback.viewport,
       // A view toggle for the current session (the Focus section turns it on by itself).
       showFocus: fallback.showFocus,
+      component: isComponentName(raw?.component) ? raw.component : fallback.component,
+      inspect: fallback.inspect,
+      pane: fallback.pane,
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }
   }
@@ -230,6 +240,48 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
+  // --- Component tokens ---------------------------------------------------------------
+
+  /** Custom token count per component. */
+  const componentOverrideCounts = computed(() => countComponentOverrides(theme.value.overrides))
+  const componentOverrideCount = computed(() => Object.values(componentOverrideCounts.value).reduce((n, c) => n + c, 0))
+
+  /** Clears the custom tokens of one component, or of every component. */
+  function resetComponents(component: string | null = null) {
+    update((d) => {
+      d.overrides = deletePath(d.overrides, component ? ['components', component] : ['components'])
+    })
+  }
+
+  /** Latest request to scroll a component into view in the preview (the id makes repeats observable). */
+  const revealRequest = shallowRef<{ component: string, id: number } | null>(null)
+  /** Whether the preview found the last revealed component, and the components it's built from. */
+  const revealed = ref<{ component: string, found: boolean, uses: string[] } | null>(null)
+  let revealId = 0
+
+  function revealComponent(component: string) {
+    revealed.value = null
+    revealRequest.value = { component, id: ++revealId }
+  }
+
+  function reportRevealed(component: string, found: boolean, uses: string[] = []) {
+    // Side by side, either pane finding it counts.
+    const current = revealed.value
+    if (current?.component === component && current.found) return
+    revealed.value = { component, found, uses }
+  }
+
+  /** Opens a component's tokens and shows it in the preview. */
+  function openComponent(component: string) {
+    if (!isComponentName(component)) return
+    prefs.value.section = 'components'
+    prefs.value.component = component
+    const { category } = COMPONENT_META[component]!
+    // Keep "All"; otherwise switch the gallery to the component's category.
+    if (prefs.value.template === 'components' && prefs.value.category !== 'all') prefs.value.category = category
+    revealComponent(component)
+  }
+
   const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
 
   function resetDesignSection(section: DesignSection) {
@@ -308,6 +360,14 @@ export const useEditorStore = defineStore('editor', () => {
     descriptors,
     designTokens,
     semanticOverrideCount,
+    componentOverrideCounts,
+    componentOverrideCount,
+    resetComponents,
+    revealRequest,
+    revealed,
+    revealComponent,
+    reportRevealed,
+    openComponent,
     setToken,
     resetToken,
     resetSemantic,

@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { EDITOR_SECTIONS, useEditorStore } from '~/stores/editor'
 import { SECTION_META } from '~/utils/editor-sections'
+import { CATEGORY_META } from '~/utils/preview-categories'
+import { COMPONENT_META } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 const toast = useToast()
 const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
-const meta = computed(() => SECTION_META[store.prefs.section])
+const openComponent = computed(() =>
+  store.prefs.section === 'components' && store.prefs.component ? COMPONENT_META[store.prefs.component] ?? null : null)
+// Inside the component tokens editor, the header names the open component.
+const meta = computed(() => openComponent.value
+  ? { ...SECTION_META.components, label: openComponent.value.label, description: `In the ${CATEGORY_META[openComponent.value.category].label} group. Changes here apply only to ${openComponent.value.label}.` }
+  : SECTION_META[store.prefs.section])
 const sectionOptions = EDITOR_SECTIONS.map(value => ({ value, label: SECTION_META[value].label }))
 
 const designSection = computed(() =>
@@ -17,16 +24,28 @@ function reset(section: DesignSection) {
 }
 
 // Sections with something to reset show the button even when there's nothing changed yet.
-const resettable = computed(() => store.prefs.section === 'semantic' || !!designSection.value)
-const resetHint = computed(() => (store.prefs.section === 'semantic' ? 'Clear every custom semantic token' : `Put ${meta.value.label.toLowerCase()} back to the base preset`))
+const resettable = computed(() => ['semantic', 'components'].includes(store.prefs.section) || !!designSection.value)
+const resetHint = computed(() => {
+  if (store.prefs.section === 'semantic') return 'Clear every custom semantic token'
+  if (store.prefs.section === 'components') return openComponent.value ? `Clear the custom ${openComponent.value.label} tokens` : 'Clear the custom tokens of every component'
+  return `Put ${meta.value.label.toLowerCase()} back to the base preset`
+})
 
-const canReset = computed(() =>
-  store.prefs.section === 'semantic'
-    ? store.semanticOverrideCount > 0
-    : !!designSection.value && store.modifiedSections.has(designSection.value))
+const canReset = computed(() => {
+  if (store.prefs.section === 'semantic') return store.semanticOverrideCount > 0
+  if (store.prefs.section === 'components') {
+    return store.prefs.component ? (store.componentOverrideCounts[store.prefs.component] ?? 0) > 0 : store.componentOverrideCount > 0
+  }
+  return !!designSection.value && store.modifiedSections.has(designSection.value)
+})
 
 function onReset() {
-  if (store.prefs.section === 'semantic') {
+  if (store.prefs.section === 'components') {
+    const label = openComponent.value?.label
+    store.resetComponents(store.prefs.component)
+    toast.add({ severity: 'secondary', summary: label ? `Custom ${label} tokens cleared` : 'Custom component tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
+  }
+  else if (store.prefs.section === 'semantic') {
     store.resetSemantic()
     toast.add({ severity: 'secondary', summary: 'Custom semantic tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
   }
@@ -37,7 +56,7 @@ function onReset() {
 
 // Scroll the panel back to the top when switching sections.
 const body = ref<HTMLElement | null>(null)
-watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ top: 0 }))
+watch([() => store.prefs.section, () => store.prefs.component], () => body.value?.closest('aside')?.scrollTo({ top: 0 }))
 </script>
 
 <template>
@@ -103,6 +122,7 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
       <EditorPanelsDensityPanel v-else-if="store.prefs.section === 'density'" />
       <EditorPanelsFocusPanel v-else-if="store.prefs.section === 'focus'" />
       <EditorPanelsSemanticPanel v-else-if="store.prefs.section === 'semantic'" />
+      <EditorPanelsComponentsPanel v-else-if="store.prefs.section === 'components'" />
       <EditorPanelsAccessibilityPanel v-else-if="store.prefs.section === 'accessibility'" />
     </div>
   </div>

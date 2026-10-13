@@ -43,18 +43,23 @@ function apply() {
 }
 
 const suggestions = ref<string[]>([])
-const kindByName = computed(() => {
-  const map = new Map<string, string>()
-  for (const d of store.descriptors) if (!map.has(d.name)) map.set(d.name, d.kind)
+const metaByName = computed(() => {
+  const map = new Map<string, { kind: string, layer: string }>()
+  for (const d of store.descriptors) if (!map.has(d.name)) map.set(d.name, { kind: d.kind, layer: d.layer })
   return map
 })
+
+// Semantic tokens are the usual targets (also for component tokens), then primitives.
+const LAYER_RANK: Record<string, number> = { semantic: 0, primitive: 1, component: 2 }
 
 /** Suggests references to tokens of the same kind, e.g. {primary.600} for colors. */
 function complete(event: { query: string }) {
   const q = event.query.replace(/[{}]/g, '').replace(/\./g, '-').toLowerCase().trim()
   const names = [...(resolver.value?.entries.keys() ?? [])]
+  const rank = (name: string) => LAYER_RANK[metaByName.value.get(name)?.layer ?? 'component'] ?? 2
   suggestions.value = names
-    .filter(name => name !== props.token.name && kindByName.value.get(name) === props.token.kind && name.includes(q))
+    .filter(name => name !== props.token.name && metaByName.value.get(name)?.kind === props.token.kind && name.includes(q))
+    .sort((a, b) => rank(a) - rank(b))
     .slice(0, 40)
     .map(referenceFor)
 }

@@ -130,6 +130,16 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
 
     <div class="ml-auto flex items-center gap-2">
       <ToggleButton
+        v-model="store.prefs.inspect"
+        v-tooltip.bottom="store.prefs.inspect ? 'Click a component in the preview to edit its tokens' : 'Pick a component in the preview to edit its tokens'"
+        on-label="Inspect"
+        off-label="Inspect"
+        on-icon="pi pi-search"
+        off-icon="pi pi-search"
+        size="small"
+        aria-label="Inspect components"
+      />
+      <ToggleButton
         v-model="store.prefs.showFocus"
         v-tooltip.bottom="store.prefs.showFocus ? 'Showing every component focused' : 'Show every component focused (focus rings)'"
         on-label="Focus"

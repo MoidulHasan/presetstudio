@@ -47,6 +47,11 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     icon: 'pi pi-sitemap',
     description: 'Every semantic token of the preset. Edit a value or point it at another token.',
   },
+  components: {
+    label: 'Component tokens',
+    icon: 'pi pi-box',
+    description: 'Fine-tune a single component. Click Inspect in the preview, then any component, to jump to its tokens.',
+  },
   accessibility: {
     label: 'Accessibility',
     icon: 'pi pi-eye',

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { createApplyMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
+import { createApplyMessage, createRevealMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const props = defineProps<{ colorScheme: ColorScheme, label: string, hideScrollbar?: boolean }>()
@@ -22,6 +22,7 @@ function sendState() {
       category: store.prefs.category,
       hideScrollbar: props.hideScrollbar,
       showFocus: store.prefs.showFocus,
+      inspect: store.prefs.inspect,
     }), window.location.origin)
   })
 }
@@ -37,7 +38,24 @@ function onMessage(event: MessageEvent) {
   else if (message?.type === 'preview:scroll') {
     emit('scroll', { x: message.x, y: message.y })
   }
+  else if (message?.type === 'preview:inspect') {
+    // One pick per Inspect click, like browser dev tools.
+    store.prefs.inspect = false
+    store.openComponent(message.component)
+    // On narrow screens the picked component's tokens are in the other pane.
+    store.prefs.pane = 'edit'
+  }
+  else if (message?.type === 'preview:revealed') {
+    store.reportRevealed(message.component, message.found, message.uses)
+  }
 }
+
+// Sent after the pending state message, so a category switch is applied before the reveal.
+watch(() => store.revealRequest, (request) => {
+  const target = frame.value?.contentWindow
+  if (!request || !ready.value || !target) return
+  requestAnimationFrame(() => requestAnimationFrame(() => target.postMessage(createRevealMessage(request.component), window.location.origin)))
+})
 
 /** Scrolls the preview without it reporting the scroll back (used to sync panes). */
 function scrollTo(position: ScrollPosition) {
@@ -52,7 +70,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus, () => store.prefs.inspect], sendState)
 </script>
 
 <template>

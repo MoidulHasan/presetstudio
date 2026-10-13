@@ -9,7 +9,7 @@ const store = useEditorStore()
 const groups: Array<{ label: string, sections: readonly EditorSection[] }> = [
   { label: 'Start', sections: ['start'] },
   { label: 'Global design', sections: DESIGN_SECTIONS },
-  { label: 'Tokens', sections: ['semantic'] },
+  { label: 'Tokens', sections: ['semantic', 'components'] },
   { label: 'Review', sections: ['accessibility'] },
 ]
 
@@ -23,7 +23,12 @@ const model = computed<MenuItem[]>(() => groups.map(group => ({
   })),
 })))
 
-const isModified = (section: EditorSection) => store.modifiedSections.has(section as DesignSection)
+const isModified = (section: EditorSection) =>
+  section === 'semantic'
+    ? store.semanticOverrideCount > 0
+    : section === 'components'
+      ? store.componentOverrideCount > 0
+      : store.modifiedSections.has(section as DesignSection)
 </script>
 
 <template>
@@ -75,9 +80,5 @@ const isModified = (section: EditorSection) => store.modifiedSections.has(sectio
         </a>
       </template>
     </Menu>
-
-    <p class="mt-4 px-2 text-xs text-surface-400 dark:text-surface-500">
-      Component tokens are coming next.
-    </p>
   </nav>
 </template>

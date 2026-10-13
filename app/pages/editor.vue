@@ -9,7 +9,12 @@ const exportVisible = ref(false)
 
 // Below lg there's room for one pane at a time.
 type Pane = 'edit' | 'preview'
-const pane = ref<Pane>('edit')
+const pane = computed<Pane>({
+  get: () => store.prefs.pane,
+  set: (value) => {
+    store.prefs.pane = value
+  },
+})
 const paneOptions: Array<{ value: Pane, label: string, icon: string }> = [
   { value: 'edit', label: 'Edit', icon: 'pi pi-sliders-h' },
   { value: 'preview', label: 'Preview', icon: 'pi pi-eye' },
