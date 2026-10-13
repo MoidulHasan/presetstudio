@@ -336,7 +336,8 @@ export const useEditorStore = defineStore('editor', () => {
     const { category } = COMPONENT_META[component]!
     // Keep "All"; otherwise switch the gallery to the component's category.
     if (prefs.value.template === 'components' && prefs.value.category !== 'all') prefs.value.category = category
-    revealComponent(component)
+    // A component's own stage shows it already; family members are found on their parent's stage.
+    if (studio !== component) revealComponent(component)
   }
 
   // --- Component studio ----------------------------------------------------------------

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { COMPONENT_META } from '~/utils/theme/components'
+import { COMPONENT_META, STUDIO_ICONS } from '~/utils/theme/components'
 
 // A link into a component's visual editor, for panels whose settings that component uses.
 const props = withDefaults(defineProps<{ component: string, text: string, variant?: 'card' | 'row' }>(), { variant: 'card' })
@@ -20,7 +20,8 @@ const label = computed(() => COMPONENT_META[props.component]?.label ?? props.com
     @click="store.openComponent(component)"
   >
     <i
-      class="pi pi-stop shrink-0"
+      :class="STUDIO_ICONS[component] ?? 'pi pi-box'"
+      class="shrink-0"
       aria-hidden="true"
     />
     <span class="min-w-0 flex-1 truncate text-sm">{{ text }}</span>

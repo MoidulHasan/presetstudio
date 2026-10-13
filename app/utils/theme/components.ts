@@ -121,7 +121,16 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
 export const COMPONENT_NAMES = Object.keys(COMPONENT_META)
 
 /** Components with a visual editor and stage (the rest use the token list). */
-export const STUDIO_COMPONENTS: readonly string[] = ['button']
+export const STUDIO_COMPONENTS: readonly string[] = ['button', 'message', 'toast', 'tag', 'badge']
+
+/** Icons of the visual editors (sidebar, component list). */
+export const STUDIO_ICONS: Readonly<Record<string, string>> = {
+  button: 'pi pi-stop',
+  message: 'pi pi-comment',
+  toast: 'pi pi-bell',
+  tag: 'pi pi-tag',
+  badge: 'pi pi-circle-fill',
+}
 
 /**
  * Components edited inside another's visual editor: they're built from it and have only a few

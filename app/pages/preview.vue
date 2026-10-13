@@ -136,7 +136,23 @@ onBeforeUnmount(() => {
     </Message>
     <PreviewStageButton
       v-if="stage === 'button'"
-      @pick="target => sendStagePick(target)"
+      @pick="sendStagePick"
+    />
+    <PreviewStageMessage
+      v-else-if="stage === 'message'"
+      @pick="sendStagePick"
+    />
+    <PreviewStageToast
+      v-else-if="stage === 'toast'"
+      @pick="sendStagePick"
+    />
+    <PreviewStageTag
+      v-else-if="stage === 'tag'"
+      @pick="sendStagePick"
+    />
+    <PreviewStageBadge
+      v-else-if="stage === 'badge'"
+      @pick="sendStagePick"
     />
     <PreviewDashboard v-else-if="template === 'dashboard'" />
     <PreviewForm v-else-if="template === 'form'" />

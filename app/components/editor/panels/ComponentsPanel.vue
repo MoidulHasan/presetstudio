@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, groupComponentTokens, studioFor, tokenLabel } from '~/utils/theme/components'
+import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS, groupComponentTokens, studioFor, tokenLabel } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { matchesQuery, tokenSource } from '~/utils/theme/semantic'
 import type { ColorScheme } from '~/utils/theme/types'
@@ -78,6 +78,14 @@ const listGroups = computed<ListGroup[]>(() => {
 })
 
 const listTotal = computed(() => listGroups.value.reduce((n, g) => n + g.items.length, 0))
+
+const STUDIO_SUBTITLES: Record<string, string> = {
+  button: 'Also ButtonGroup, SplitButton and SpeedDial',
+  message: 'Severities in default, outlined and simple styles',
+  toast: 'Severities with summary, detail and close button',
+  tag: 'Severities, plain and pill',
+  badge: 'Severities in four sizes, plus dots',
+}
 
 function visualHint(name: string): string {
   const studio = studioFor(name)
@@ -239,11 +247,14 @@ function showInGallery() {
           class="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-100 dark:bg-surface-800"
           aria-hidden="true"
         >
-          <i class="pi pi-stop text-surface-600 dark:text-surface-300" />
+          <i
+            :class="STUDIO_ICONS[name] ?? 'pi pi-box'"
+            class="text-surface-600 dark:text-surface-300"
+          />
         </span>
         <span class="flex min-w-0 flex-1 flex-col">
           <span class="text-sm font-semibold text-surface-900 dark:text-surface-0">{{ COMPONENT_META[name]!.label }}</span>
-          <span class="truncate text-xs text-surface-500">{{ name === 'button' ? 'Also ButtonGroup, SplitButton and SpeedDial' : 'Every variant and state, light and dark' }}</span>
+          <span class="truncate text-xs text-surface-500">{{ STUDIO_SUBTITLES[name] ?? 'Every variant and state, light and dark' }}</span>
         </span>
         <Badge
           v-if="store.componentOverrideCounts[name]"
@@ -508,6 +519,11 @@ function showInGallery() {
         />
       </p>
       <EditorStudioButton v-if="component === 'button'" />
+      <EditorStudioSeverity
+        v-else
+        :key="component"
+        :component="component"
+      />
     </template>
 
     <p

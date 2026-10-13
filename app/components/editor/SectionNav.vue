@@ -2,13 +2,12 @@
 import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore, type EditorSection } from '~/stores/editor'
 import { SECTION_META } from '~/utils/editor-sections'
-import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
+import { COMPONENT_META, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 
 // Components with a visual editor are listed by name, so their stage is one click away.
-const STUDIO_ICONS: Record<string, string> = { button: 'pi pi-stop' }
 
 type NavItem = { key: string, label: string, icon: string, open: () => void, active: boolean, modified: boolean, badge?: number, visual?: boolean }
 
