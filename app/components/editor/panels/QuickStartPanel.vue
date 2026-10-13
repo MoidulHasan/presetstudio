@@ -29,14 +29,14 @@ function setBrand(color: string) {
   }, 'start.brand')
 }
 
-const corners: Array<{ value: RadiusScale, label: string }> = [
+const corners: Array<{ value: Exclude<RadiusScale, 'custom'>, label: string }> = [
   { value: 'none', label: 'Square' },
   { value: 'base', label: 'Default' },
   { value: 'large', label: 'Rounded' },
   { value: 'xlarge', label: 'Soft' },
 ]
 
-function cornerPreview(value: RadiusScale): string {
+function cornerPreview(value: Exclude<RadiusScale, 'custom'>): string {
   return value === 'base' ? (store.resolvers?.light.entries.get('border-radius-md')?.raw.toString() ?? '6px') : RADIUS_VALUES[value].md!
 }
 

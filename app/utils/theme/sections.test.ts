@@ -4,13 +4,14 @@ import { buildEffectivePreset } from './build'
 import { checkContrast, classifyContrast } from './contrast'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection } from './sections'
 import { createResolver } from './tokens'
-import { createDefaultThemeState, type ThemeState, type TokenTree } from './types'
+import { createDefaultDesign, createDefaultThemeState, type ThemeState, type TokenTree } from './types'
 
 const aura = Aura as unknown as TokenTree
 
 const modified: ThemeState = {
   ...createDefaultThemeState(),
   design: {
+    ...createDefaultDesign(),
     primary: { kind: 'palette', name: 'indigo' },
     surface: { light: { kind: 'palette', name: 'stone' }, dark: { kind: 'base' } },
     radius: 'large',

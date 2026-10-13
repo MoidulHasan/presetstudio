@@ -1,16 +1,18 @@
 import Aura from '@primeuix/themes/aura'
 import Lara from '@primeuix/themes/lara'
 import Material from '@primeuix/themes/material'
+import Nora from '@primeuix/themes/nora'
 import { describe, expect, it } from 'vitest'
 import { buildEffectivePreset, buildPresetOverrides } from './build'
 import { CONTRAST_PAIRS, checkContrast } from './contrast'
-import { designToTokens, scaleLength } from './design'
+import { designToTokens, radiusScaleFrom, scaleLength } from './design'
 import { createResolver } from './tokens'
 import { createDefaultThemeState, type DesignSettings, type ThemeState, type TokenTree } from './types'
 
 const aura = Aura as unknown as TokenTree
 const lara = Lara as unknown as TokenTree
 const material = Material as unknown as TokenTree
+const nora = Nora as unknown as TokenTree
 
 const withDesign = (design: Partial<DesignSettings>): ThemeState => {
   const state = createDefaultThemeState()
@@ -63,13 +65,69 @@ describe('designToTokens', () => {
     const semantic = compact.semantic as TokenTree
     expect((semantic.formField as TokenTree).paddingX).toBe('0.563rem')
     // Aura's button padding references formField, so it isn't overridden directly...
-    expect(((compact.components as TokenTree)?.button as TokenTree | undefined)?.root).toBeUndefined()
+    const buttonRoot = ((compact.components as TokenTree).button as TokenTree).root as TokenTree
+    expect(buttonRoot.paddingX).toBeUndefined()
+    // ...while literal component spacing is scaled.
+    expect(buttonRoot.gap).toBe('0.375rem')
     // ...but still follows it.
     const r = createResolver(buildEffectivePreset(withDesign({ density: 'compact' }), aura), 'light')
     expect(r.resolve('button-padding-x')!.value).toBe('0.563rem')
     // Lara's button padding is a literal and gets scaled directly.
     const lr = createResolver(buildEffectivePreset(withDesign({ density: 'comfortable' }), lara), 'light')
     expect(lr.resolve('button-padding-x')!.value).toBe('1.25rem')
+  })
+
+  it('scales every literal padding and gap in both layers and schemes', () => {
+    for (const preset of [aura, lara, material]) {
+      const before = createResolver(buildEffectivePreset(withDesign({}), preset), 'light')
+      const after = createResolver(buildEffectivePreset(withDesign({ density: 'custom', densityScale: 1.5 }), preset), 'light')
+      for (const name of ['card-body-padding', 'dialog-content-padding', 'accordion-header-padding', 'chip-padding-x', 'datatable-header-padding']) {
+        const value = before.resolve(name)!.value
+        expect(after.resolve(name)!.value, name).toBe(scaleLength(value, 1.5) ?? value)
+      }
+    }
+  })
+
+  it('applies a custom radius scale', () => {
+    const design = withDesign({ radius: 'custom', customRadius: { xs: 1, sm: 3, md: 0, lg: 9, xl: 20 } }).design
+    const r = createResolver(buildEffectivePreset({ design, overrides: {} }, aura), 'light')
+    expect(r.resolve('border-radius-xs')!.value).toBe('1px')
+    expect(r.resolve('border-radius-md')!.value).toBe('0')
+    expect(r.resolve('border-radius-xl')!.value).toBe('20px')
+    expect(radiusScaleFrom(6)).toEqual({ xs: 2, sm: 4, md: 6, lg: 8, xl: 12 })
+  })
+
+  it('can tint the white light-mode backgrounds', () => {
+    const design = withDesign({ surface: { light: { kind: 'palette', name: 'stone' }, dark: { kind: 'base' } }, tintedBackgrounds: true }).design
+    const light = createResolver(buildEffectivePreset({ design, overrides: {} }, aura), 'light')
+    const dark = createResolver(buildEffectivePreset({ design, overrides: {} }, aura), 'dark')
+    const surface0 = light.resolve('surface-0')!.value
+    expect(surface0).toMatch(/^#[0-9a-f]{6}$/)
+    expect(surface0).not.toBe('#ffffff')
+    expect(light.resolve('content-background')!.value).toBe(surface0)
+    expect(dark.resolve('surface-0')!.value).toBe('#ffffff')
+  })
+
+  it('points every component focus ring at a custom outline', () => {
+    for (const preset of [aura, lara, nora, material]) {
+      const custom = withDesign({ focusRing: { kind: 'outline', width: 3, offset: 2, color: '#ff0000' } })
+      const r = createResolver(buildEffectivePreset(custom, preset), 'light')
+      for (const name of ['checkbox-focus-ring', 'tabs-tab-focus-ring', 'toggleswitch-focus-ring']) {
+        expect(r.resolve(`${name}-color`)!.value, name).toBe('#ff0000')
+        expect(r.resolve(`${name}-width`)!.value, name).toBe('3px')
+        expect(r.resolve(`${name}-shadow`)!.value, name).toBe('none')
+      }
+      expect(r.resolve('button-focus-ring-width')!.value).toBe('3px')
+      expect(r.resolve('button-primary-focus-ring-color')!.value).toBe('#ff0000')
+      expect(r.resolve('button-primary-focus-ring-shadow')!.value).toBe('none')
+      // Inset rings stay inset; form fields keep their own focus style.
+      if (createResolver(preset, 'light').resolve('datatable-row-focus-ring-offset')!.value === '-1px')
+        expect(r.resolve('datatable-row-focus-ring-offset')!.value).toBe('-1px')
+      expect((buildPresetOverrides(custom, preset).components as TokenTree).inputtext).toBeUndefined()
+    }
+    // With the primary color, buttons keep their severity color.
+    const primary = createResolver(buildEffectivePreset(withDesign({ focusRing: { kind: 'outline', width: 2, offset: 2, color: 'primary' } }), aura), 'light')
+    expect(primary.resolve('button-danger-focus-ring-color')!.value).toBe(primary.resolve('red-500')!.value)
   })
 
   it('replaces box-shadow focus rings with an outline', () => {

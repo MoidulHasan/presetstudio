@@ -10,11 +10,12 @@ import {
   sanitizeThemeName,
   serializeThemeState,
 } from './serialize'
-import { createDefaultThemeState, type ThemeState } from './types'
+import { createDefaultDesign, createDefaultThemeState, type ThemeState } from './types'
 
 const custom: ThemeState = {
   ...createDefaultThemeState('nora'),
   design: {
+    ...createDefaultDesign(),
     primary: { kind: 'custom', color: '#6366f1', algorithm: 'oklch', shades: { 50: '#ffffff' } },
     surface: { light: { kind: 'palette', name: 'stone' }, dark: { kind: 'tinted', chroma: 0.02 } },
     radius: 'large',

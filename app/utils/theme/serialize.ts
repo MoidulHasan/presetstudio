@@ -1,3 +1,4 @@
+import { DENSITY_SCALE_RANGE, MAX_RADIUS } from './design'
 import { isTokenTree, mergeOverrides } from './merge'
 import { normalizeHex } from './palette'
 import { sanitizeTokenTree } from './values'
@@ -7,11 +8,13 @@ import {
   NEUTRAL_COLORS,
   PRIMITIVE_COLORS,
   RADIUS_SCALES,
+  RADIUS_STEPS,
   SHADES,
   THEME_STATE_VERSION,
   WORKSPACE_VERSION,
   createDefaultDesign,
   createDefaultThemeState,
+  type CustomRadius,
   type DesignSettings,
   type FocusRingDesign,
   type PrimaryDesign,
@@ -66,6 +69,11 @@ function parseFocusRing(input: unknown): FocusRingDesign {
   }
 }
 
+function parseCustomRadius(input: unknown, fallback: CustomRadius): CustomRadius {
+  const source = isTokenTree(input) ? input : {}
+  return Object.fromEntries(RADIUS_STEPS.map(step => [step, Math.round(finite(source[step], 0, MAX_RADIUS, fallback[step]))])) as CustomRadius
+}
+
 function parseDesign(input: unknown): DesignSettings {
   const defaults = createDefaultDesign()
   if (!isTokenTree(input)) return defaults
@@ -73,8 +81,11 @@ function parseDesign(input: unknown): DesignSettings {
   return {
     primary: parsePrimary(input.primary),
     surface: { light: parseSurface(surface.light), dark: parseSurface(surface.dark) },
+    tintedBackgrounds: (input as Record<string, unknown>).tintedBackgrounds === true,
     radius: oneOf(RADIUS_SCALES, input.radius) ? input.radius : defaults.radius,
+    customRadius: parseCustomRadius(input.customRadius, defaults.customRadius),
     density: oneOf(DENSITIES, input.density) ? input.density : defaults.density,
+    densityScale: finite(input.densityScale, DENSITY_SCALE_RANGE.min, DENSITY_SCALE_RANGE.max, defaults.densityScale),
     focusRing: parseFocusRing(input.focusRing),
   }
 }

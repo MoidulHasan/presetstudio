@@ -46,10 +46,16 @@ export type SurfaceDesign
     /** Neutral tinted with the primary hue. `chroma` in OKLCH units (0–0.04). */
     | { kind: 'tinted', chroma: number }
 
-export const RADIUS_SCALES = ['none', 'small', 'base', 'large', 'xlarge'] as const
+export const RADIUS_SCALES = ['none', 'small', 'base', 'large', 'xlarge', 'custom'] as const
 export type RadiusScale = (typeof RADIUS_SCALES)[number]
 
-export const DENSITIES = ['compact', 'base', 'comfortable'] as const
+/** The borderRadius primitives a radius scale sets (`none` is always 0). */
+export const RADIUS_STEPS = ['xs', 'sm', 'md', 'lg', 'xl'] as const
+export type RadiusStep = (typeof RADIUS_STEPS)[number]
+/** Custom radius in px per step. */
+export type CustomRadius = Record<RadiusStep, number>
+
+export const DENSITIES = ['compact', 'base', 'comfortable', 'custom'] as const
 export type Density = (typeof DENSITIES)[number]
 
 export type FocusRingDesign
@@ -60,8 +66,14 @@ export type FocusRingDesign
 export interface DesignSettings {
   primary: PrimaryDesign
   surface: { light: SurfaceDesign, dark: SurfaceDesign }
+  /** Light mode: tint the white backgrounds (surface.0: cards, inputs, overlays) with the surface color. */
+  tintedBackgrounds: boolean
   radius: RadiusScale
+  /** Used when `radius` is 'custom'. */
+  customRadius: CustomRadius
   density: Density
+  /** Spacing multiplier used when `density` is 'custom'. */
+  densityScale: number
   focusRing: FocusRingDesign
 }
 
@@ -91,12 +103,18 @@ export interface Workspace {
   themes: ThemeDocument[]
 }
 
+/** Starting point for a custom radius scale (Aura's values). */
+export const DEFAULT_CUSTOM_RADIUS: CustomRadius = { xs: 2, sm: 4, md: 6, lg: 8, xl: 12 }
+
 export function createDefaultDesign(): DesignSettings {
   return {
     primary: { kind: 'base' },
     surface: { light: { kind: 'base' }, dark: { kind: 'base' } },
+    tintedBackgrounds: false,
     radius: 'base',
+    customRadius: { ...DEFAULT_CUSTOM_RADIUS },
     density: 'base',
+    densityScale: 1,
     focusRing: { kind: 'base' },
   }
 }

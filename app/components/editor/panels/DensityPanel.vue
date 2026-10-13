@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { DENSITY_FACTORS } from '~/utils/theme/design'
+import { DENSITY_SCALE_RANGE, densityFactor } from '~/utils/theme/design'
 import type { Density } from '~/utils/theme/types'
 
 const store = useEditorStore()
@@ -9,12 +9,26 @@ const options: Array<{ value: Density, label: string, hint: string }> = [
   { value: 'compact', label: 'Compact', hint: 'Data-dense apps, admin tools' },
   { value: 'base', label: 'Default', hint: 'The base preset\'s spacing' },
   { value: 'comfortable', label: 'Comfortable', hint: 'Touch-friendly, airy layouts' },
+  { value: 'custom', label: 'Custom', hint: 'Pick your own spacing scale' },
 ]
 
+const design = computed(() => store.theme.design)
+
 function setDensity(value: Density) {
+  // A custom scale starts from the current one.
+  const scale = value === 'custom' && design.value.density !== 'custom' ? densityFactor(design.value.density, design.value.densityScale) : null
   store.update((d) => {
     d.design.density = value
+    if (scale !== null) d.design.densityScale = scale
   })
+}
+
+function setScale(value: number | number[]) {
+  const n = Array.isArray(value) ? value[0]! : value
+  store.update((d) => {
+    d.design.density = 'custom'
+    d.design.densityScale = Math.round(n * 100) / 100
+  }, 'density.scale')
 }
 
 const samples = computed(() => {
@@ -23,6 +37,8 @@ const samples = computed(() => {
     { label: 'Input padding', value: r?.resolve('form-field-padding-y')?.value + ' / ' + r?.resolve('form-field-padding-x')?.value },
     { label: 'Button padding', value: r?.resolve('button-padding-y')?.value + ' / ' + r?.resolve('button-padding-x')?.value },
     { label: 'List option', value: r?.resolve('list-option-padding')?.value },
+    { label: 'Card body', value: r?.resolve('card-body-padding')?.value },
+    { label: 'Dialog', value: r?.resolve('dialog-content-padding')?.value },
     { label: 'Table cell', value: r?.resolve('datatable-body-cell-padding')?.value },
   ]
 })
@@ -32,7 +48,7 @@ const samples = computed(() => {
   <div class="flex flex-col gap-8">
     <EditorInspectorGroup
       title="Spacing"
-      description="Scales the padding of inputs, buttons, lists, menus, overlays, cards and tables. Values that reference other tokens follow them automatically."
+      description="Scales every padding and gap of every component: inputs, buttons, lists, menus, overlays, panels and tables."
     >
       <div
         class="flex flex-col gap-2"
@@ -52,7 +68,7 @@ const samples = computed(() => {
           <template #visual>
             <span
               class="flex w-8 flex-col justify-center"
-              :style="{ gap: `${3 * DENSITY_FACTORS[option.value]}px` }"
+              :style="{ gap: `${3 * densityFactor(option.value, design.densityScale)}px` }"
               aria-hidden="true"
             >
               <span
@@ -63,6 +79,23 @@ const samples = computed(() => {
             </span>
           </template>
         </EditorOptionCard>
+      </div>
+      <div
+        v-if="design.density === 'custom'"
+        class="flex flex-col gap-2"
+      >
+        <label
+          id="density-scale"
+          class="flex justify-between text-xs font-medium"
+        >Spacing scale <span class="font-mono text-surface-500">{{ Math.round(design.densityScale * 100) }}%</span></label>
+        <Slider
+          :model-value="design.densityScale"
+          :min="DENSITY_SCALE_RANGE.min"
+          :max="DENSITY_SCALE_RANGE.max"
+          :step="0.05"
+          aria-labelledby="density-scale"
+          @update:model-value="setScale"
+        />
       </div>
     </EditorInspectorGroup>
 

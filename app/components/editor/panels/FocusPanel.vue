@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { normalizeHex } from '~/utils/theme/palette'
+import { createResolver } from '~/utils/theme/tokens'
 import { BASE_PRESET_LABELS, type FocusRingDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
@@ -33,9 +34,10 @@ const customColor = computed({
   },
 })
 
-/** Describes how the base preset draws focus, from the resolved tokens. */
+/** Describes how the base preset draws focus, from its own (unedited) tokens. */
+const baseResolver = computed(() => (store.basePreset ? createResolver(store.basePreset, 'light') : null))
 const baseDescription = computed(() => {
-  const r = store.resolvers?.light
+  const r = baseResolver.value
   if (!r) return ''
   const width = r.resolve('focus-ring-width')?.value
   const shadow = r.resolve('focus-ring-shadow')?.value

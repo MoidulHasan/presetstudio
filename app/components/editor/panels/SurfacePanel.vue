@@ -30,6 +30,12 @@ function setSurface(value: SurfaceDesign, key: string | null = null) {
   }, key)
 }
 
+function setTintedBackgrounds(value: boolean) {
+  store.update((d) => {
+    d.design.tintedBackgrounds = value
+  })
+}
+
 function applyToOther() {
   const target = other.value
   const value = { ...current.value }
@@ -152,6 +158,20 @@ function setTint(value: number | number[]) {
           </p>
         </div>
       </div>
+    </EditorInspectorGroup>
+
+    <EditorInspectorGroup
+      v-if="scheme === 'light'"
+      title="Backgrounds"
+      description="Cards, inputs, tables and overlays are pure white (surface 0) in light mode, so a new neutral mostly shows in borders and text. Tint them to carry it into every background."
+    >
+      <label class="flex items-center justify-between gap-3 text-sm">
+        Tint white backgrounds
+        <ToggleSwitch
+          :model-value="store.theme.design.tintedBackgrounds"
+          @update:model-value="setTintedBackgrounds"
+        />
+      </label>
     </EditorInspectorGroup>
 
     <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-50 p-3 text-xs dark:bg-surface-800">
