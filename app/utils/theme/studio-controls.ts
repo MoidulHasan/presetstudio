@@ -13,6 +13,8 @@ export interface StudioControl {
   path: string | Partial<Record<StudioSize, string>>
   min?: number
   max?: number
+  /** The token is per color scheme: show one control for light and one for dark. */
+  schemes?: boolean
 }
 
 export interface StudioSection {

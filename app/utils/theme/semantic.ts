@@ -26,6 +26,9 @@ const GROUPS: Array<{ key: string, label: string, description: string }> = [
 ]
 const KNOWN = new Set(GROUPS.map(g => g.key))
 
+/** Semantic group keys in display order. */
+export const GROUPS_ORDER = GROUPS.map(g => g.key)
+
 /** Path below `semantic` (and below `colorScheme.<scheme>`), e.g. ['formField', 'focusBorderColor']. */
 export function semanticPath(token: TokenDescriptor): string[] {
   const rest = token.path.slice(1)

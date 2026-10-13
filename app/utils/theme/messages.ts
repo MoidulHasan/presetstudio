@@ -1,4 +1,5 @@
 import { isComponentName } from './components'
+import { SEMANTIC_STAGE_NAMES } from './semantic-studio'
 import { parseThemeState } from './serialize'
 import { COLOR_SCHEMES, type ColorScheme, type ThemeState } from './types'
 
@@ -97,7 +98,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
     if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean' || typeof event.data.inspect !== 'boolean') return null
     const stage = event.data.stage
-    if (stage !== null && !isComponentName(stage)) return null
+    if (stage !== null && !isComponentName(stage) && !SEMANTIC_STAGE_NAMES.includes(stage as string)) return null
     return {
       channel: MESSAGE_CHANNEL,
       type: 'theme:apply',
@@ -108,7 +109,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       hideScrollbar: event.data.hideScrollbar,
       showFocus: event.data.showFocus,
       inspect: event.data.inspect,
-      stage,
+      stage: stage as string | null,
     }
   }
   if (event.data.type === 'preview:scroll-to') {
