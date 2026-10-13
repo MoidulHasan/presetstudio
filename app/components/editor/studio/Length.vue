@@ -5,7 +5,7 @@ import { tokenSource } from '~/utils/theme/semantic'
 
 // A length token (padding, radius, size) as a slider in px. Shows what the token follows
 // (e.g. "form field padding x") until it's given its own value.
-const props = withDefaults(defineProps<{ token?: TokenDescriptor, label: string, max?: number, min?: number, step?: number }>(), { token: undefined, max: 40, min: 0, step: 1 })
+const props = withDefaults(defineProps<{ token?: TokenDescriptor, label: string, hint?: string, max?: number, min?: number, step?: number }>(), { token: undefined, hint: undefined, max: 40, min: 0, step: 1 })
 
 const store = useEditorStore()
 
@@ -47,6 +47,10 @@ const display = computed(() => (px.value === null ? resolved.value?.value ?? 'â€
     <div class="flex items-center justify-between gap-2 text-xs">
       <span class="flex min-w-0 items-center gap-1.5 font-medium">
         {{ label }}
+        <span
+          v-if="hint"
+          class="truncate font-normal text-surface-500"
+        >Â· {{ hint }}</span>
         <span
           v-if="source === 'custom'"
           v-tooltip.top="'Custom value'"

@@ -357,16 +357,18 @@ watch(() => store.stagePick, async (pick) => {
     <div :ref="el => (sections.shape = el as HTMLElement | null)">
       <EditorInspectorGroup
         title="Shape"
-        description="By default Button follows the form field radius from the Shape section."
+        description="Corner radius is for every button and follows the form field radius from the Shape section by default. Pill radius is only for buttons with the rounded prop; anything over half the button's height makes fully round ends."
       >
         <EditorStudioLength
           :token="shared('root.borderRadius')"
           label="Corner radius"
+          hint="all buttons"
           :max="24"
         />
         <EditorStudioLength
           :token="shared('root.roundedBorderRadius')"
-          label="Rounded button radius"
+          label="Pill radius"
+          hint="buttons with rounded"
           :max="48"
         />
       </EditorInspectorGroup>
@@ -516,11 +518,13 @@ watch(() => store.stagePick, async (pick) => {
           <EditorStudioLength
             :token="familyToken('splitbutton', 'root.borderRadius')"
             label="Corner radius"
+            hint="all SplitButtons"
             :max="24"
           />
           <EditorStudioLength
             :token="familyToken('splitbutton', 'root.roundedBorderRadius')"
-            label="Rounded radius"
+            label="Pill radius"
+            hint="with rounded"
             :max="48"
           />
           <div
