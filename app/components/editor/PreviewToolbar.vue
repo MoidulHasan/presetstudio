@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore, type PreviewViewport } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_META } from '~/utils/theme/components'
 import { PREVIEW_CATEGORIES, type PreviewTemplate } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
@@ -40,7 +39,7 @@ const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: stri
 
 const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_META[value] }))
 
-const stageMeta = computed(() => (store.stageComponent ? COMPONENT_META[store.stageComponent] ?? null : null))
+const stageMeta = computed(() => (store.stageName ? { label: store.stageLabel } : null))
 const stageOptions = computed(() => [
   { value: true, label: 'Stage', icon: 'pi pi-th-large', hint: `Every ${stageMeta.value?.label ?? ''} variant and state, light and dark` },
   { value: false, label: 'In context', icon: 'pi pi-window-maximize', hint: 'The usual preview pages' },

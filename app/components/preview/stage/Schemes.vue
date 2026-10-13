@@ -2,7 +2,8 @@
 import { SCHEME_CLASS } from '~/composables/usePreviewForcedStyles'
 
 // Light and dark side by side for a component stage; the slot renders one scheme.
-defineProps<{ intro: string }>()
+// `stacked`: light above dark, for wide grids that need the full width.
+withDefaults(defineProps<{ intro: string, stacked?: boolean }>(), { stacked: false })
 
 const SCHEMES = [
   { key: 'light', label: 'Light', icon: 'pi pi-sun', cls: SCHEME_CLASS },
@@ -15,7 +16,10 @@ const SCHEMES = [
     <p class="text-xs text-muted-color">
       {{ intro }}
     </p>
-    <div class="grid gap-4 xl:grid-cols-2">
+    <div
+      class="grid gap-4"
+      :class="stacked ? '' : 'xl:grid-cols-2'"
+    >
       <section
         v-for="scheme in SCHEMES"
         :key="scheme.key"

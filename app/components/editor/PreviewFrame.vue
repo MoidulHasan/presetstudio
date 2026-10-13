@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { withoutComponent } from '~/utils/theme/recolor'
 import { createApplyMessage, createRevealMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
@@ -18,11 +17,8 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    // While Compare is held, show the open component as the preset (and design settings) style it.
-    const component = store.prefs.component
-    const state = store.prefs.compare && component
-      ? { ...store.theme, overrides: withoutComponent(store.theme.overrides, component) }
-      : store.theme
+    // While Compare is held, the open editor's own edits are left out.
+    const state = store.prefs.compare ? { ...store.theme, overrides: store.compareOverrides() } : store.theme
     target.postMessage(createApplyMessage(state, props.colorScheme, {
       template: store.prefs.template,
       category: store.prefs.category,

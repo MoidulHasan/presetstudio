@@ -4,16 +4,22 @@ import { SECTION_META } from '~/utils/editor-sections'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
+import { semanticStudio } from '~/utils/theme/semantic-studio'
 
 const store = useEditorStore()
 const toast = useToast()
 const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
 const openComponent = computed(() =>
   store.prefs.section === 'components' && store.prefs.component ? COMPONENT_META[store.prefs.component] ?? null : null)
-// Inside the component tokens editor, the header names the open component.
-const meta = computed(() => openComponent.value
-  ? { ...SECTION_META.components, label: openComponent.value.label, description: `In the ${CATEGORY_META[openComponent.value.category].label} group. Changes here apply only to ${openComponent.value.label}.` }
-  : SECTION_META[store.prefs.section])
+// Pattern sections (and Text) edit one semantic group.
+const openSemantic = computed(() => (store.sectionGroup ? semanticStudio(store.sectionGroup) ?? null : null))
+// Inside a component or semantic group editor, the header names what's open.
+const meta = computed(() => {
+  if (openComponent.value) {
+    return { ...SECTION_META.components, label: openComponent.value.label, description: `In the ${CATEGORY_META[openComponent.value.category].label} group. Changes here apply only to ${openComponent.value.label}.` }
+  }
+  return SECTION_META[store.prefs.section]
+})
 // Same entries as the section nav: visual component editors are listed by name.
 const sectionOptions = EDITOR_SECTIONS.flatMap(value => [
   { value, label: SECTION_META[value].label },
@@ -39,14 +45,16 @@ function reset(section: DesignSection) {
 }
 
 // Sections with something to reset show the button even when there's nothing changed yet.
-const resettable = computed(() => ['semantic', 'components'].includes(store.prefs.section) || !!designSection.value)
+const resettable = computed(() => ['semantic', 'components'].includes(store.prefs.section) || !!designSection.value || !!openSemantic.value)
 const resetHint = computed(() => {
+  if (openSemantic.value) return `Clear the custom ${openSemantic.value.label.toLowerCase()} tokens`
   if (store.prefs.section === 'semantic') return 'Clear every custom semantic token'
   if (store.prefs.section === 'components') return openComponent.value ? `Clear the custom ${openComponent.value.label} tokens` : 'Clear the custom tokens of every component'
   return `Put ${meta.value.label.toLowerCase()} back to the base preset`
 })
 
 const canReset = computed(() => {
+  if (openSemantic.value) return (store.semanticGroupCounts[openSemantic.value.key] ?? 0) > 0
   if (store.prefs.section === 'semantic') return store.semanticOverrideCount > 0
   if (store.prefs.section === 'components') {
     return store.prefs.component ? (store.componentOverrideCounts[store.prefs.component] ?? 0) > 0 : store.componentOverrideCount > 0
@@ -60,9 +68,10 @@ function onReset() {
     store.resetComponents(store.prefs.component)
     toast.add({ severity: 'secondary', summary: label ? `Custom ${label} tokens cleared` : 'Custom component tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
   }
-  else if (store.prefs.section === 'semantic') {
-    store.resetSemantic()
-    toast.add({ severity: 'secondary', summary: 'Custom semantic tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
+  else if (openSemantic.value || store.prefs.section === 'semantic') {
+    const label = openSemantic.value?.label
+    store.resetSemantic(openSemantic.value?.key ?? null)
+    toast.add({ severity: 'secondary', summary: label ? `Custom ${label.toLowerCase()} tokens cleared` : 'Custom semantic tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
   }
   else if (designSection.value) {
     reset(designSection.value)
@@ -136,6 +145,7 @@ watch([() => store.prefs.section, () => store.prefs.component], () => body.value
       <EditorPanelsShapePanel v-else-if="store.prefs.section === 'shape'" />
       <EditorPanelsDensityPanel v-else-if="store.prefs.section === 'density'" />
       <EditorPanelsFocusPanel v-else-if="store.prefs.section === 'focus'" />
+      <EditorPanelsPatternPanel v-else-if="store.sectionGroup" />
       <EditorPanelsSemanticPanel v-else-if="store.prefs.section === 'semantic'" />
       <EditorPanelsComponentsPanel v-else-if="store.prefs.section === 'components'" />
       <EditorPanelsAccessibilityPanel v-else-if="store.prefs.section === 'accessibility'" />

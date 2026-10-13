@@ -9,9 +9,10 @@ import { loadBasePreset } from '~/utils/theme/presets'
 import { describePreset } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
 import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponentName, studioFor } from '~/utils/theme/components'
-import { clearRecolor, recolorOverrides, type PaletteChoice } from '~/utils/theme/recolor'
+import { clearRecolor, recolorOverrides, withoutComponent, type PaletteChoice } from '~/utils/theme/recolor'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
+import { PATTERN_SECTIONS, SEMANTIC_STUDIO_KEYS, countSemanticGroup, semanticStageName, semanticStudio, withoutSemanticGroup, type PatternSection } from '~/utils/theme/semantic-studio'
 import { deletePath, getPath, setPath } from '~/utils/theme/tree'
 import { sanitizeTokenValue } from '~/utils/theme/values'
 import {
@@ -43,7 +44,10 @@ const WORKSPACE_KEY = 'presetstudio:workspace'
 const LEGACY_THEME_KEY = 'presetstudio:theme'
 const PREFS_KEY = 'presetstudio:prefs'
 
-export const EDITOR_SECTIONS = ['start', ...DESIGN_SECTIONS, 'semantic', 'components', 'accessibility'] as const
+/** Pattern sections: shared looks that many components use (each edits one semantic group). */
+export const PATTERN_SECTION_KEYS = ['formfield', 'list', 'menu', 'overlay', 'container', 'selection'] as const
+
+export const EDITOR_SECTIONS = ['start', 'primary', 'surface', 'status', 'text', 'shape', 'density', 'focus', ...PATTERN_SECTION_KEYS, 'components', 'semantic', 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
 export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
@@ -78,6 +82,8 @@ interface EditorPrefs {
   compare: boolean
   /** One-time tips the user has dismissed. */
   dismissedTips: string[]
+  /** Pattern section view (and Text): visual controls or the group's token list. */
+  semanticView: 'design' | 'tokens'
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
 }
@@ -110,7 +116,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -128,6 +134,7 @@ function loadPrefs(): EditorPrefs {
       stage: typeof raw?.stage === 'boolean' ? raw.stage : fallback.stage,
       componentView: raw?.componentView === 'tokens' ? 'tokens' : fallback.componentView,
       compare: fallback.compare,
+      semanticView: raw?.semanticView === 'tokens' ? 'tokens' : fallback.semanticView,
       dismissedTips: Array.isArray(raw?.dismissedTips) ? raw.dismissedTips.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }
@@ -266,10 +273,24 @@ export const useEditorStore = defineStore('editor', () => {
     })
   }
 
-  function resetSemantic() {
+  /** Clears the custom values of one semantic group, or of every semantic token. */
+  function resetSemantic(group: string | null = null) {
     update((d) => {
-      d.overrides = deletePath(d.overrides, ['semantic'])
+      d.overrides = group ? withoutSemanticGroup(d.overrides, group) : deletePath(d.overrides, ['semantic'])
     })
+  }
+
+  /** Custom value count per semantic group. */
+  const semanticGroupCounts = computed(() =>
+    Object.fromEntries(SEMANTIC_STUDIO_KEYS.map(key => [key, countSemanticGroup(theme.value.overrides, key)])) as Record<string, number>)
+
+  /** Semantic group edited by the current section (pattern sections and Text), if any. */
+  const sectionGroup = computed(() => PATTERN_SECTIONS[prefs.value.section as PatternSection] ?? null)
+
+  /** Switches a pattern section between its visual editor (with stage) and its token list. */
+  function setSemanticView(view: 'design' | 'tokens') {
+    prefs.value.semanticView = view
+    if (view === 'design') prefs.value.stage = true
   }
 
   // --- Component tokens ---------------------------------------------------------------
@@ -359,8 +380,31 @@ export const useEditorStore = defineStore('editor', () => {
       : null
   })
 
-  /** Component whose stage the preview shows, if any (the user can switch to the pages). */
-  const activeStage = computed(() => (prefs.value.stage ? stageComponent.value : null))
+  /** Semantic group whose visual editor is open, if any. */
+  const stageSemanticGroup = computed(() => (prefs.value.semanticView === 'design' ? sectionGroup.value : null))
+
+  /** Stage available for the open visual editor ('button', 'semantic-formfield'), if any. */
+  const stageName = computed(() =>
+    stageComponent.value ?? (stageSemanticGroup.value ? semanticStageName(stageSemanticGroup.value) : null))
+
+  /** What the stage shows, for the preview toolbar. */
+  const stageLabel = computed(() => {
+    if (stageComponent.value) return COMPONENT_META[stageComponent.value]?.label ?? stageComponent.value
+    return stageSemanticGroup.value ? semanticStudio(stageSemanticGroup.value)?.label ?? '' : ''
+  })
+
+  /** Stage the preview shows, if any (the user can switch to the pages). */
+  const activeStage = computed(() => (prefs.value.stage ? stageName.value : null))
+
+  /** Overrides with the open editor's own edits removed, while Compare is held. */
+  function compareOverrides(): TokenTree {
+    const overrides = theme.value.overrides
+    if (!prefs.value.compare) return overrides
+    if (stageComponent.value) return withoutComponent(overrides, stageComponent.value)
+    if (prefs.value.section === 'components' && prefs.value.component) return withoutComponent(overrides, prefs.value.component)
+    if (sectionGroup.value) return withoutSemanticGroup(overrides, sectionGroup.value)
+    return overrides
+  }
 
   /** Latest click on the stage ('root:danger:hover'); the id makes repeats observable. */
   const stagePick = shallowRef<{ target: string, id: number } | null>(null)
@@ -469,6 +513,13 @@ export const useEditorStore = defineStore('editor', () => {
     openComponentList,
     activeStage,
     stageComponent,
+    stageSemanticGroup,
+    stageName,
+    stageLabel,
+    compareOverrides,
+    semanticGroupCounts,
+    sectionGroup,
+    setSemanticView,
     stagePick,
     pickOnStage,
     recolorGroup,

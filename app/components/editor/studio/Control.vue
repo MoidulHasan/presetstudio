@@ -7,6 +7,7 @@ const props = defineProps<{ token: TokenDescriptor, label: string, hint?: string
 const kind = computed(() => {
   if (props.token.kind === 'fontWeight') return 'weight'
   if (props.token.kind === 'shadow') return 'shadow'
+  if (props.token.kind === 'number' || props.token.kind === 'duration') return 'number'
   if (props.token.kind === 'spacing' && /\s/.test(String(props.token.defaultValue).trim())) return 'spacing'
   return 'length'
 })
@@ -21,6 +22,12 @@ const kind = computed(() => {
   />
   <EditorStudioShadow
     v-else-if="kind === 'shadow'"
+    :token="token"
+    :label="label"
+    :hint="hint"
+  />
+  <EditorStudioNumber
+    v-else-if="kind === 'number'"
     :token="token"
     :label="label"
     :hint="hint"

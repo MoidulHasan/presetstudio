@@ -42,10 +42,45 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     icon: 'pi pi-bullseye',
     description: 'The keyboard focus indicator. While you edit it, the preview shows every component focused.',
   },
+  text: {
+    label: 'Text',
+    icon: 'pi pi-align-left',
+    description: 'Default and muted text colors, at rest and hovered.',
+  },
+  formfield: {
+    label: 'Form fields',
+    icon: 'pi pi-pencil',
+    description: 'Inputs, selects, date pickers and every other form control.',
+  },
+  list: {
+    label: 'Lists',
+    icon: 'pi pi-list',
+    description: 'Options in dropdowns, listboxes, autocompletes and pick lists.',
+  },
+  menu: {
+    label: 'Menus',
+    icon: 'pi pi-bars',
+    description: 'Items of menus, menubars, tiered, context and panel menus.',
+  },
+  overlay: {
+    label: 'Overlays',
+    icon: 'pi pi-clone',
+    description: 'Dropdown panels, popovers and dialogs, and the backdrop behind dialogs.',
+  },
+  container: {
+    label: 'Containers',
+    icon: 'pi pi-window-maximize',
+    description: 'Cards, panels, tabs, accordions and other containers.',
+  },
+  selection: {
+    label: 'Selection',
+    icon: 'pi pi-check-square',
+    description: 'Selected items everywhere: list options, table rows, tree nodes.',
+  },
   semantic: {
-    label: 'Semantic tokens',
+    label: 'All tokens',
     icon: 'pi pi-sitemap',
-    description: 'Every semantic token of the preset. Edit a value or point it at another token.',
+    description: 'Every semantic token of the preset, for fine control. Foundations and patterns edit most of them visually.',
   },
   components: {
     label: 'All components',

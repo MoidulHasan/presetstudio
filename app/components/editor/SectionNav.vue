@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import { useEditorStore, type EditorSection } from '~/stores/editor'
+import { PATTERN_SECTION_KEYS, useEditorStore, type EditorSection } from '~/stores/editor'
+import { PATTERN_SECTIONS, type PatternSection } from '~/utils/theme/semantic-studio'
 import { SECTION_META } from '~/utils/editor-sections'
 import { COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
-import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
+import type { DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 
@@ -19,7 +20,11 @@ const sectionItem = (section: EditorSection): NavItem => ({
   icon: SECTION_META[section].icon,
   open: () => (store.prefs.section = section),
   active: store.prefs.section === section,
-  modified: section === 'semantic' ? store.semanticOverrideCount > 0 : store.modifiedSections.has(section as DesignSection),
+  modified: section === 'semantic'
+    ? store.semanticOverrideCount > 0
+    : PATTERN_SECTIONS[section as PatternSection]
+      ? (store.semanticGroupCounts[PATTERN_SECTIONS[section as PatternSection]] ?? 0) > 0
+      : store.modifiedSections.has(section as DesignSection),
 })
 
 const openStudio = computed(() =>
@@ -27,8 +32,8 @@ const openStudio = computed(() =>
 
 const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
   { label: 'Start', items: [sectionItem('start')] },
-  { label: 'Global design', items: DESIGN_SECTIONS.map(sectionItem) },
-  { label: 'Tokens', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
+  { label: 'Foundations', items: (['primary', 'surface', 'status', 'text', 'shape', 'density', 'focus'] as const).map(sectionItem) },
+  { label: 'Patterns', items: PATTERN_SECTION_KEYS.map(sectionItem) },
   {
     label: 'Components',
     items: [
@@ -54,6 +59,7 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
       })),
     ],
   },
+  { label: 'Advanced', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
   { label: 'Review', items: [sectionItem('accessibility')] },
 ])
 

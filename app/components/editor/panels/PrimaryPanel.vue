@@ -2,9 +2,23 @@
 import { useEditorStore } from '~/stores/editor'
 import { parseColor, rgbToOklch } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
+import { semanticCell, semanticStudio } from '~/utils/theme/semantic-studio'
 import { BASE_PRESET_LABELS, PRIMITIVE_COLORS, type PaletteAlgorithm, type PrimaryDesign, type Shade } from '~/utils/theme/types'
 
 const store = useEditorStore()
+
+const stateGrid = computed(() => {
+  const config = semanticStudio('primary')
+  if (!config?.rows || !config.columns) return null
+  return {
+    columns: config.columns,
+    rows: config.rows.map(row => ({
+      key: row.key,
+      label: row.label,
+      cells: Object.fromEntries(Object.entries(row.cells).map(([column, path]) => [column, semanticCell(store.descriptors, path)])),
+    })),
+  }
+})
 const primary = computed(() => store.theme.design.primary)
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
@@ -220,6 +234,19 @@ const usage = computed(() => {
       >
         {{ baseLabel }} uses shade {{ usage.light }} as the primary color in light mode and {{ usage.dark }} in dark mode.
       </p>
+    </EditorInspectorGroup>
+
+    <!-- Which shade each state uses (from the palette above), light and dark side by side. -->
+    <EditorInspectorGroup
+      v-if="stateGrid"
+      title="States"
+      description="The colors buttons, links and selections use at rest, hovered and pressed, and the text on them. They point at the palette above; select one to change it."
+    >
+      <EditorStudioTokenGrid
+        :columns="stateGrid.columns"
+        :rows="stateGrid.rows"
+        title="Primary"
+      />
     </EditorInspectorGroup>
 
     <EditorStudioLink
