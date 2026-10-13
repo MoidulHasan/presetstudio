@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { forcedFocusCss, forcedFocusSelector, splitSelectorList } from './focus-preview'
+import { forcedFocusCss, forcedFocusSelector, forcedStateCss, forcedStateSelector, schemeScopeCss, splitSelectorList } from './preview-css'
 
 describe('splitSelectorList', () => {
   it('splits only on top-level commas', () => {
@@ -42,5 +42,30 @@ describe('forcedFocusCss', () => {
       @keyframes k { from { opacity: 0 } }
     `, '.s')
     expect(css).toBe('.s .a { background: var(--x) no-repeat; }\n@media (min-width: 1px) { .s .c { color: blue; } }')
+  })
+})
+
+describe('forced hover and active states', () => {
+  it('drops only the requested state', () => {
+    expect(forcedStateSelector('.p-button:not(:disabled):hover', '.h', 'hover')).toBe('.h .p-button:not(:disabled)')
+    expect(forcedStateSelector('.p-button:not(:disabled):active', '.a', 'active')).toBe('.a .p-button:not(:disabled)')
+    expect(forcedStateSelector('.p-button:not(:disabled):active', '.h', 'hover')).toBeNull()
+    expect(forcedStateSelector('.a:not(:hover)', '.h', 'hover')).toBeNull()
+  })
+
+  it('builds CSS for one state', () => {
+    expect(forcedStateCss('.a:hover { color: red; } .a:active { color: blue; }', '.h', 'hover')).toBe('.h .a { color: red; }')
+  })
+})
+
+describe('schemeScopeCss', () => {
+  it('re-declares root and dark variables inside a scope', () => {
+    const css = schemeScopeCss([
+      ':root,:host{--p-a: #fff; --p-b: var(--p-a);}',
+      '.ps-dark{--p-a: #000;}',
+      '@layer x { :root{--p-c: 1px;} }',
+      '.p-button{color: var(--p-a);}',
+    ], '.s', 'ps-dark')
+    expect(css).toBe('.s { --p-a: #fff; --p-b: var(--p-a); --p-c: 1px; }\n.s.ps-dark { --p-a: #000; }')
   })
 })
