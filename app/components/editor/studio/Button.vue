@@ -28,6 +28,27 @@ const openRow = ref<string | null>(null)
 const rowStyle = ref<Record<string, ButtonStyle>>({})
 const highlight = ref<{ row: string, state: StudioState } | null>(null)
 
+/** The color cell being edited; its editor shows under the grid (in the panel's flow). */
+const selected = ref<{ row: string, style: ButtonStyle, property: string, state: StudioState } | null>(null)
+
+function isSelected(row: VariantRow, property: string, state: StudioState) {
+  const sel = selected.value
+  return !!sel && sel.row === row.key && sel.style === styleOf(row) && sel.property === property && sel.state === state
+}
+
+function select(row: VariantRow, property: string, state: StudioState) {
+  selected.value = isSelected(row, property, state) ? null : { row: row.key, style: styleOf(row), property, state }
+}
+
+/** The selected cell of a row (only while its style tab is showing). */
+function selectedCell(row: VariantRow) {
+  const sel = selected.value
+  if (!sel || sel.row !== row.key || sel.style !== styleOf(row)) return null
+  const prop = stateMatrix(row.styles[sel.style] ?? []).find(p => p.property === sel.property)
+  const cell = prop?.cells[sel.state]
+  return cell && prop ? { ...cell, label: `${prop.label} · ${STATE_LABELS[sel.state]}` } : null
+}
+
 function styleOptions(row: VariantRow) {
   return (Object.keys(row.styles) as ButtonStyle[]).map(style => ({ value: style, label: BUTTON_STYLE_LABELS[style] }))
 }
@@ -126,7 +147,14 @@ watch(() => store.stagePick, async (pick) => {
   if (!key) return
   openRow.value = key
   rowStyle.value = { ...rowStyle.value, [key]: style as ButtonStyle }
-  highlight.value = { row: key, state: (state as StudioState) ?? 'default' }
+  const pickedState = (state as StudioState) ?? 'default'
+  highlight.value = { row: key, state: pickedState }
+  // Open the main color of what was clicked: the first of background, border and text that
+  // the style has in that state (outlined buttons have no hover border, link only text).
+  const row = variants.value.find(v => v.key === key)
+  const matrix = stateMatrix(row?.styles[style as ButtonStyle] ?? [])
+  const property = ['background', 'borderColor', 'color'].find(p => matrix.find(m => m.property === p)?.cells[pickedState])
+  selected.value = property ? { row: key, style: style as ButtonStyle, property, state: pickedState } : null
   await nextTick()
   rows.value[key]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   setTimeout(() => {
@@ -234,8 +262,9 @@ watch(() => store.stagePick, async (pick) => {
                     v-if="prop.cells[state]"
                     :light="prop.cells[state]!.light"
                     :dark="prop.cells[state]!.dark"
-                    :label="`${row.label} ${BUTTON_STYLE_LABELS[styleOf(row)].toLowerCase()} · ${prop.label.toLowerCase()} · ${STATE_LABELS[state].toLowerCase()}`"
-                    :highlight="highlight?.row === row.key && highlight.state === state"
+                    :label="`${prop.label} · ${STATE_LABELS[state]}`"
+                    :selected="isSelected(row, prop.property, state)"
+                    @select="select(row, prop.property, state)"
                   />
                   <span
                     v-else
@@ -244,6 +273,41 @@ watch(() => store.stagePick, async (pick) => {
                   >—</span>
                 </template>
               </template>
+            </div>
+            <!-- Editor of the selected cell: in the panel's flow, light and dark together. -->
+            <div
+              v-if="selectedCell(row)"
+              class="flex flex-col gap-2 rounded-lg border border-surface-200 bg-surface-0 p-2 dark:border-surface-700 dark:bg-surface-900"
+            >
+              <div class="flex items-center justify-between gap-2 px-1">
+                <p class="truncate text-xs font-semibold">
+                  {{ BUTTON_STYLE_LABELS[styleOf(row)] }} {{ row.label.toLowerCase() }} · {{ selectedCell(row)!.label.toLowerCase() }}
+                </p>
+                <Button
+                  icon="pi pi-times"
+                  severity="secondary"
+                  size="small"
+                  text
+                  rounded
+                  class="!size-6 shrink-0"
+                  aria-label="Close color editor"
+                  @click="selected = null"
+                />
+              </div>
+              <EditorTokenRow
+                v-if="selectedCell(row)!.light"
+                :token="selectedCell(row)!.light!"
+                scheme="light"
+                label="Light mode"
+                :expanded="true"
+              />
+              <EditorTokenRow
+                v-if="selectedCell(row)!.dark"
+                :token="selectedCell(row)!.dark!"
+                scheme="dark"
+                label="Dark mode"
+                :expanded="true"
+              />
             </div>
             <Message
               v-if="row.styles.root && lowContrast(row)"

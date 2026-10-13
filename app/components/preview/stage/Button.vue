@@ -47,7 +47,7 @@ function severityProps(severity: Severity) {
         v-for="scheme in SCHEMES"
         :key="scheme.key"
         :class="scheme.cls"
-        class="flex min-w-0 flex-col gap-6 rounded-xl border border-surface bg-surface-0 p-5 text-color dark:bg-surface-900"
+        class="flex min-w-0 flex-col gap-8 rounded-xl border border-surface bg-surface-0 p-5 text-color dark:bg-surface-900"
         :aria-label="`${scheme.label} mode`"
       >
         <h2 class="flex items-center gap-2 text-sm font-semibold">
@@ -61,12 +61,13 @@ function severityProps(severity: Severity) {
         <div
           v-for="style in STYLES"
           :key="style.key"
-          class="flex flex-col gap-2"
+          class="flex flex-col gap-3"
         >
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
             {{ style.label }}
           </h3>
-          <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2 gap-y-1.5">
+          <!-- Room around each cell so hover shadows and focus rings never touch the next row. -->
+          <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-3 gap-y-4">
             <span />
             <span
               v-for="state in STATES"
@@ -96,11 +97,11 @@ function severityProps(severity: Severity) {
           </div>
         </div>
 
-        <div class="flex flex-col gap-2">
+        <div class="flex flex-col gap-3">
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
             Link
           </h3>
-          <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-2">
+          <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-3">
             <span class="text-xs text-muted-color">Link</span>
             <div
               v-for="state in STATES"
@@ -118,12 +119,12 @@ function severityProps(severity: Severity) {
           </div>
         </div>
 
-        <div class="flex flex-col gap-3">
+        <div class="flex flex-col gap-4">
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
             Sizes and shapes
           </h3>
           <div
-            class="flex cursor-pointer flex-wrap items-center gap-2"
+            class="flex cursor-pointer flex-wrap items-center gap-3"
             @click="emit('pick', 'size')"
           >
             <Button
@@ -159,7 +160,7 @@ function severityProps(severity: Severity) {
             />
           </div>
           <div
-            class="flex cursor-pointer flex-wrap items-center gap-2"
+            class="flex cursor-pointer flex-wrap items-center gap-3"
             @click="emit('pick', 'shape')"
           >
             <Button
