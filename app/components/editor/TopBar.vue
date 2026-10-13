@@ -5,6 +5,7 @@ import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName } from '~/utils/t
 defineEmits<{ export: [] }>()
 
 const store = useEditorStore()
+const toast = useToast()
 const presetOptions = BASE_PRESETS.map(value => ({ value, label: BASE_PRESET_LABELS[value] }))
 const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
 const mod = isMac ? '⌘' : 'Ctrl+'
@@ -18,6 +19,11 @@ const UI_THEME_META: Record<UiTheme, { icon: string, label: string }> = {
 
 const uiTheme = computed(() => UI_THEME_META[store.prefs.uiTheme] ?? UI_THEME_META.system)
 
+function resetTheme() {
+  store.resetTheme()
+  toast.add({ severity: 'secondary', summary: 'Theme reset to the base preset', detail: `Press ${mod}Z to undo.`, life: 3000 })
+}
+
 function setBase(value: BasePresetName) {
   store.update((d) => {
     d.basePreset = value
@@ -26,15 +32,15 @@ function setBase(value: BasePresetName) {
 </script>
 
 <template>
-  <header class="flex h-14 shrink-0 items-center gap-3 border-b border-surface-200 px-3 dark:border-surface-800">
-    <AppLogo class="hidden sm:flex" />
+  <header class="flex h-14 shrink-0 items-center gap-2 border-b border-surface-200 px-3 sm:gap-3 dark:border-surface-800">
+    <AppLogo class="hidden whitespace-nowrap lg:flex" />
     <Divider
       layout="vertical"
-      class="!mx-1 hidden sm:block"
+      class="!mx-1 hidden lg:block"
     />
-    <EditorThemeSwitcher />
+    <EditorThemeSwitcher class="min-w-0" />
 
-    <div class="ml-auto flex items-center gap-2">
+    <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
       <div class="flex items-center">
         <Button
           v-tooltip.bottom="`Undo (${mod}Z)`"
@@ -59,7 +65,19 @@ function setBase(value: BasePresetName) {
           :disabled="!store.canRedo"
           @click="store.redo()"
         />
+        <Button
+          v-tooltip.bottom="store.pristine ? 'Nothing to reset' : 'Reset the whole theme to the base preset'"
+          icon="pi pi-refresh"
+          severity="secondary"
+          size="small"
+          text
+          rounded
+          aria-label="Reset theme"
+          :disabled="store.pristine"
+          @click="resetTheme"
+        />
       </div>
+      <!-- On phones the base preset is picked in Quick start. -->
       <label
         for="base-preset"
         class="hidden text-sm text-surface-500 md:inline"
@@ -71,7 +89,7 @@ function setBase(value: BasePresetName) {
         option-value="value"
         input-id="base-preset"
         size="small"
-        class="w-32"
+        class="!hidden w-28 sm:!inline-flex sm:w-32"
         @update:model-value="setBase"
       />
       <Button
@@ -82,12 +100,15 @@ function setBase(value: BasePresetName) {
         text
         rounded
         :aria-label="uiTheme.label"
+        class="!hidden sm:!inline-flex"
         @click="store.prefs.uiTheme = UI_THEME_NEXT[store.prefs.uiTheme] ?? 'light'"
       />
       <Button
         label="Export"
         icon="pi pi-code"
         size="small"
+        aria-label="Export"
+        :pt="{ label: { class: 'hidden sm:inline' } }"
         @click="$emit('export')"
       />
     </div>

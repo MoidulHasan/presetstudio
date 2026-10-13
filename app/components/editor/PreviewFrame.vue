@@ -21,6 +21,7 @@ function sendState() {
       template: store.prefs.template,
       category: store.prefs.category,
       hideScrollbar: props.hideScrollbar,
+      showFocus: store.prefs.showFocus,
     }), window.location.origin)
   })
 }
@@ -51,7 +52,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus], sendState)
 </script>
 
 <template>

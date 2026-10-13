@@ -16,6 +16,10 @@ function reset(section: DesignSection) {
   toast.add({ severity: 'secondary', summary: `${SECTION_META[section].label} reset`, detail: `Back to the base preset. Press ${undoHint} to undo.`, life: 3000 })
 }
 
+// Sections with something to reset show the button even when there's nothing changed yet.
+const resettable = computed(() => store.prefs.section === 'semantic' || !!designSection.value)
+const resetHint = computed(() => (store.prefs.section === 'semantic' ? 'Clear every custom semantic token' : `Put ${meta.value.label.toLowerCase()} back to the base preset`))
+
 const canReset = computed(() =>
   store.prefs.section === 'semantic'
     ? store.semanticOverrideCount > 0
@@ -42,28 +46,29 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
     class="flex flex-col"
   >
     <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
-      <!-- On narrow screens the section nav is hidden; pick sections here instead. -->
+      <!-- Below xl the section nav is hidden; pick sections here instead. -->
       <Select
         v-model="store.prefs.section"
         :options="sectionOptions"
         option-label="label"
         option-value="value"
         aria-label="Editor section"
-        class="mb-3 w-full lg:hidden"
+        class="mb-3 w-full xl:hidden"
       />
       <div class="flex items-start justify-between gap-2">
         <h2 class="text-base font-semibold">
           {{ meta.label }}
         </h2>
         <Button
-          v-if="canReset"
-          v-tooltip.left="'Back to the base preset\'s values'"
+          v-if="resettable"
+          v-tooltip.left="canReset ? resetHint : 'Nothing to reset yet'"
           label="Reset"
           icon="pi pi-undo"
           severity="secondary"
           size="small"
-          text
-          class="-my-1"
+          outlined
+          class="-my-1 shrink-0"
+          :disabled="!canReset"
           @click="onReset"
         />
       </div>

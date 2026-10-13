@@ -35,7 +35,7 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
   focus: {
     label: 'Focus ring',
     icon: 'pi pi-bullseye',
-    description: 'The keyboard focus indicator. Press Tab inside the preview to see it.',
+    description: 'The keyboard focus indicator. While you edit it, the preview shows every component focused.',
   },
   semantic: {
     label: 'Semantic tokens',

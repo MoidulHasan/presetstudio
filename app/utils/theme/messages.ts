@@ -17,6 +17,8 @@ export interface PreviewView {
   category: PreviewCategory
   /** Side by side, only one pane shows a scrollbar (the panes scroll together). */
   hideScrollbar: boolean
+  /** Draw every component in its focused state. */
+  showFocus: boolean
 }
 
 export type ApplyMessage = {
@@ -26,7 +28,7 @@ export type ApplyMessage = {
   colorScheme: ColorScheme
 } & PreviewView
 
-const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false }
+const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false }
 
 /** Scroll position of a preview (side-by-side panes scroll together). */
 export interface ScrollPosition {
@@ -74,7 +76,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     const category = event.data.category
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
-    if (typeof event.data.hideScrollbar !== 'boolean') return null
+    if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean') return null
     return {
       channel: MESSAGE_CHANNEL,
       type: 'theme:apply',
@@ -83,6 +85,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       template: template as PreviewTemplate,
       category: category as PreviewCategory,
       hideScrollbar: event.data.hideScrollbar,
+      showFocus: event.data.showFocus,
     }
   }
   if (event.data.type === 'preview:scroll-to') {

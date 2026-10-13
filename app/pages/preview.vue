@@ -10,6 +10,7 @@ import {
   type PreviewTemplate,
   type ScrollPosition,
 } from '~/utils/theme/messages'
+import { forcedFocusCss } from '~/utils/theme/focus-preview'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -62,6 +63,48 @@ function scrollTo(position: ScrollPosition) {
   window.scrollTo({ left: position.x, top: position.y, behavior: 'instant' })
 }
 
+// --- Focus states ----------------------------------------------------------------
+// Focus styles only apply to the focused element. To show every component's focus ring
+// at once, copies of the :focus / :focus-visible rules are scoped to a class on <html>,
+// rebuilt whenever component styles are added or the theme changes.
+const FOCUS_CLASS = 'ps-show-focus'
+let focusStyle: HTMLStyleElement | null = null
+let focusObserver: MutationObserver | null = null
+let focusTimer: ReturnType<typeof setTimeout> | undefined
+
+function buildFocusStyles() {
+  if (!focusStyle) return
+  const css = Array.from(document.querySelectorAll('style'))
+    .filter(style => style !== focusStyle)
+    .map(style => forcedFocusCss(style.textContent ?? '', `.${FOCUS_CLASS}`))
+    .filter(Boolean)
+    .join('\n')
+  if (focusStyle.textContent !== css) focusStyle.textContent = css
+}
+
+function setShowFocus(on: boolean) {
+  document.documentElement.classList.toggle(FOCUS_CLASS, on)
+  if (on && !focusStyle) {
+    focusStyle = document.createElement('style')
+    focusStyle.dataset.psFocusStates = ''
+    document.head.appendChild(focusStyle)
+    focusObserver = new MutationObserver((records) => {
+      if (records.every(r => r.target === focusStyle)) return
+      clearTimeout(focusTimer)
+      focusTimer = setTimeout(buildFocusStyles, 50)
+    })
+    focusObserver.observe(document.head, { childList: true, subtree: true, characterData: true })
+    buildFocusStyles()
+  }
+  else if (!on && focusStyle) {
+    focusObserver?.disconnect()
+    focusStyle.remove()
+    focusStyle = null
+    focusObserver = null
+    clearTimeout(focusTimer)
+  }
+}
+
 function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return
   const message = parseEditorMessage(event, window.location.origin)
@@ -70,6 +113,7 @@ function onMessage(event: MessageEvent) {
   template.value = message.template
   category.value = message.category
   document.documentElement.classList.toggle('ps-no-scrollbar', message.hideScrollbar)
+  setShowFocus(message.showFocus)
   void applyTheme(message.state, message.colorScheme)
 }
 
@@ -87,6 +131,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
   window.removeEventListener('scroll', onScroll)
   cancelAnimationFrame(scrollFrame)
+  setShowFocus(false)
 })
 </script>
 

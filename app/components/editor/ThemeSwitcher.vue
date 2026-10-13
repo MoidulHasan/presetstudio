@@ -65,7 +65,7 @@ function confirmDelete() {
       option-value="id"
       aria-label="Active theme"
       size="small"
-      class="w-48"
+      class="w-32 min-w-0 sm:w-48"
       @update:model-value="store.switchTheme"
     />
     <Button

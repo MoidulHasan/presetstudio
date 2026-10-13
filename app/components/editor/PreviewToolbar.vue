@@ -7,7 +7,7 @@ import type { ColorScheme } from '~/utils/theme/types'
 const store = useEditorStore()
 
 const templates: Array<{ value: PreviewTemplate, label: string, icon: string }> = [
-  { value: 'components', label: 'All components', icon: 'pi pi-th-large' },
+  { value: 'components', label: 'Components', icon: 'pi pi-th-large' },
   { value: 'dashboard', label: 'Dashboard', icon: 'pi pi-chart-bar' },
   { value: 'form', label: 'Form', icon: 'pi pi-pen-to-square' },
   { value: 'settings', label: 'Settings', icon: 'pi pi-cog' },
@@ -51,7 +51,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       option-value="value"
       aria-label="Preview page"
       size="small"
-      class="w-44"
+      class="w-40 sm:w-44"
     >
       <template #value>
         <span class="flex items-center gap-2">
@@ -81,7 +81,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       option-value="value"
       aria-label="Component category"
       size="small"
-      class="w-40"
+      class="w-36 sm:w-40"
     >
       <template #value>
         <span class="flex items-center gap-2">
@@ -108,6 +108,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       </template>
     </Select>
 
+    <!-- Phones are already narrow; the width presets only matter on larger screens. -->
     <SelectButton
       v-model="store.prefs.viewport"
       :options="viewportOptions"
@@ -116,6 +117,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       :allow-empty="false"
       aria-label="Preview width"
       size="small"
+      class="!hidden md:!inline-flex"
     >
       <template #option="{ option }">
         <i
@@ -126,23 +128,35 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       </template>
     </SelectButton>
 
-    <SelectButton
-      v-model="mode"
-      :options="modeOptions"
-      option-label="label"
-      option-value="value"
-      :allow-empty="false"
-      aria-label="Preview mode"
-      size="small"
-      class="ml-auto"
-    >
-      <template #option="{ option }">
-        <i
-          :class="option.icon"
-          aria-hidden="true"
-        />
-        <span>{{ option.label }}</span>
-      </template>
-    </SelectButton>
+    <div class="ml-auto flex items-center gap-2">
+      <ToggleButton
+        v-model="store.prefs.showFocus"
+        v-tooltip.bottom="store.prefs.showFocus ? 'Showing every component focused' : 'Show every component focused (focus rings)'"
+        on-label="Focus"
+        off-label="Focus"
+        on-icon="pi pi-bullseye"
+        off-icon="pi pi-bullseye"
+        size="small"
+        aria-label="Show focus states"
+      />
+      <SelectButton
+        v-model="mode"
+        :options="modeOptions"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-label="Preview mode"
+        size="small"
+      >
+        <template #option="{ option }">
+          <i
+            v-tooltip.bottom="option.label"
+            :class="option.icon"
+            aria-hidden="true"
+          />
+          <span class="hidden 2xl:inline">{{ option.label }}</span>
+        </template>
+      </SelectButton>
+    </div>
   </div>
 </template>
