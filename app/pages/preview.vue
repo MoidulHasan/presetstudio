@@ -3,7 +3,9 @@ import { definePreset, usePreset } from '@primeuix/themes'
 import type { Preset } from '@primeuix/themes/types'
 import { buildPresetOverrides } from '~/utils/theme/build'
 import {
+  createInspectMessage,
   createReadyMessage,
+  createRevealedMessage,
   createScrollMessage,
   parseEditorMessage,
   type PreviewCategory,
@@ -105,15 +107,27 @@ function setShowFocus(on: boolean) {
   }
 }
 
+// --- Component inspection ----------------------------------------------------------
+const inspector = usePreviewInspector((component) => {
+  window.parent.postMessage(createInspectMessage(component), window.location.origin)
+})
+
+async function reveal(component: string) {
+  const { found, uses } = await inspector.reveal(component)
+  window.parent.postMessage(createRevealedMessage(component, found, uses), window.location.origin)
+}
+
 function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return
   const message = parseEditorMessage(event, window.location.origin)
   if (message?.type === 'preview:scroll-to') return scrollTo(message)
+  if (message?.type === 'preview:reveal') return void reveal(message.component)
   if (message?.type !== 'theme:apply') return
   template.value = message.template
   category.value = message.category
   document.documentElement.classList.toggle('ps-no-scrollbar', message.hideScrollbar)
   setShowFocus(message.showFocus)
+  inspector.setInspect(message.inspect)
   void applyTheme(message.state, message.colorScheme)
 }
 
@@ -132,6 +146,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll)
   cancelAnimationFrame(scrollFrame)
   setShowFocus(false)
+  inspector.dispose()
 })
 </script>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApplyMessage, createReadyMessage, createScrollMessage, createScrollToMessage, parseEditorMessage, parsePreviewMessage } from './messages'
+import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, parseEditorMessage, parsePreviewMessage } from './messages'
 import { generateClassicPalette, normalizeHex } from './palette'
 import {
   createWorkspace,
@@ -136,6 +136,21 @@ describe('override sanitization', () => {
   it('drops unsafe override values from untrusted state', () => {
     const parsed = parseThemeState({ ...createDefaultThemeState(), overrides: { semantic: { text: { color: 'red;} body{display:none' }, list: { gap: '4px' } } } })!
     expect(parsed.overrides).toEqual({ semantic: { list: { gap: '4px' } } })
+  })
+})
+
+describe('component inspect messages', () => {
+  const origin = 'https://presetstudio.app'
+  it('round-trips reveal, inspect and revealed messages for known components only', () => {
+    expect(parseEditorMessage({ origin, data: createRevealMessage('datatable') }, origin)).toEqual(createRevealMessage('datatable'))
+    expect(parsePreviewMessage({ origin, data: createInspectMessage('button') }, origin)).toEqual(createInspectMessage('button'))
+    expect(parsePreviewMessage({ origin, data: createRevealedMessage('tooltip', false) }, origin)).toEqual(createRevealedMessage('tooltip', false))
+    // Unknown nested names are dropped.
+    expect(parsePreviewMessage({ origin, data: createRevealedMessage('speeddial', true, ['button', '<script>']) }, origin)).toEqual(createRevealedMessage('speeddial', true, ['button']))
+    expect(parseEditorMessage({ origin, data: createRevealMessage('__proto__') }, origin)).toBeNull()
+    expect(parsePreviewMessage({ origin, data: { ...createInspectMessage('button'), component: 'x"><img>' } }, origin)).toBeNull()
+    expect(parsePreviewMessage({ origin, data: { ...createRevealedMessage('button', true), found: 'yes' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...createApplyMessage(createDefaultThemeState(), 'light'), inspect: 1 } }, origin)).toBeNull()
   })
 })
 

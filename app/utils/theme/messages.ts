@@ -1,3 +1,4 @@
+import { isComponentName } from './components'
 import { parseThemeState } from './serialize'
 import { COLOR_SCHEMES, type ColorScheme, type ThemeState } from './types'
 
@@ -23,6 +24,8 @@ export interface PreviewView {
   hideScrollbar: boolean
   /** Draw every component in its focused state. */
   showFocus: boolean
+  /** Inspect mode: hovering highlights a component, clicking reports it instead of interacting. */
+  inspect: boolean
 }
 
 export type ApplyMessage = {
@@ -32,7 +35,7 @@ export type ApplyMessage = {
   colorScheme: ColorScheme
 } & PreviewView
 
-const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false }
+const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false, inspect: false }
 
 /** Scroll position of a preview (side-by-side panes scroll together). */
 export interface ScrollPosition {
@@ -41,11 +44,17 @@ export interface ScrollPosition {
 }
 
 export type ScrollToMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll-to' } & ScrollPosition
-export type EditorToPreviewMessage = ApplyMessage | ScrollToMessage
+/** Scroll a component into view and flash it. */
+export type RevealMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:reveal', component: string }
+export type EditorToPreviewMessage = ApplyMessage | ScrollToMessage | RevealMessage
 
 export type ReadyMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
 export type ScrollMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll' } & ScrollPosition
-export type PreviewToEditorMessage = ReadyMessage | ScrollMessage
+/** A component was clicked in inspect mode. */
+export type InspectMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:inspect', component: string }
+/** Whether a reveal found the component on the current preview page, and the components it's built from. */
+export type RevealedMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:revealed', component: string, found: boolean, uses: string[] }
+export type PreviewToEditorMessage = ReadyMessage | ScrollMessage | InspectMessage | RevealedMessage
 
 const MAX_SCROLL = 1_000_000
 
@@ -80,7 +89,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     const category = event.data.category
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
-    if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean') return null
+    if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean' || typeof event.data.inspect !== 'boolean') return null
     return {
       channel: MESSAGE_CHANNEL,
       type: 'theme:apply',
@@ -90,11 +99,15 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       category: category as PreviewCategory,
       hideScrollbar: event.data.hideScrollbar,
       showFocus: event.data.showFocus,
+      inspect: event.data.inspect,
     }
   }
   if (event.data.type === 'preview:scroll-to') {
     const position = parseScroll(event.data)
     return position ? { channel: MESSAGE_CHANNEL, type: 'preview:scroll-to', ...position } : null
+  }
+  if (event.data.type === 'preview:reveal' && isComponentName(event.data.component)) {
+    return { channel: MESSAGE_CHANNEL, type: 'preview:reveal', component: event.data.component }
   }
   return null
 }
@@ -106,6 +119,13 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   if (event.data.type === 'preview:scroll') {
     const position = parseScroll(event.data)
     return position ? { channel: MESSAGE_CHANNEL, type: 'preview:scroll', ...position } : null
+  }
+  if (event.data.type === 'preview:inspect' && isComponentName(event.data.component)) {
+    return { channel: MESSAGE_CHANNEL, type: 'preview:inspect', component: event.data.component }
+  }
+  if (event.data.type === 'preview:revealed' && isComponentName(event.data.component) && typeof event.data.found === 'boolean') {
+    const uses = Array.isArray(event.data.uses) ? event.data.uses.filter(isComponentName).slice(0, 20) : []
+    return { channel: MESSAGE_CHANNEL, type: 'preview:revealed', component: event.data.component, found: event.data.found, uses }
   }
   return null
 }
@@ -132,4 +152,16 @@ export function createScrollMessage({ x, y }: ScrollPosition): ScrollMessage {
 
 export function createScrollToMessage({ x, y }: ScrollPosition): ScrollToMessage {
   return { channel: MESSAGE_CHANNEL, type: 'preview:scroll-to', x, y }
+}
+
+export function createRevealMessage(component: string): RevealMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:reveal', component }
+}
+
+export function createInspectMessage(component: string): InspectMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:inspect', component }
+}
+
+export function createRevealedMessage(component: string, found: boolean, uses: string[] = []): RevealedMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:revealed', component, found, uses }
 }

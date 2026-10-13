@@ -19,3 +19,9 @@ html.ps-no-scrollbar {
 html.ps-no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* Preview inspect mode: every component is a pick target. */
+html.ps-inspecting,
+html.ps-inspecting * {
+  cursor: crosshair !important;
+}
