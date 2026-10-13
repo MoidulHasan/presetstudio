@@ -123,6 +123,18 @@ export const COMPONENT_NAMES = Object.keys(COMPONENT_META)
 /** Components with a visual editor and stage (the rest use the token list). */
 export const STUDIO_COMPONENTS: readonly string[] = ['button']
 
+/**
+ * Components edited inside another's visual editor: they're built from it and have only a few
+ * tokens of their own (SplitButton's halves and SpeedDial's actions are Buttons).
+ */
+export const STUDIO_FAMILY: Readonly<Record<string, string>> = { splitbutton: 'button', speeddial: 'button' }
+
+/** The visual editor a component is edited in, if any. */
+export function studioFor(component: string): string | null {
+  if (STUDIO_COMPONENTS.includes(component)) return component
+  return STUDIO_FAMILY[component] ?? null
+}
+
 /** Category order of the PrimeVue docs. */
 export const COMPONENT_CATEGORIES: readonly GalleryCategory[] = ['form', 'button', 'data', 'panel', 'overlay', 'file', 'menu', 'messages', 'media', 'misc']
 

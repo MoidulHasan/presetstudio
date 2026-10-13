@@ -133,15 +133,35 @@ const raised = computed(() => shared('root.raisedShadow'))
 const raisedValue = computed(() => (raised.value ? String(store.resolvers?.light.resolve(raised.value.name)?.raw ?? '') : ''))
 const raisedOptions = computed(() => SHADOWS.some(s => s.value === raisedValue.value) ? SHADOWS : [...SHADOWS, { value: raisedValue.value, label: 'Custom' }])
 
+// --- Button family ---------------------------------------------------------------------
+/** Shared token of another component of the family, e.g. ('splitbutton', 'root.borderRadius'). */
+function familyToken(component: string, path: string): TokenDescriptor | undefined {
+  return store.descriptors.find(t => t.component === component && t.scheme === null && componentPath(t).join('.') === path)
+}
+const familyHighlight = ref<string | null>(null)
+const splitRaised = computed(() => familyToken('splitbutton', 'root.raisedShadow'))
+const splitRaisedValue = computed(() => (splitRaised.value ? String(store.resolvers?.light.resolve(splitRaised.value.name)?.raw ?? '') : ''))
+const splitRaisedOptions = computed(() => SHADOWS.some(s => s.value === splitRaisedValue.value) ? SHADOWS : [...SHADOWS, { value: splitRaisedValue.value, label: 'Custom' }])
+const familyChanged = (component: string) => (store.componentOverrideCounts[component] ?? 0) > 0
+
 // --- Stage picks -----------------------------------------------------------------------
 const sections = ref<Record<string, HTMLElement | null>>({})
 const rows = ref<Record<string, HTMLElement | null>>({})
 
 watch(() => store.stagePick, async (pick) => {
   if (!pick) return
+  // Handled once (the panel may mount right after the pick, e.g. when opening SplitButton).
+  store.stagePick = null
   const [style, key, state] = pick.target.split(':')
-  if (style === 'size' || style === 'shape') {
+  if (style === 'size' || style === 'shape' || style === 'family') {
+    await nextTick()
     sections.value[style]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
+    if (style === 'family' && key) {
+      familyHighlight.value = key
+      setTimeout(() => {
+        if (familyHighlight.value === key) familyHighlight.value = null
+      }, 1600)
+    }
     return
   }
   if (!key) return
@@ -160,7 +180,7 @@ watch(() => store.stagePick, async (pick) => {
   setTimeout(() => {
     if (highlight.value?.row === key) highlight.value = null
   }, 1600)
-})
+}, { immediate: true })
 </script>
 
 <template>
@@ -465,6 +485,98 @@ watch(() => store.stagePick, async (pick) => {
         :max="32"
       />
     </EditorInspectorGroup>
+
+    <!-- Button family: components built from Button, with a few tokens of their own -->
+    <div :ref="el => (sections.family = el as HTMLElement | null)">
+      <EditorInspectorGroup
+        title="Button family"
+        description="These are built from Button, so its colors, sizes and padding above already apply. Here are the few settings of their own."
+      >
+        <div
+          class="flex flex-col gap-3 rounded-lg border p-3 transition-colors"
+          :class="familyHighlight === 'splitbutton' ? 'border-surface-900 dark:border-surface-0' : 'border-surface-200 dark:border-surface-700'"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <p class="flex items-center gap-1.5 text-sm font-semibold">
+              SplitButton
+              <span
+                v-if="familyChanged('splitbutton')"
+                class="size-1.5 rounded-full bg-surface-900 dark:bg-surface-0"
+                aria-hidden="true"
+              />
+            </p>
+            <Button
+              label="All tokens"
+              size="small"
+              text
+              class="!py-0.5 !text-xs"
+              @click="store.openComponent('splitbutton', { view: 'tokens' })"
+            />
+          </div>
+          <EditorStudioLength
+            :token="familyToken('splitbutton', 'root.borderRadius')"
+            label="Corner radius"
+            :max="24"
+          />
+          <EditorStudioLength
+            :token="familyToken('splitbutton', 'root.roundedBorderRadius')"
+            label="Rounded radius"
+            :max="48"
+          />
+          <div
+            v-if="splitRaised"
+            class="flex items-center justify-between gap-3"
+          >
+            <label
+              for="split-raised-shadow"
+              class="text-xs font-medium"
+            >Raised shadow</label>
+            <Select
+              input-id="split-raised-shadow"
+              :model-value="splitRaisedValue"
+              :options="splitRaisedOptions"
+              option-label="label"
+              option-value="value"
+              size="small"
+              class="w-36"
+              @update:model-value="(v: string) => store.setToken(splitRaised!.path, v)"
+            />
+          </div>
+        </div>
+
+        <div
+          class="flex flex-col gap-3 rounded-lg border p-3 transition-colors"
+          :class="familyHighlight === 'speeddial' ? 'border-surface-900 dark:border-surface-0' : 'border-surface-200 dark:border-surface-700'"
+        >
+          <div class="flex items-center justify-between gap-2">
+            <p class="flex items-center gap-1.5 text-sm font-semibold">
+              SpeedDial
+              <span
+                v-if="familyChanged('speeddial')"
+                class="size-1.5 rounded-full bg-surface-900 dark:bg-surface-0"
+                aria-hidden="true"
+              />
+            </p>
+            <Button
+              label="All tokens"
+              size="small"
+              text
+              class="!py-0.5 !text-xs"
+              @click="store.openComponent('speeddial', { view: 'tokens' })"
+            />
+          </div>
+          <EditorStudioLength
+            :token="familyToken('speeddial', 'root.gap')"
+            label="Gap between actions"
+            :max="32"
+          />
+        </div>
+
+        <p class="text-xs text-surface-500 dark:text-surface-400">
+          <span class="font-medium text-surface-700 dark:text-surface-200">ButtonGroup</span> has no settings of its own: it joins Buttons and follows everything above.
+        </p>
+      </EditorInspectorGroup>
+    </div>
 
     <p class="text-xs text-surface-500">
       Need a token that isn't here? Switch to <span class="font-medium">All tokens</span> at the top. Every Button token is there.

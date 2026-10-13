@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, groupComponentTokens, tokenLabel } from '~/utils/theme/components'
+import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, groupComponentTokens, studioFor, tokenLabel } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { matchesQuery, tokenSource } from '~/utils/theme/semantic'
 import type { ColorScheme } from '~/utils/theme/types'
@@ -78,6 +78,11 @@ const listGroups = computed<ListGroup[]>(() => {
 })
 
 const listTotal = computed(() => listGroups.value.reduce((n, g) => n + g.items.length, 0))
+
+function visualHint(name: string): string {
+  const studio = studioFor(name)
+  return studio === name ? 'Visual editor with a live stage' : `Edited in the ${COMPONENT_META[studio!]!.label} visual editor`
+}
 
 function open(name: string, carryQuery: boolean) {
   // A token search carries over into the component, so the matches are what you see.
@@ -238,7 +243,7 @@ function showInGallery() {
         </span>
         <span class="flex min-w-0 flex-1 flex-col">
           <span class="text-sm font-semibold text-surface-900 dark:text-surface-0">{{ COMPONENT_META[name]!.label }}</span>
-          <span class="truncate text-xs text-surface-500">Every variant and state, light and dark</span>
+          <span class="truncate text-xs text-surface-500">{{ name === 'button' ? 'Also ButtonGroup, SplitButton and SpeedDial' : 'Every variant and state, light and dark' }}</span>
         </span>
         <Badge
           v-if="store.componentOverrideCounts[name]"
@@ -291,8 +296,8 @@ function showInGallery() {
           >
             <span class="min-w-0 flex-1 truncate text-left text-sm text-surface-900 dark:text-surface-0">{{ item.meta.label }}</span>
             <Tag
-              v-if="STUDIO_COMPONENTS.includes(item.name)"
-              v-tooltip.left="'Visual editor with a live stage'"
+              v-if="studioFor(item.name)"
+              v-tooltip.left="visualHint(item.name)"
               value="Visual"
               severity="info"
               class="shrink-0 !px-1.5 !py-0 !text-[10px]"

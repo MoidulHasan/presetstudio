@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { STUDIO_COMPONENTS } from '~/utils/theme/components'
+import { studioFor } from '~/utils/theme/components'
 import { createInspectMessage } from '~/utils/theme/messages'
 
 // One component demo in the gallery: a title and the live component.
@@ -11,7 +11,12 @@ const demoOf = computed(() => props.title.split('·').map(part => part.trim().sp
 
 // Inside the editor, demos of components with a visual editor link straight to it.
 const embedded = import.meta.client && window.parent !== window
-const studio = computed(() => (embedded ? demoOf.value.split(' ').find(name => STUDIO_COMPONENTS.includes(name)) ?? null : null))
+// ButtonGroup isn't a themed component; it's edited as part of Button.
+const studio = computed(() => {
+  if (!embedded) return null
+  const names = demoOf.value.split(' ')
+  return names.find(name => studioFor(name)) ?? (names.includes('buttongroup') ? 'button' : null)
+})
 
 function customize() {
   if (studio.value) window.parent.postMessage(createInspectMessage(studio.value), window.location.origin)

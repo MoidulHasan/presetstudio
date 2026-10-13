@@ -3,7 +3,7 @@ import Lara from '@primeuix/themes/lara'
 import Material from '@primeuix/themes/material'
 import Nora from '@primeuix/themes/nora'
 import { describe, expect, it } from 'vitest'
-import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, countComponentOverrides, groupComponentTokens, isComponentName, tokenLabel } from './components'
+import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, countComponentOverrides, groupComponentTokens, isComponentName, studioFor, tokenLabel } from './components'
 import { describePreset } from './schema'
 import type { TokenTree } from './types'
 
@@ -19,6 +19,11 @@ describe('component metadata', () => {
   it('puts every component in a known category', () => {
     for (const meta of Object.values(COMPONENT_META)) expect(COMPONENT_CATEGORIES).toContain(meta.category)
     expect(isComponentName('datatable')).toBe(true)
+    // SplitButton and SpeedDial are edited in Button's visual editor.
+    expect(studioFor('button')).toBe('button')
+    expect(studioFor('splitbutton')).toBe('button')
+    expect(studioFor('speeddial')).toBe('button')
+    expect(studioFor('datatable')).toBeNull()
     expect(isComponentName('constructor')).toBe(false)
   })
 })

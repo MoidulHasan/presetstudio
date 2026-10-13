@@ -8,7 +8,7 @@ import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type Previ
 import { loadBasePreset } from '~/utils/theme/presets'
 import { describePreset } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
-import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponentName } from '~/utils/theme/components'
+import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponentName, studioFor } from '~/utils/theme/components'
 import { clearRecolor, recolorOverrides, type PaletteChoice } from '~/utils/theme/recolor'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
@@ -285,15 +285,23 @@ export const useEditorStore = defineStore('editor', () => {
     revealed.value = { component, found, uses }
   }
 
-  /** Opens a component's tokens and shows it in the preview. */
-  function openComponent(component: string) {
+  /**
+   * Opens a component: in its visual editor (with the stage) when it has one or belongs to one
+   * (SplitButton → Button), otherwise, or with `view: 'tokens'`, in the token list.
+   */
+  function openComponent(component: string, options: { view?: 'design' | 'tokens' } = {}) {
     if (!isComponentName(component)) return
+    const studio = options.view === 'tokens' ? null : studioFor(component)
     prefs.value.section = 'components'
-    prefs.value.component = component
-    // Components with a visual editor always open in it, with their stage in the preview.
-    if (STUDIO_COMPONENTS.includes(component)) {
+    prefs.value.component = studio ?? component
+    if (studio) {
       prefs.value.componentView = 'design'
       prefs.value.stage = true
+      // A family member opens its section of the editor.
+      if (studio !== component) pickOnStage(`family:${component}`)
+    }
+    else if (options.view === 'tokens') {
+      prefs.value.componentView = 'tokens'
     }
     const { category } = COMPONENT_META[component]!
     // Keep "All"; otherwise switch the gallery to the component's category.

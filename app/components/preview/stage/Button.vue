@@ -29,6 +29,10 @@ const SCHEMES = [
 
 const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
+// Button family: built from Button (static demos, nothing happens on click).
+const SPLIT_ITEMS = [{ label: 'Update', icon: 'pi pi-refresh' }, { label: 'Delete', icon: 'pi pi-times' }]
+const DIAL_ITEMS = [{ label: 'Add', icon: 'pi pi-pencil' }, { label: 'Update', icon: 'pi pi-refresh' }, { label: 'Delete', icon: 'pi pi-trash' }]
+
 /** Button props for a severity ('primary' is the default, 'plain' a flag). */
 function severityProps(severity: Severity) {
   if (severity === 'primary') return {}
@@ -194,6 +198,80 @@ function severityProps(severity: Severity) {
               disabled
               tabindex="-1"
             />
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-4">
+          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+            Button family
+          </h3>
+          <div
+            class="flex cursor-pointer flex-wrap items-center gap-3"
+            @click="emit('pick', 'family:buttongroup')"
+          >
+            <span class="w-24 text-xs text-muted-color">ButtonGroup</span>
+            <ButtonGroup>
+              <Button
+                label="Save"
+                icon="pi pi-check"
+                tabindex="-1"
+              />
+              <Button
+                label="Delete"
+                icon="pi pi-trash"
+                tabindex="-1"
+              />
+              <Button
+                label="Cancel"
+                icon="pi pi-times"
+                tabindex="-1"
+              />
+            </ButtonGroup>
+          </div>
+          <div
+            class="flex cursor-pointer flex-wrap items-center gap-3"
+            @click="emit('pick', 'family:splitbutton')"
+          >
+            <span class="w-24 text-xs text-muted-color">SplitButton</span>
+            <SplitButton
+              label="Save"
+              :model="SPLIT_ITEMS"
+              tabindex="-1"
+            />
+            <SplitButton
+              label="Save"
+              :model="SPLIT_ITEMS"
+              severity="secondary"
+              outlined
+              tabindex="-1"
+            />
+            <SplitButton
+              label="Save"
+              :model="SPLIT_ITEMS"
+              rounded
+              tabindex="-1"
+            />
+            <SplitButton
+              label="Save"
+              :model="SPLIT_ITEMS"
+              raised
+              tabindex="-1"
+            />
+          </div>
+          <div
+            class="flex cursor-pointer items-center gap-3"
+            @click="emit('pick', 'family:speeddial')"
+          >
+            <span class="w-24 shrink-0 text-xs text-muted-color">SpeedDial</span>
+            <!-- Shown open, so the gap between actions is visible. -->
+            <div class="relative h-12 min-w-0 flex-1">
+              <SpeedDial
+                :model="DIAL_ITEMS"
+                direction="right"
+                :visible="true"
+                :style="{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)' }"
+              />
+            </div>
           </div>
         </div>
       </section>
