@@ -9,6 +9,7 @@ import {
   PRIMITIVE_COLORS,
   RADIUS_SCALES,
   RADIUS_STEPS,
+  STATUS_KINDS,
   SHADES,
   THEME_STATE_VERSION,
   WORKSPACE_VERSION,
@@ -17,7 +18,10 @@ import {
   type CustomRadius,
   type DesignSettings,
   type FocusRingDesign,
+  type ColorPalette,
   type PrimaryDesign,
+  type StatusDesign,
+  type StatusKind,
   type SurfaceDesign,
   type ThemeDocument,
   type ThemeState,
@@ -32,21 +36,25 @@ const oneOf = <T extends string>(list: readonly T[], value: unknown): value is T
 const finite = (value: unknown, min: number, max: number, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallback
 
+function parseShades(input: unknown): Partial<ColorPalette> {
+  const shades: Partial<ColorPalette> = {}
+  if (isTokenTree(input)) {
+    for (const shade of SHADES) {
+      const value = input[shade]
+      const hex = typeof value === 'string' ? normalizeHex(value) : null
+      if (hex) shades[shade] = hex
+    }
+  }
+  return shades
+}
+
 function parsePrimary(input: unknown): PrimaryDesign {
   if (!isTokenTree(input)) return { kind: 'base' }
   if (input.kind === 'palette' && oneOf(PRIMITIVE_COLORS, input.name)) return { kind: 'palette', name: input.name }
   if (input.kind === 'custom' && typeof input.color === 'string') {
     const color = normalizeHex(input.color)
     if (!color) return { kind: 'base' }
-    const shades: Partial<Record<(typeof SHADES)[number], string>> = {}
-    if (isTokenTree(input.shades)) {
-      for (const shade of SHADES) {
-        const value = input.shades[shade]
-        const hex = typeof value === 'string' ? normalizeHex(value) : null
-        if (hex) shades[shade] = hex
-      }
-    }
-    return { kind: 'custom', color, algorithm: input.algorithm === 'classic' ? 'classic' : 'oklch', shades }
+    return { kind: 'custom', color, algorithm: input.algorithm === 'classic' ? 'classic' : 'oklch', shades: parseShades(input.shades) }
   }
   return { kind: 'base' }
 }
@@ -55,7 +63,16 @@ function parseSurface(input: unknown): SurfaceDesign {
   if (!isTokenTree(input)) return { kind: 'base' }
   if (input.kind === 'palette' && oneOf(NEUTRAL_COLORS, input.name)) return { kind: 'palette', name: input.name }
   if (input.kind === 'tinted') return { kind: 'tinted', chroma: finite(input.chroma, 0, 0.04, 0.012) }
+  const color = input.kind === 'custom' && typeof input.color === 'string' ? normalizeHex(input.color) : null
+  if (color) return { kind: 'custom', color, shades: parseShades(input.shades) }
   return { kind: 'base' }
+}
+
+function parseStatus(input: unknown): StatusDesign {
+  if (!isTokenTree(input)) return { kind: 'base' }
+  if (input.kind === 'palette' && oneOf(PRIMITIVE_COLORS, input.name)) return { kind: 'palette', name: input.name }
+  const color = input.kind === 'custom' && typeof input.color === 'string' ? normalizeHex(input.color) : null
+  return color ? { kind: 'custom', color } : { kind: 'base' }
 }
 
 function parseFocusRing(input: unknown): FocusRingDesign {
@@ -81,6 +98,7 @@ function parseDesign(input: unknown): DesignSettings {
   return {
     primary: parsePrimary(input.primary),
     surface: { light: parseSurface(surface.light), dark: parseSurface(surface.dark) },
+    status: Object.fromEntries(STATUS_KINDS.map(kind => [kind, parseStatus(isTokenTree(input.status) ? input.status[kind] : undefined)])) as Record<StatusKind, StatusDesign>,
     tintedBackgrounds: (input as Record<string, unknown>).tintedBackgrounds === true,
     radius: oneOf(RADIUS_SCALES, input.radius) ? input.radius : defaults.radius,
     customRadius: parseCustomRadius(input.customRadius, defaults.customRadius),

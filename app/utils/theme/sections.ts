@@ -3,7 +3,7 @@ import { deletePath, hasPath } from './tree'
 import { COLOR_SCHEMES, createDefaultDesign, type ThemeState } from './types'
 
 // Editor sections that own part of a ThemeState and can be reset independently.
-export const DESIGN_SECTIONS = ['primary', 'surface', 'shape', 'density', 'focus'] as const
+export const DESIGN_SECTIONS = ['primary', 'surface', 'status', 'shape', 'density', 'focus'] as const
 export type DesignSection = (typeof DESIGN_SECTIONS)[number]
 
 /** Raw-override paths owned by a section (e.g. the accessibility fix writes primary.contrastColor). */
@@ -13,6 +13,7 @@ const OWNED_OVERRIDES: Record<DesignSection, string[][]> = {
     ...COLOR_SCHEMES.flatMap(s => [['semantic', 'colorScheme', s, 'primary'], ['semantic', 'colorScheme', s, 'highlight']]),
   ],
   surface: COLOR_SCHEMES.map(s => ['semantic', 'colorScheme', s, 'surface']),
+  status: [['primitive', 'status']],
   shape: [['primitive', 'borderRadius']],
   density: [],
   focus: [['semantic', 'focusRing'], ...COLOR_SCHEMES.map(s => ['semantic', 'colorScheme', s, 'focusRing'])],
@@ -23,6 +24,7 @@ export function isSectionModified(state: ThemeState, section: DesignSection): bo
   const designChanged = {
     primary: d.primary.kind !== 'base',
     surface: d.surface.light.kind !== 'base' || d.surface.dark.kind !== 'base' || d.tintedBackgrounds,
+    status: Object.values(d.status).some(s => s.kind !== 'base'),
     shape: d.radius !== 'base',
     density: d.density !== 'base',
     focus: d.focusRing.kind !== 'base',
@@ -36,6 +38,7 @@ export function resetSection(state: ThemeState, section: DesignSection): ThemeSt
   const defaults = createDefaultDesign()
   if (section === 'primary') design.primary = defaults.primary
   if (section === 'surface') Object.assign(design, { surface: defaults.surface, tintedBackgrounds: defaults.tintedBackgrounds })
+  if (section === 'status') design.status = defaults.status
   if (section === 'shape') Object.assign(design, { radius: defaults.radius, customRadius: defaults.customRadius })
   if (section === 'density') Object.assign(design, { density: defaults.density, densityScale: defaults.densityScale })
   if (section === 'focus') design.focusRing = defaults.focusRing

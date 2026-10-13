@@ -22,6 +22,11 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     icon: 'pi pi-clone',
     description: 'The neutral scale used for backgrounds, borders and text.',
   },
+  status: {
+    label: 'Status colors',
+    icon: 'pi pi-info-circle',
+    description: 'The colors behind info, success, warning, danger and help: buttons, badges, tags, messages and toasts.',
+  },
   shape: {
     label: 'Shape',
     icon: 'pi pi-stop',

@@ -71,17 +71,37 @@ export function generateOklchPalette(color: string): ColorPalette {
 }
 
 /** A neutral (surface) palette, optionally tinted with a hue. 50 ≈ near-white, 950 ≈ near-black. */
+const NEUTRAL_L: Record<Shade, number> = {
+  50: 0.985, 100: 0.967, 200: 0.928, 300: 0.869, 400: 0.704, 500: 0.554,
+  600: 0.446, 700: 0.372, 800: 0.279, 900: 0.208, 950: 0.13,
+}
+
 export function generateNeutralPalette(hue: number, chroma = 0.012): ColorPalette {
-  const neutralL: Record<Shade, number> = {
-    50: 0.985, 100: 0.967, 200: 0.928, 300: 0.869, 400: 0.704, 500: 0.554,
-    600: 0.446, 700: 0.372, 800: 0.279, 900: 0.208, 950: 0.13,
-  }
+  const neutralL = NEUTRAL_L
   const result = {} as ColorPalette
   for (const shade of SHADES) {
     // Slightly more tint in the mid-tones, where it's visible.
     const c = chroma * (shade === '50' || shade === '950' ? 0.6 : 1)
     result[shade] = toHex(oklchToRgb({ l: neutralL[shade], c, h: hue }))
   }
+  return result
+}
+
+/** Most chroma a generated surface ramp keeps, so backgrounds stay calm even from a vivid color. */
+export const MAX_SURFACE_CHROMA = 0.08
+
+// Like real neutrals, the near-white shades carry much less color than the mid-tones.
+const SURFACE_CHROMA: Record<Shade, number> = {
+  50: 0.2, 100: 0.3, 200: 0.45, 300: 0.65, 400: 0.9, 500: 1,
+  600: 0.95, 700: 0.85, 800: 0.75, 900: 0.65, 950: 0.5,
+}
+
+/** A surface ramp from any color: its hue and (capped) chroma on the neutral lightness ladder. */
+export function generateSurfacePalette(color: string): ColorPalette {
+  const { c, h } = rgbToOklch(parseColor(requireHex(color))!)
+  const chroma = Math.min(c, MAX_SURFACE_CHROMA)
+  const result = {} as ColorPalette
+  for (const shade of SHADES) result[shade] = toHex(oklchToRgb({ l: NEUTRAL_L[shade], c: chroma * SURFACE_CHROMA[shade], h }))
   return result
 }
 

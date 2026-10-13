@@ -45,6 +45,17 @@ export type SurfaceDesign
     | { kind: 'palette', name: NeutralColorName }
     /** Neutral tinted with the primary hue. `chroma` in OKLCH units (0–0.04). */
     | { kind: 'tinted', chroma: number }
+    /** A surface ramp generated from any color, with optional per-shade tweaks. */
+    | { kind: 'custom', color: string, shades: Partial<ColorPalette> }
+
+/** Severities components are styled with (buttons, badges, tags, messages, toasts). */
+export const STATUS_KINDS = ['info', 'success', 'warn', 'danger', 'help'] as const
+export type StatusKind = (typeof STATUS_KINDS)[number]
+
+export type StatusDesign
+  = | { kind: 'base' }
+    | { kind: 'palette', name: PrimitiveColorName }
+    | { kind: 'custom', color: string }
 
 export const RADIUS_SCALES = ['none', 'small', 'base', 'large', 'xlarge', 'custom'] as const
 export type RadiusScale = (typeof RADIUS_SCALES)[number]
@@ -66,6 +77,8 @@ export type FocusRingDesign
 export interface DesignSettings {
   primary: PrimaryDesign
   surface: { light: SurfaceDesign, dark: SurfaceDesign }
+  /** Palettes behind each severity (info, success, warn, danger, help). */
+  status: Record<StatusKind, StatusDesign>
   /** Light mode: tint the white backgrounds (surface.0: cards, inputs, overlays) with the surface color. */
   tintedBackgrounds: boolean
   radius: RadiusScale
@@ -110,6 +123,7 @@ export function createDefaultDesign(): DesignSettings {
   return {
     primary: { kind: 'base' },
     surface: { light: { kind: 'base' }, dark: { kind: 'base' } },
+    status: { info: { kind: 'base' }, success: { kind: 'base' }, warn: { kind: 'base' }, danger: { kind: 'base' }, help: { kind: 'base' } },
     tintedBackgrounds: false,
     radius: 'base',
     customRadius: { ...DEFAULT_CUSTOM_RADIUS },

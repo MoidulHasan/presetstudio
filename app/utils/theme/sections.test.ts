@@ -14,6 +14,7 @@ const modified: ThemeState = {
     ...createDefaultDesign(),
     primary: { kind: 'palette', name: 'indigo' },
     surface: { light: { kind: 'palette', name: 'stone' }, dark: { kind: 'base' } },
+    status: { ...createDefaultDesign().status, warn: { kind: 'palette', name: 'amber' } },
     radius: 'large',
     density: 'compact',
     focusRing: { kind: 'outline', width: 2, offset: 2, color: 'primary' },

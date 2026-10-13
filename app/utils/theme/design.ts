@@ -1,11 +1,14 @@
 import { mergeOverrides } from './merge'
 import { mixSrgb, parseColor, rgbToOklch, toHex } from './color'
-import { generateNeutralPalette, generatePalette } from './palette'
+import { generateNeutralPalette, generatePalette, generateSurfacePalette } from './palette'
 import { createResolver } from './tokens'
 import { setPath } from './tree'
 import {
+  NEUTRAL_COLORS,
+  PRIMITIVE_COLORS,
   RADIUS_STEPS,
   SHADES,
+  STATUS_KINDS,
   type ColorPalette,
   type CustomRadius,
   type Density,
@@ -13,6 +16,8 @@ import {
   type FocusRingDesign,
   type PrimaryDesign,
   type RadiusScale,
+  type StatusDesign,
+  type StatusKind,
   type SurfaceDesign,
   type TokenTree,
 } from './types'
@@ -51,7 +56,66 @@ export function surfacePalette(surface: SurfaceDesign, hue: () => number): Color
       return refPalette(surface.name)
     case 'tinted':
       return generateNeutralPalette(hue(), surface.chroma)
+    case 'custom':
+      return { ...generateSurfacePalette(surface.color), ...surface.shades }
   }
+}
+
+// --- Status colors -------------------------------------------------------------------
+// Presets point each severity at fixed primitives (info → sky/blue, warn → orange/yellow, …)
+// inside component tokens keyed by the severity. A status design adds a `status.<kind>`
+// palette and points those references at it, keeping the shade (`{sky.600}` → `{status.info.600}`).
+
+/** Component keys that mean each severity ('error' is danger in messages and toasts). */
+export const STATUS_KEYS: Record<StatusKind, readonly string[]> = {
+  info: ['info'],
+  success: ['success'],
+  warn: ['warn', 'warning'],
+  danger: ['danger', 'error'],
+  help: ['help'],
+}
+
+const CHROMATIC = new Set<string>(PRIMITIVE_COLORS.filter(c => !(NEUTRAL_COLORS as readonly string[]).includes(c)))
+const CHROMATIC_REF_RE = /\{([a-z]+)\.(\d+)\}/g
+
+export function statusPalette(status: StatusDesign): ColorPalette | null {
+  switch (status.kind) {
+    case 'base':
+      return null
+    case 'palette':
+      return refPalette(status.name)
+    case 'custom':
+      return generatePalette(status.color, 'oklch')
+  }
+}
+
+function statusTokens(status: Record<StatusKind, StatusDesign>, base: TokenTree): TokenTree {
+  const kindOf = new Map<string, StatusKind>()
+  const palettes: TokenTree = {}
+  for (const kind of STATUS_KINDS) {
+    const palette = statusPalette(status[kind])
+    if (!palette) continue
+    palettes[kind] = { ...palette }
+    for (const key of STATUS_KEYS[kind]) kindOf.set(key, kind)
+  }
+  if (!kindOf.size) return {}
+
+  let out: TokenTree = { primitive: { status: palettes } }
+  const walk = (node: TokenTree, path: string[], kind: StatusKind | undefined) => {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'css') continue
+      const p = [...path, key]
+      const k = kindOf.get(key) ?? kind
+      if (typeof value === 'object') walk(value, p, k)
+      else if (k && typeof value === 'string') {
+        const next = value.replace(CHROMATIC_REF_RE, (match, color: string, shade: string) =>
+          CHROMATIC.has(color) ? `{status.${k}.${shade}}` : match)
+        if (next !== value) out = setPath(out, p, next)
+      }
+    }
+  }
+  if (base.components && typeof base.components === 'object') walk(base.components, ['components'], undefined)
+  return out
 }
 
 // borderRadius primitives: none, xs, sm, md, lg, xl. 'base' keeps the preset's values.
@@ -210,6 +274,7 @@ export function designToTokens(design: DesignSettings, base: TokenTree): TokenTr
     // Keep surface.0 (pure white in every base preset) and replace the 50–950 ramp.
     if (surface) trees.push({ semantic: { colorScheme: { [scheme]: { surface: { ...surface } } } } })
   }
+  trees.push(statusTokens(design.status, base))
   if (design.tintedBackgrounds) {
     const surface0 = tintedWhite(mergeOverrides(base, ...trees))
     if (surface0) trees.push({ semantic: { colorScheme: { light: { surface: { 0: surface0 } } } } })

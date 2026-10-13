@@ -98,6 +98,7 @@ watch(() => store.prefs.section, () => body.value?.closest('aside')?.scrollTo({ 
       <EditorPanelsQuickStartPanel v-if="store.prefs.section === 'start'" />
       <EditorPanelsPrimaryPanel v-else-if="store.prefs.section === 'primary'" />
       <EditorPanelsSurfacePanel v-else-if="store.prefs.section === 'surface'" />
+      <EditorPanelsStatusPanel v-else-if="store.prefs.section === 'status'" />
       <EditorPanelsShapePanel v-else-if="store.prefs.section === 'shape'" />
       <EditorPanelsDensityPanel v-else-if="store.prefs.section === 'density'" />
       <EditorPanelsFocusPanel v-else-if="store.prefs.section === 'focus'" />

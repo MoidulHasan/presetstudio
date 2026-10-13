@@ -6,8 +6,10 @@ import { describe, expect, it } from 'vitest'
 import { buildEffectivePreset, buildPresetOverrides } from './build'
 import { CONTRAST_PAIRS, checkContrast } from './contrast'
 import { designToTokens, radiusScaleFrom, scaleLength } from './design'
+import { parseColor, rgbToOklch } from './color'
+import { MAX_SURFACE_CHROMA } from './palette'
 import { createResolver } from './tokens'
-import { createDefaultThemeState, type DesignSettings, type ThemeState, type TokenTree } from './types'
+import { createDefaultDesign, createDefaultThemeState, type DesignSettings, type ThemeState, type TokenTree } from './types'
 
 const aura = Aura as unknown as TokenTree
 const lara = Lara as unknown as TokenTree
@@ -128,6 +130,34 @@ describe('designToTokens', () => {
     // With the primary color, buttons keep their severity color.
     const primary = createResolver(buildEffectivePreset(withDesign({ focusRing: { kind: 'outline', width: 2, offset: 2, color: 'primary' } }), aura), 'light')
     expect(primary.resolve('button-danger-focus-ring-color')!.value).toBe(primary.resolve('red-500')!.value)
+  })
+
+  it('repoints every severity at its status palette, keeping shades', () => {
+    for (const preset of [aura, lara, nora, material]) {
+      const design = withDesign({ status: { ...createDefaultDesign().status, info: { kind: 'palette', name: 'violet' }, danger: { kind: 'custom', color: '#be123c' } } }).design
+      const before = createResolver(preset, 'light')
+      const r = createResolver(buildEffectivePreset({ design, overrides: {} }, preset), 'light')
+      const violet = (shade: string) => r.resolve(`violet-${shade}`)!.value
+      // Buttons (sky) and messages (blue) both follow, each with its own shade.
+      expect(r.resolve('button-info-background')!.chain).toContain('status-info-' + before.resolve('button-info-background')!.chain.at(-1)!.split('-').at(-1))
+      expect(r.resolve('button-info-background')!.value).toBe(violet(before.resolve('button-info-background')!.chain.at(-1)!.split('-').at(-1)!))
+      expect(r.resolve('message-info-color')!.value).not.toBe(before.resolve('message-info-color')!.value)
+      // 'error' in messages and toasts is danger.
+      expect(r.resolve('message-error-color')!.chain.some(n => n.startsWith('status-danger-'))).toBe(true)
+      expect(r.resolve('button-danger-background')!.value).not.toBe(before.resolve('button-danger-background')!.value)
+      // Untouched severities and neutral references stay as they were.
+      expect(r.resolve('button-success-background')!.value).toBe(before.resolve('button-success-background')!.value)
+      expect(r.resolve('button-secondary-background')!.value).toBe(before.resolve('button-secondary-background')!.value)
+    }
+  })
+
+  it('generates a calm surface ramp from any color', () => {
+    const design = withDesign({ surface: { light: { kind: 'custom', color: '#ff0000', shades: { 950: '#000000' } }, dark: { kind: 'base' } } }).design
+    const r = createResolver(buildEffectivePreset({ design, overrides: {} }, aura), 'light')
+    expect(r.resolve('surface-950')!.value).toBe('#000000')
+    const { c } = rgbToOklch(parseColor(r.resolve('surface-500')!.value)!)
+    expect(c).toBeGreaterThan(0.05)
+    expect(c).toBeLessThanOrEqual(MAX_SURFACE_CHROMA + 0.005)
   })
 
   it('replaces box-shadow focus rings with an outline', () => {

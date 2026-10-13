@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { primaryHue } from '~/utils/theme/design'
-import { generateNeutralPalette } from '~/utils/theme/palette'
-import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type SurfaceDesign } from '~/utils/theme/types'
+import { generateNeutralPalette, generateSurfacePalette, normalizeHex } from '~/utils/theme/palette'
+import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type Shade, type SurfaceDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
@@ -20,7 +20,7 @@ const current = computed(() => store.theme.design.surface[scheme.value])
 const surfaceId = (s: SurfaceDesign) => (s.kind === 'palette' ? s.name : s.kind)
 const sameAsOther = computed(() => {
   const o = store.theme.design.surface[other.value]
-  return surfaceId(current.value) === surfaceId(o) && (current.value.kind !== 'tinted' || o.kind !== 'tinted' || current.value.chroma === o.chroma)
+  return JSON.stringify(current.value) === JSON.stringify(o)
 })
 
 function setSurface(value: SurfaceDesign, key: string | null = null) {
@@ -28,6 +28,47 @@ function setSurface(value: SurfaceDesign, key: string | null = null) {
   store.update((d) => {
     d.design.surface[target] = value
   }, key)
+}
+
+// --- Custom surface color ----------------------------------------------------------------
+const custom = computed(() => (current.value.kind === 'custom' ? current.value : null))
+const CUSTOM_SEED = '#64748b'
+
+function chooseCustom() {
+  if (custom.value) return
+  // Start from the current mid-tone, so switching to Custom changes nothing yet.
+  const seed = normalizeHex(store.resolvedScale('surface', scheme.value)?.['500'] ?? '') ?? CUSTOM_SEED
+  setSurface({ kind: 'custom', color: seed, shades: {} })
+}
+
+function setCustomColor(value: string | undefined) {
+  const hex = value ? normalizeHex(value) : null
+  if (hex && custom.value) setSurface({ ...custom.value, color: hex }, `surface.${scheme.value}.color`)
+}
+
+const customPreview = computed(() => generateSurfacePalette(custom.value?.color ?? CUSTOM_SEED))
+
+const selectedShade = ref<Shade | null>(null)
+watch([() => current.value.kind, scheme], () => {
+  selectedShade.value = null
+})
+const palette = computed(() => store.resolvedScale('surface', scheme.value))
+const editedShades = computed(() => Object.keys(custom.value?.shades ?? {}) as Shade[])
+
+const shadeColor = computed({
+  get: () => (selectedShade.value && palette.value ? palette.value[selectedShade.value].replace('#', '') : '000000'),
+  set: (value: string) => {
+    const shade = selectedShade.value
+    const hex = normalizeHex(value)
+    if (!custom.value || !shade || !hex) return
+    setSurface({ ...custom.value, shades: { ...custom.value.shades, [shade]: hex } }, `surface.${scheme.value}.shade.${shade}`)
+  },
+})
+
+function resetShade(shade: Shade) {
+  if (!custom.value) return
+  const shades = Object.fromEntries(Object.entries(custom.value.shades).filter(([key]) => key !== shade))
+  setSurface({ ...custom.value, shades })
 }
 
 function setTintedBackgrounds(value: boolean) {
@@ -80,8 +121,30 @@ function setTint(value: number | number[]) {
     <EditorInspectorGroup title="Palette">
       <EditorPaletteStrip
         :label="`${scheme} mode surface palette`"
-        :palette="store.resolvedScale('surface', scheme)"
+        :palette="palette"
+        :selectable="!!custom"
+        :selected="selectedShade"
+        :edited="editedShades"
+        @select="shade => (selectedShade = selectedShade === shade ? null : shade)"
       />
+      <div
+        v-if="custom && selectedShade"
+        class="flex items-center gap-2 rounded-lg border border-surface-200 p-2 dark:border-surface-700"
+      >
+        <ColorPicker
+          v-model="shadeColor"
+          :aria-label="`Pick color for surface shade ${selectedShade}`"
+        />
+        <span class="min-w-0 flex-1 truncate font-mono text-sm">{{ selectedShade }} · {{ palette?.[selectedShade] }}</span>
+        <Button
+          v-if="editedShades.includes(selectedShade)"
+          label="Reset"
+          icon="pi pi-undo"
+          size="small"
+          text
+          @click="resetShade(selectedShade)"
+        />
+      </div>
 
       <div
         class="flex flex-col gap-2"
@@ -134,6 +197,48 @@ function setTint(value: number | number[]) {
               </span>
             </template>
           </EditorOptionCard>
+        </div>
+        <EditorOptionCard
+          :name="`surface-${scheme}`"
+          value="custom"
+          :selected="!!custom"
+          label="Custom color"
+          hint="Any color; the ramp keeps surfaces calm"
+          @select="chooseCustom"
+        >
+          <template #visual>
+            <span class="flex overflow-hidden rounded">
+              <span
+                v-for="shade in ['200', '500', '800']"
+                :key="shade"
+                class="h-5 w-2.5"
+                :style="{ backgroundColor: customPreview[shade as '500'] }"
+              />
+            </span>
+          </template>
+        </EditorOptionCard>
+        <div
+          v-if="custom"
+          class="flex flex-col gap-2 rounded-lg border border-surface-200 p-3 dark:border-surface-700"
+        >
+          <div class="flex items-center gap-2">
+            <ColorPicker
+              :model-value="custom.color.slice(1)"
+              aria-label="Surface color"
+              @update:model-value="setCustomColor"
+            />
+            <InputText
+              :model-value="custom.color"
+              aria-label="Surface color hex"
+              size="small"
+              class="w-28 font-mono"
+              @change="(e: Event) => setCustomColor((e.target as HTMLInputElement).value)"
+            />
+          </div>
+          <p class="text-xs text-surface-500 dark:text-surface-400">
+            Uses the color's hue and some of its saturation on a neutral light-to-dark ladder. Select a shade
+            in the palette above to set it exactly.
+          </p>
         </div>
         <div
           v-if="current.kind === 'tinted'"
