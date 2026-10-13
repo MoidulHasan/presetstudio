@@ -16,8 +16,8 @@ const meta = computed(() => openComponent.value
   : SECTION_META[store.prefs.section])
 // Same entries as the section nav: visual component editors are listed by name.
 const sectionOptions = EDITOR_SECTIONS.flatMap(value => [
-  ...(value === 'components' ? STUDIO_COMPONENTS.map(name => ({ value: `component:${name}`, label: `${COMPONENT_META[name]!.label} (visual editor)` })) : []),
   { value, label: SECTION_META[value].label },
+  ...(value === 'components' ? STUDIO_COMPONENTS.map(name => ({ value: `component:${name}`, label: `${COMPONENT_META[name]!.label} (visual editor)` })) : []),
 ])
 
 const sectionValue = computed({

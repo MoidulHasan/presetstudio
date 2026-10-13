@@ -7,6 +7,8 @@ import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 
 const store = useEditorStore()
 
+const MAX_SIDEBAR_STUDIOS = 8
+
 // Components with a visual editor are listed by name, so their stage is one click away.
 
 type NavItem = { key: string, label: string, icon: string, open: () => void, active: boolean, modified: boolean, badge?: number, visual?: boolean, count?: number }
@@ -29,15 +31,7 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
   {
     label: 'Components',
     items: [
-      ...STUDIO_COMPONENTS.map(name => ({
-        key: `component:${name}`,
-        label: COMPONENT_META[name]!.label,
-        icon: STUDIO_ICONS[name] ?? 'pi pi-box',
-        open: () => store.openComponent(name),
-        active: openStudio.value === name,
-        modified: (store.componentOverrideCounts[name] ?? 0) > 0,
-        visual: true,
-      })),
+      // The catalog first; the visual editors are shortcuts into it.
       {
         key: 'components',
         label: SECTION_META.components.label,
@@ -47,6 +41,16 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
         modified: store.componentOverrideCount > 0,
         count: COMPONENT_NAMES.length,
       },
+      // Capped so the sidebar doesn't grow with every new editor; all of them are pinned in the list.
+      ...STUDIO_COMPONENTS.slice(0, MAX_SIDEBAR_STUDIOS).map(name => ({
+        key: `component:${name}`,
+        label: COMPONENT_META[name]!.label,
+        icon: STUDIO_ICONS[name] ?? 'pi pi-box',
+        open: () => store.openComponent(name),
+        active: openStudio.value === name,
+        modified: (store.componentOverrideCounts[name] ?? 0) > 0,
+        visual: true,
+      })),
     ],
   },
   { label: 'Tokens', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
