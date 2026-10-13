@@ -139,6 +139,14 @@ function familyToken(component: string, path: string): TokenDescriptor | undefin
   return store.descriptors.find(t => t.component === component && t.scheme === null && componentPath(t).join('.') === path)
 }
 const familyHighlight = ref<string | null>(null)
+
+// SplitButton's own radius only shapes its wrapper (the outline of the raised shadow); its
+// halves are Buttons. It follows Button's corner radius, so the shadow fits the buttons.
+const splitWrapperLink = computed(() => {
+  const wrapper = familyToken('splitbutton', 'root.borderRadius')
+  return wrapper ? [{ path: wrapper.path, value: '{button.border.radius}' }] : []
+})
+const buttonRadius = computed(() => store.resolvers?.light.resolve('button-border-radius')?.value ?? '')
 const splitRaised = computed(() => familyToken('splitbutton', 'root.raisedShadow'))
 const splitRaisedValue = computed(() => (splitRaised.value ? String(store.resolvers?.light.resolve(splitRaised.value.name)?.raw ?? '') : ''))
 const splitRaisedOptions = computed(() => SHADOWS.some(s => s.value === splitRaisedValue.value) ? SHADOWS : [...SHADOWS, { value: splitRaisedValue.value, label: 'Custom' }])
@@ -363,6 +371,7 @@ watch(() => store.stagePick, async (pick) => {
           :token="shared('root.borderRadius')"
           label="Corner radius"
           hint="all buttons"
+          :linked="splitWrapperLink"
           :max="24"
         />
         <EditorStudioLength
@@ -515,12 +524,9 @@ watch(() => store.stagePick, async (pick) => {
               @click="store.openComponent('splitbutton', { view: 'tokens' })"
             />
           </div>
-          <EditorStudioLength
-            :token="familyToken('splitbutton', 'root.borderRadius')"
-            label="Corner radius"
-            hint="all SplitButtons"
-            :max="24"
-          />
+          <p class="text-xs text-surface-500 dark:text-surface-400">
+            <span class="font-medium text-surface-700 dark:text-surface-200">Corner radius</span> follows Button's corner radius above ({{ buttonRadius }}): both halves are Buttons.
+          </p>
           <EditorStudioLength
             :token="familyToken('splitbutton', 'root.roundedBorderRadius')"
             label="Pill radius"

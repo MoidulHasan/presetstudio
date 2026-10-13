@@ -12,7 +12,7 @@ import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponent
 import { clearRecolor, recolorOverrides, type PaletteChoice } from '~/utils/theme/recolor'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
-import { deletePath, setPath } from '~/utils/theme/tree'
+import { deletePath, getPath, setPath } from '~/utils/theme/tree'
 import { sanitizeTokenValue } from '~/utils/theme/values'
 import {
   createThemeDocument,
@@ -32,6 +32,12 @@ import {
   type TokenTree,
   type Workspace,
 } from '~/utils/theme/types'
+
+/** A token that follows another one's edit (set to `value`, usually a reference). */
+export interface LinkedToken {
+  path: string[]
+  value: string
+}
 
 const WORKSPACE_KEY = 'presetstudio:workspace'
 const LEGACY_THEME_KEY = 'presetstudio:theme'
@@ -233,18 +239,30 @@ export const useEditorStore = defineStore('editor', () => {
   const semanticOverrideCount = computed(() => countSemanticOverrides(theme.value.overrides))
 
   /** Sets a raw token override. Returns false if the value isn't a safe token value. */
-  function setToken(path: string[], value: string): boolean {
+  /**
+   * Sets a raw token override. Returns false if the value isn't a safe token value.
+   * `linked` tokens follow along in the same undo step, unless they already have their own
+   * value (e.g. SplitButton's wrapper radius follows Button's corner radius).
+   */
+  function setToken(path: string[], value: string, linked: LinkedToken[] = []): boolean {
     const safe = sanitizeTokenValue(value)
     if (safe === null) return false
     update((d) => {
       d.overrides = setPath(d.overrides, path, safe)
+      for (const link of linked) {
+        if (getPath(d.overrides, link.path) === undefined) d.overrides = setPath(d.overrides, link.path, link.value)
+      }
     }, `token:${path.join('.')}`)
     return true
   }
 
-  function resetToken(path: string[]) {
+  /** Removes a token override, and linked tokens that still only follow it. */
+  function resetToken(path: string[], linked: LinkedToken[] = []) {
     update((d) => {
       d.overrides = deletePath(d.overrides, path)
+      for (const link of linked) {
+        if (getPath(d.overrides, link.path) === link.value) d.overrides = deletePath(d.overrides, link.path)
+      }
     })
   }
 
@@ -264,6 +282,18 @@ export const useEditorStore = defineStore('editor', () => {
   function resetComponents(component: string | null = null) {
     update((d) => {
       d.overrides = deletePath(d.overrides, component ? ['components', component] : ['components'])
+      // Links that only followed this component (SplitButton's radius → Button's) go too.
+      const others = d.overrides.components
+      if (component && others && typeof others === 'object') {
+        const prefix = `{${component}.`
+        const walk = (node: TokenTree, path: string[]) => {
+          for (const [key, value] of Object.entries(node)) {
+            if (typeof value === 'object') walk(value, [...path, key])
+            else if (typeof value === 'string' && value.startsWith(prefix) && /^\{[^{}]+\}$/.test(value)) d.overrides = deletePath(d.overrides, [...path, key])
+          }
+        }
+        walk(others, ['components'])
+      }
     })
   }
 
