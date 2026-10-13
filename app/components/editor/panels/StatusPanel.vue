@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
+import { statusComponents } from '~/utils/theme/design'
 import { contrastRatio, parseColor } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
 import { createResolver } from '~/utils/theme/tokens'
@@ -15,6 +15,7 @@ import {
 } from '~/utils/theme/types'
 
 const store = useEditorStore()
+const usedBy = computed(() => (store.basePreset ? statusComponents(store.basePreset) : []))
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
 const META: Record<StatusKind, { label: string, hint: string }> = {
@@ -199,19 +200,9 @@ const preview = computed(() => {
       </Message>
     </section>
 
-    <EditorInspectorGroup
-      title="Fine-tune per component"
-      description="These set each severity everywhere. To give one component its own colors, open its visual editor."
-    >
-      <div class="flex flex-col">
-        <EditorStudioLink
-          v-for="name in STUDIO_COMPONENTS"
-          :key="name"
-          :component="name"
-          :text="COMPONENT_META[name]!.label"
-          variant="row"
-        />
-      </div>
-    </EditorInspectorGroup>
+    <EditorUsedBy
+      :components="usedBy"
+      text="To give one of them its own colors, open it."
+    />
   </div>
 </template>

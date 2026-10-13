@@ -253,6 +253,13 @@ function focusRingTokens(focus: FocusRingDesign, base: TokenTree): TokenTree {
   )
 }
 
+/** Components the status colors reach (those with severity tokens that use a status palette). */
+export function statusComponents(base: TokenTree): string[] {
+  const every = Object.fromEntries(STATUS_KINDS.map(kind => [kind, { kind: 'palette', name: 'violet' }])) as Record<StatusKind, StatusDesign>
+  const components = statusTokens(every, base).components
+  return components && typeof components === 'object' ? Object.keys(components).sort() : []
+}
+
 /** Light-mode surface.0 a quarter of the way from surface.50 to white, so white backgrounds pick up the surface tint. */
 function tintedWhite(tree: TokenTree): string | null {
   const value = createResolver(tree, 'light').resolve('surface-50')?.value

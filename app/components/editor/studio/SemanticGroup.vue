@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { COMPONENT_META, studioFor } from '~/utils/theme/components'
 import { semanticCell, semanticStudio, semanticTokens, semanticUsedBy } from '~/utils/theme/semantic-studio'
 import { SIZE_LABELS, controlPath, type StudioSection, type StudioSize } from '~/utils/theme/studio-controls'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -13,11 +12,7 @@ const store = useEditorStore()
 const studio = computed(() => semanticStudio(props.group)!)
 
 // --- Used by -------------------------------------------------------------------------
-const usedBy = computed(() => semanticUsedBy(store.descriptors, props.group)
-  .map(name => ({ name, label: COMPONENT_META[name]?.label ?? name, visual: !!studioFor(name) }))
-  .sort((a, b) => Number(b.visual) - Number(a.visual) || a.label.localeCompare(b.label)))
-const showAllUsers = ref(false)
-const USERS_SHOWN = 10
+const usedBy = computed(() => semanticUsedBy(store.descriptors, props.group))
 
 // --- Colors ----------------------------------------------------------------------------
 const grid = computed(() => {
@@ -82,36 +77,7 @@ watch(() => store.stagePick, async (pick) => {
 <template>
   <div class="flex flex-col gap-8">
     <!-- Where this group shows up -->
-    <div
-      v-if="usedBy.length"
-      class="flex flex-col gap-2 rounded-lg bg-surface-50 p-3 dark:bg-surface-800"
-    >
-      <p class="text-xs text-surface-600 dark:text-surface-300">
-        Used by <span class="font-semibold">{{ usedBy.length }} component{{ usedBy.length === 1 ? '' : 's' }}</span>. A change here reaches all of them.
-      </p>
-      <div class="flex flex-wrap gap-1.5">
-        <Button
-          v-for="user in showAllUsers ? usedBy : usedBy.slice(0, USERS_SHOWN)"
-          :key="user.name"
-          :label="user.label"
-          :icon="user.visual ? 'pi pi-sparkles' : undefined"
-          severity="secondary"
-          size="small"
-          outlined
-          class="!px-2 !py-0.5 !text-xs"
-          :aria-label="`Open ${user.label}`"
-          @click="store.openComponent(user.name)"
-        />
-        <Button
-          v-if="usedBy.length > USERS_SHOWN"
-          :label="showAllUsers ? 'Show fewer' : `+${usedBy.length - USERS_SHOWN} more`"
-          size="small"
-          text
-          class="!px-2 !py-0.5 !text-xs"
-          @click="showAllUsers = !showAllUsers"
-        />
-      </div>
-    </div>
+    <EditorUsedBy :components="usedBy" />
 
     <!-- Colors -->
     <div

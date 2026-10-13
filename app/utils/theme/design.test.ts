@@ -5,7 +5,7 @@ import Nora from '@primeuix/themes/nora'
 import { describe, expect, it } from 'vitest'
 import { buildEffectivePreset, buildPresetOverrides } from './build'
 import { CONTRAST_PAIRS, checkContrast } from './contrast'
-import { designToTokens, radiusScaleFrom, scaleLength } from './design'
+import { designToTokens, radiusScaleFrom, scaleLength, statusComponents } from './design'
 import { parseColor, rgbToOklch } from './color'
 import { MAX_SURFACE_CHROMA } from './palette'
 import { createResolver } from './tokens'
@@ -149,6 +149,10 @@ describe('designToTokens', () => {
       expect(r.resolve('button-success-background')!.value).toBe(before.resolve('button-success-background')!.value)
       expect(r.resolve('button-secondary-background')!.value).toBe(before.resolve('button-secondary-background')!.value)
     }
+  })
+
+  it('lists the components status colors reach', () => {
+    expect(statusComponents(aura)).toEqual(['badge', 'button', 'inlinemessage', 'message', 'tag', 'toast'])
   })
 
   it('generates a calm surface ramp from any color', () => {

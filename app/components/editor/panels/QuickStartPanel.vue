@@ -226,11 +226,18 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         />
         <span class="flex-1 text-left">Fine-tune colors, shape, density and focus</span>
       </Button>
-      <EditorStudioLink
-        component="button"
-        text="Customize buttons"
-        variant="row"
-      />
+      <Button
+        severity="secondary"
+        text
+        class="!justify-start"
+        @click="store.openComponentList()"
+      >
+        <i
+          class="pi pi-th-large"
+          aria-hidden="true"
+        />
+        <span class="flex-1 text-left">Customize components</span>
+      </Button>
     </div>
   </div>
 </template>

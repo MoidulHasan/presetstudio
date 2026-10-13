@@ -2,10 +2,12 @@
 import { useEditorStore } from '~/stores/editor'
 import { parseColor, rgbToOklch } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
-import { semanticCell, semanticStudio } from '~/utils/theme/semantic-studio'
+import { semanticCell, semanticStudio, semanticUsedBy } from '~/utils/theme/semantic-studio'
 import { BASE_PRESET_LABELS, PRIMITIVE_COLORS, type PaletteAlgorithm, type PrimaryDesign, type Shade } from '~/utils/theme/types'
 
 const store = useEditorStore()
+
+const usedBy = computed(() => semanticUsedBy(store.descriptors, 'primary'))
 
 const stateGrid = computed(() => {
   const config = semanticStudio('primary')
@@ -249,9 +251,6 @@ const usage = computed(() => {
       />
     </EditorInspectorGroup>
 
-    <EditorStudioLink
-      component="button"
-      text="Fine-tune how buttons use the primary color"
-    />
+    <EditorUsedBy :components="usedBy" />
   </div>
 </template>
