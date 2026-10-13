@@ -8,7 +8,9 @@ import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type Previ
 import { loadBasePreset } from '~/utils/theme/presets'
 import { describePreset } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
-import { COMPONENT_META, countComponentOverrides, isComponentName } from '~/utils/theme/components'
+import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponentName } from '~/utils/theme/components'
+import { clearRecolor, recolorOverrides, type PaletteChoice } from '~/utils/theme/recolor'
+import type { TokenDescriptor } from '~/utils/theme/schema'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
 import { deletePath, setPath } from '~/utils/theme/tree'
 import { sanitizeTokenValue } from '~/utils/theme/values'
@@ -62,6 +64,12 @@ interface EditorPrefs {
   inspect: boolean
   /** Below lg only one pane shows at a time. */
   pane: 'edit' | 'preview'
+  /** Show a component's stage (all variants and states) instead of the preview page. */
+  stage: boolean
+  /** Component editor view: visual controls or the full token list. */
+  componentView: 'design' | 'tokens'
+  /** While held: preview the open component without its edits. */
+  compare: boolean
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
 }
@@ -94,7 +102,7 @@ function loadWorkspace(): Workspace {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -109,6 +117,9 @@ function loadPrefs(): EditorPrefs {
       component: isComponentName(raw?.component) ? raw.component : fallback.component,
       inspect: fallback.inspect,
       pane: fallback.pane,
+      stage: typeof raw?.stage === 'boolean' ? raw.stage : fallback.stage,
+      componentView: raw?.componentView === 'tokens' ? 'tokens' : fallback.componentView,
+      compare: fallback.compare,
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
     }
   }
@@ -282,6 +293,35 @@ export const useEditorStore = defineStore('editor', () => {
     revealComponent(component)
   }
 
+  // --- Component studio ----------------------------------------------------------------
+
+  /** Component whose stage the preview shows, if any. */
+  const activeStage = computed(() => {
+    const component = prefs.value.component
+    return prefs.value.section === 'components' && prefs.value.stage && prefs.value.componentView === 'design'
+      && component && STUDIO_COMPONENTS.includes(component)
+      ? component
+      : null
+  })
+
+  /** Latest click on the stage ('root:danger:hover'); the id makes repeats observable. */
+  const stagePick = shallowRef<{ target: string, id: number } | null>(null)
+  let pickId = 0
+  function pickOnStage(target: string) {
+    stagePick.value = { target, id: ++pickId }
+  }
+
+  /** Recolors a group of a component's tokens (e.g. Button 'info') with a palette, or resets it (null). */
+  function recolorGroup(component: string, group: string, tokens: TokenDescriptor[], choice: PaletteChoice | null) {
+    const r = resolvers.value
+    if (!r) return
+    update((d) => {
+      d.overrides = choice
+        ? recolorOverrides(d.overrides, tokens, r, component, group, choice)
+        : clearRecolor(d.overrides, tokens, component, group)
+    }, choice?.kind === 'custom' ? `recolor:${component}:${group}` : null)
+  }
+
   const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
 
   function resetDesignSection(section: DesignSection) {
@@ -368,6 +408,10 @@ export const useEditorStore = defineStore('editor', () => {
     revealComponent,
     reportRevealed,
     openComponent,
+    activeStage,
+    stagePick,
+    pickOnStage,
+    recolorGroup,
     setToken,
     resetToken,
     resetSemantic,

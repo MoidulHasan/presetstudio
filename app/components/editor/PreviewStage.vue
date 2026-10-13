@@ -9,7 +9,9 @@ const store = useEditorStore()
 
 const VIEWPORT_WIDTH: Record<PreviewViewport, string | null> = { full: null, tablet: '768px', mobile: '390px' }
 
-const panes = computed<ColorScheme[]>(() => (store.prefs.split ? ['light', 'dark'] : [store.prefs.colorScheme]))
+// A component stage shows light and dark itself, so it needs one pane.
+const split = computed(() => store.prefs.split && !store.activeStage)
+const panes = computed<ColorScheme[]>(() => (split.value ? ['light', 'dark'] : [store.prefs.colorScheme]))
 const width = computed(() => VIEWPORT_WIDTH[store.prefs.viewport])
 
 // Side by side, both panes scroll together so the same component is always compared.
@@ -21,7 +23,7 @@ function setFrame(scheme: ColorScheme, handle: unknown) {
 }
 
 function onScroll(from: ColorScheme, position: ScrollPosition) {
-  if (!store.prefs.split) return
+  if (!split.value) return
   frames[from === 'light' ? 'dark' : 'light']?.scrollTo(position)
 }
 </script>
@@ -29,7 +31,7 @@ function onScroll(from: ColorScheme, position: ScrollPosition) {
 <template>
   <div
     class="grid min-h-0 flex-1 gap-px bg-surface-200 dark:bg-surface-800"
-    :class="store.prefs.split ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'"
+    :class="split ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'"
   >
     <div
       v-for="scheme in panes"
@@ -49,7 +51,7 @@ function onScroll(from: ColorScheme, position: ScrollPosition) {
             :ref="handle => setFrame(scheme, handle)"
             :color-scheme="scheme"
             :label="`${scheme} mode preview`"
-            :hide-scrollbar="store.prefs.split && scheme === 'light'"
+            :hide-scrollbar="split && scheme === 'light'"
             @scroll="position => onScroll(scheme, position)"
           />
         </div>

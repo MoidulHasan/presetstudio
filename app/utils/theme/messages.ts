@@ -26,6 +26,8 @@ export interface PreviewView {
   showFocus: boolean
   /** Inspect mode: hovering highlights a component, clicking reports it instead of interacting. */
   inspect: boolean
+  /** Component stage to show instead of the page (every variant and state, light and dark). */
+  stage: string | null
 }
 
 export type ApplyMessage = {
@@ -35,7 +37,7 @@ export type ApplyMessage = {
   colorScheme: ColorScheme
 } & PreviewView
 
-const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false, inspect: false }
+const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false, inspect: false, stage: null }
 
 /** Scroll position of a preview (side-by-side panes scroll together). */
 export interface ScrollPosition {
@@ -54,7 +56,11 @@ export type ScrollMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:sc
 export type InspectMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:inspect', component: string }
 /** Whether a reveal found the component on the current preview page, and the components it's built from. */
 export type RevealedMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:revealed', component: string, found: boolean, uses: string[] }
-export type PreviewToEditorMessage = ReadyMessage | ScrollMessage | InspectMessage | RevealedMessage
+/** Something on the component stage was clicked, e.g. 'root:danger:hover' (style, variant, state). */
+export type StagePickMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:stage-pick', target: string }
+export type PreviewToEditorMessage = ReadyMessage | ScrollMessage | InspectMessage | RevealedMessage | StagePickMessage
+
+const STAGE_TARGET_RE = /^[a-z]+(?::[a-z]+){0,3}$/
 
 const MAX_SCROLL = 1_000_000
 
@@ -90,6 +96,8 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
     if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean' || typeof event.data.inspect !== 'boolean') return null
+    const stage = event.data.stage
+    if (stage !== null && !isComponentName(stage)) return null
     return {
       channel: MESSAGE_CHANNEL,
       type: 'theme:apply',
@@ -100,6 +108,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       hideScrollbar: event.data.hideScrollbar,
       showFocus: event.data.showFocus,
       inspect: event.data.inspect,
+      stage,
     }
   }
   if (event.data.type === 'preview:scroll-to') {
@@ -126,6 +135,9 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   if (event.data.type === 'preview:revealed' && isComponentName(event.data.component) && typeof event.data.found === 'boolean') {
     const uses = Array.isArray(event.data.uses) ? event.data.uses.filter(isComponentName).slice(0, 20) : []
     return { channel: MESSAGE_CHANNEL, type: 'preview:revealed', component: event.data.component, found: event.data.found, uses }
+  }
+  if (event.data.type === 'preview:stage-pick' && typeof event.data.target === 'string' && event.data.target.length <= 60 && STAGE_TARGET_RE.test(event.data.target)) {
+    return { channel: MESSAGE_CHANNEL, type: 'preview:stage-pick', target: event.data.target }
   }
   return null
 }
@@ -164,4 +176,8 @@ export function createInspectMessage(component: string): InspectMessage {
 
 export function createRevealedMessage(component: string, found: boolean, uses: string[] = []): RevealedMessage {
   return { channel: MESSAGE_CHANNEL, type: 'preview:revealed', component, found, uses }
+}
+
+export function createStagePickMessage(target: string): StagePickMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:stage-pick', target }
 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore, type PreviewViewport } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
+import { COMPONENT_META } from '~/utils/theme/components'
 import { PREVIEW_CATEGORIES, type PreviewTemplate } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
@@ -39,94 +40,117 @@ const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: stri
 
 const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_META[value] }))
 
+const stageMeta = computed(() => (store.activeStage ? COMPONENT_META[store.activeStage] ?? null : null))
+
 const currentTemplate = computed(() => templates.find(t => t.value === store.prefs.template)!)
 </script>
 
 <template>
   <div class="flex flex-wrap items-center gap-2 border-b border-surface-200 bg-surface-0 px-3 py-2 dark:border-surface-800 dark:bg-surface-900">
-    <Select
-      v-model="store.prefs.template"
-      :options="templates"
-      option-label="label"
-      option-value="value"
-      aria-label="Preview page"
-      size="small"
-      class="w-40 sm:w-44"
-    >
-      <template #value>
-        <span class="flex items-center gap-2">
-          <i
-            :class="currentTemplate.icon"
-            aria-hidden="true"
-          />
-          {{ currentTemplate.label }}
-        </span>
-      </template>
-      <template #option="{ option }">
-        <span class="flex items-center gap-2">
-          <i
-            :class="option.icon"
-            aria-hidden="true"
-          />
-          {{ option.label }}
-        </span>
-      </template>
-    </Select>
-
-    <Select
-      v-if="store.prefs.template === 'components'"
-      v-model="store.prefs.category"
-      :options="categoryOptions"
-      option-label="label"
-      option-value="value"
-      aria-label="Component category"
-      size="small"
-      class="w-36 sm:w-40"
-    >
-      <template #value>
-        <span class="flex items-center gap-2">
-          <i
-            :class="CATEGORY_META[store.prefs.category].icon"
-            aria-hidden="true"
-          />
-          {{ CATEGORY_META[store.prefs.category].label }}
-        </span>
-      </template>
-      <template #option="{ option }">
-        <span class="flex w-full items-center gap-2">
-          <i
-            :class="option.icon"
-            aria-hidden="true"
-          />
-          <span class="flex-1">{{ option.label }}</span>
-          <Badge
-            :value="option.count"
-            severity="secondary"
-            size="small"
-          />
-        </span>
-      </template>
-    </Select>
-
-    <!-- Phones are already narrow; the width presets only matter on larger screens. -->
-    <SelectButton
-      v-model="store.prefs.viewport"
-      :options="viewportOptions"
-      option-label="label"
-      option-value="value"
-      :allow-empty="false"
-      aria-label="Preview width"
-      size="small"
-      class="!hidden md:!inline-flex"
-    >
-      <template #option="{ option }">
+    <!-- A component stage replaces the page; it shows light and dark itself. -->
+    <template v-if="stageMeta">
+      <span class="flex items-center gap-2 px-1 text-sm font-medium">
         <i
-          v-tooltip.bottom="option.label"
-          :class="option.icon"
-          :aria-label="option.label"
+          class="pi pi-box text-surface-500"
+          aria-hidden="true"
         />
-      </template>
-    </SelectButton>
+        {{ stageMeta.label }} stage
+      </span>
+      <Button
+        v-tooltip.bottom="'Show the preview page instead of the stage'"
+        label="Show page"
+        icon="pi pi-external-link"
+        severity="secondary"
+        size="small"
+        text
+        @click="store.prefs.stage = false"
+      />
+    </template>
+    <template v-else>
+      <Select
+        v-model="store.prefs.template"
+        :options="templates"
+        option-label="label"
+        option-value="value"
+        aria-label="Preview page"
+        size="small"
+        class="w-40 sm:w-44"
+      >
+        <template #value>
+          <span class="flex items-center gap-2">
+            <i
+              :class="currentTemplate.icon"
+              aria-hidden="true"
+            />
+            {{ currentTemplate.label }}
+          </span>
+        </template>
+        <template #option="{ option }">
+          <span class="flex items-center gap-2">
+            <i
+              :class="option.icon"
+              aria-hidden="true"
+            />
+            {{ option.label }}
+          </span>
+        </template>
+      </Select>
+
+      <Select
+        v-if="store.prefs.template === 'components'"
+        v-model="store.prefs.category"
+        :options="categoryOptions"
+        option-label="label"
+        option-value="value"
+        aria-label="Component category"
+        size="small"
+        class="w-36 sm:w-40"
+      >
+        <template #value>
+          <span class="flex items-center gap-2">
+            <i
+              :class="CATEGORY_META[store.prefs.category].icon"
+              aria-hidden="true"
+            />
+            {{ CATEGORY_META[store.prefs.category].label }}
+          </span>
+        </template>
+        <template #option="{ option }">
+          <span class="flex w-full items-center gap-2">
+            <i
+              :class="option.icon"
+              aria-hidden="true"
+            />
+            <span class="flex-1">{{ option.label }}</span>
+            <Badge
+              :value="option.count"
+              severity="secondary"
+              size="small"
+            />
+          </span>
+        </template>
+      </Select>
+
+      <!-- Phones are already narrow; the width presets only matter on larger screens. -->
+      <SelectButton
+        v-model="store.prefs.viewport"
+        :options="viewportOptions"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        aria-label="Preview width"
+        size="small"
+        class="!hidden md:!inline-flex"
+      >
+        <template #option="{ option }">
+          <i
+            v-tooltip.bottom="option.label"
+            :class="option.icon"
+            :aria-label="option.label"
+          />
+        </template>
+      </SelectButton>
+    </template>
 
     <div class="ml-auto flex items-center gap-2">
       <ToggleButton
@@ -150,6 +174,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         aria-label="Show focus states"
       />
       <SelectButton
+        v-if="!stageMeta"
         v-model="mode"
         :options="modeOptions"
         option-label="label"

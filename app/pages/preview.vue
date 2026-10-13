@@ -7,12 +7,12 @@ import {
   createReadyMessage,
   createRevealedMessage,
   createScrollMessage,
+  createStagePickMessage,
   parseEditorMessage,
   type PreviewCategory,
   type PreviewTemplate,
   type ScrollPosition,
 } from '~/utils/theme/messages'
-import { forcedFocusCss } from '~/utils/theme/focus-preview'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -37,7 +37,8 @@ async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
   // usePreset (not updatePreset) so switching base presets or removing overrides
   // never leaves stale tokens behind.
   usePreset(definePreset(base, buildPresetOverrides(state, base as unknown as TokenTree) as Preset))
-  document.documentElement.classList.toggle('ps-dark', colorScheme === 'dark')
+  // The stage shows light and dark side by side itself.
+  document.documentElement.classList.toggle('ps-dark', colorScheme === 'dark' && !stage.value)
   themed.value = true
 }
 
@@ -65,52 +66,18 @@ function scrollTo(position: ScrollPosition) {
   window.scrollTo({ left: position.x, top: position.y, behavior: 'instant' })
 }
 
-// --- Focus states ----------------------------------------------------------------
-// Focus styles only apply to the focused element. To show every component's focus ring
-// at once, copies of the :focus / :focus-visible rules are scoped to a class on <html>,
-// rebuilt whenever component styles are added or the theme changes.
-const FOCUS_CLASS = 'ps-show-focus'
-let focusStyle: HTMLStyleElement | null = null
-let focusObserver: MutationObserver | null = null
-let focusTimer: ReturnType<typeof setTimeout> | undefined
-
-function buildFocusStyles() {
-  if (!focusStyle) return
-  const css = Array.from(document.querySelectorAll('style'))
-    .filter(style => style !== focusStyle)
-    .map(style => forcedFocusCss(style.textContent ?? '', `.${FOCUS_CLASS}`))
-    .filter(Boolean)
-    .join('\n')
-  if (focusStyle.textContent !== css) focusStyle.textContent = css
-}
-
-function setShowFocus(on: boolean) {
-  document.documentElement.classList.toggle(FOCUS_CLASS, on)
-  if (on && !focusStyle) {
-    focusStyle = document.createElement('style')
-    focusStyle.dataset.psFocusStates = ''
-    document.head.appendChild(focusStyle)
-    focusObserver = new MutationObserver((records) => {
-      if (records.every(r => r.target === focusStyle)) return
-      clearTimeout(focusTimer)
-      focusTimer = setTimeout(buildFocusStyles, 50)
-    })
-    focusObserver.observe(document.head, { childList: true, subtree: true, characterData: true })
-    buildFocusStyles()
-  }
-  else if (!on && focusStyle) {
-    focusObserver?.disconnect()
-    focusStyle.remove()
-    focusStyle = null
-    focusObserver = null
-    clearTimeout(focusTimer)
-  }
-}
+// --- Forced states and scheme scopes (focus-states toggle, component stage) --------
+const forced = usePreviewForcedStyles()
+const stage = ref<string | null>(null)
 
 // --- Component inspection ----------------------------------------------------------
 const inspector = usePreviewInspector((component) => {
   window.parent.postMessage(createInspectMessage(component), window.location.origin)
 })
+
+function sendStagePick(target: string) {
+  window.parent.postMessage(createStagePickMessage(target), window.location.origin)
+}
 
 async function reveal(component: string) {
   const { found, uses } = await inspector.reveal(component)
@@ -126,7 +93,8 @@ function onMessage(event: MessageEvent) {
   template.value = message.template
   category.value = message.category
   document.documentElement.classList.toggle('ps-no-scrollbar', message.hideScrollbar)
-  setShowFocus(message.showFocus)
+  stage.value = message.stage
+  forced.update({ focus: message.showFocus, stage: !!message.stage })
   inspector.setInspect(message.inspect)
   void applyTheme(message.state, message.colorScheme)
 }
@@ -145,7 +113,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
   window.removeEventListener('scroll', onScroll)
   cancelAnimationFrame(scrollFrame)
-  setShowFocus(false)
+  forced.dispose()
   inspector.dispose()
 })
 </script>
@@ -166,7 +134,11 @@ onBeforeUnmount(() => {
         class="underline"
       >Preset Studio editor</NuxtLink> and is meant to be shown inside it.
     </Message>
-    <PreviewDashboard v-if="template === 'dashboard'" />
+    <PreviewStageButton
+      v-if="stage === 'button'"
+      @pick="target => sendStagePick(target)"
+    />
+    <PreviewDashboard v-else-if="template === 'dashboard'" />
     <PreviewForm v-else-if="template === 'form'" />
     <PreviewSettings v-else-if="template === 'settings'" />
     <PreviewGallery

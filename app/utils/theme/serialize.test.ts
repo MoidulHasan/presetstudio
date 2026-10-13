@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, parseEditorMessage, parsePreviewMessage } from './messages'
+import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, createStagePickMessage, parseEditorMessage, parsePreviewMessage } from './messages'
 import { generateClassicPalette, normalizeHex } from './palette'
 import {
   createWorkspace,
@@ -151,6 +151,10 @@ describe('component inspect messages', () => {
     expect(parsePreviewMessage({ origin, data: { ...createInspectMessage('button'), component: 'x"><img>' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: { ...createRevealedMessage('button', true), found: 'yes' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...createApplyMessage(createDefaultThemeState(), 'light'), inspect: 1 } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: createApplyMessage(createDefaultThemeState(), 'light', { stage: 'button' }) }, origin)).toMatchObject({ stage: 'button' })
+    expect(parseEditorMessage({ origin, data: createApplyMessage(createDefaultThemeState(), 'light', { stage: 'nope' }) }, origin)).toBeNull()
+    expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:danger:hover') }, origin)).toEqual(createStagePickMessage('root:danger:hover'))
+    expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:<b>') }, origin)).toBeNull()
   })
 })
 

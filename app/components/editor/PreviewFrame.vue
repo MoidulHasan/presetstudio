@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { withoutComponent } from '~/utils/theme/recolor'
 import { createApplyMessage, createRevealMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
@@ -17,12 +18,18 @@ function sendState() {
   // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
-    target.postMessage(createApplyMessage(store.theme, props.colorScheme, {
+    // While Compare is held, show the open component as the preset (and design settings) style it.
+    const component = store.prefs.component
+    const state = store.prefs.compare && component
+      ? { ...store.theme, overrides: withoutComponent(store.theme.overrides, component) }
+      : store.theme
+    target.postMessage(createApplyMessage(state, props.colorScheme, {
       template: store.prefs.template,
       category: store.prefs.category,
       hideScrollbar: props.hideScrollbar,
       showFocus: store.prefs.showFocus,
       inspect: store.prefs.inspect,
+      stage: store.activeStage,
     }), window.location.origin)
   })
 }
@@ -43,6 +50,10 @@ function onMessage(event: MessageEvent) {
     store.prefs.inspect = false
     store.openComponent(message.component)
     // On narrow screens the picked component's tokens are in the other pane.
+    store.prefs.pane = 'edit'
+  }
+  else if (message?.type === 'preview:stage-pick') {
+    store.pickOnStage(message.target)
     store.prefs.pane = 'edit'
   }
   else if (message?.type === 'preview:revealed') {
@@ -70,7 +81,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus, () => store.prefs.inspect], sendState)
+watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus, () => store.prefs.inspect, () => store.activeStage, () => store.prefs.compare], sendState)
 </script>
 
 <template>

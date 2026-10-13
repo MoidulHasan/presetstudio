@@ -120,6 +120,9 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
 
 export const COMPONENT_NAMES = Object.keys(COMPONENT_META)
 
+/** Components with a visual editor and stage (the rest use the token list). */
+export const STUDIO_COMPONENTS: readonly string[] = ['button']
+
 /** Category order of the PrimeVue docs. */
 export const COMPONENT_CATEGORIES: readonly GalleryCategory[] = ['form', 'button', 'data', 'panel', 'overlay', 'file', 'menu', 'messages', 'media', 'misc']
 

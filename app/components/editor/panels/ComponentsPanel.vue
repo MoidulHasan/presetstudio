@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, groupComponentTokens, tokenLabel } from '~/utils/theme/components'
+import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, groupComponentTokens, tokenLabel } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { matchesQuery, tokenSource } from '~/utils/theme/semantic'
 import type { ColorScheme } from '~/utils/theme/types'
@@ -131,6 +131,16 @@ function back() {
 function toggle(token: TokenDescriptor) {
   expanded.value = expanded.value === keyOf(token) ? null : keyOf(token)
 }
+
+/** Components with a visual editor default to it; the token list is always one click away. */
+const hasStudio = computed(() => !!component.value && STUDIO_COMPONENTS.includes(component.value))
+const designView = computed(() => hasStudio.value && store.prefs.componentView === 'design')
+
+// Compare: while held, the preview shows the component without this theme's edits to it.
+function compare(on: boolean) {
+  store.prefs.compare = on
+}
+onBeforeUnmount(() => compare(false))
 
 const revealedHere = computed(() => (store.revealed?.component === component.value ? store.revealed : null))
 
@@ -278,7 +288,40 @@ function showInGallery() {
           @click="showInPreview"
         />
       </div>
+      <div
+        v-if="hasStudio"
+        class="flex items-center gap-2"
+      >
+        <SelectButton
+          :model-value="store.prefs.componentView"
+          :options="[{ value: 'design', label: 'Design' }, { value: 'tokens', label: 'All tokens' }]"
+          option-label="label"
+          option-value="value"
+          :allow-empty="false"
+          aria-label="Component editor view"
+          size="small"
+          class="flex-1"
+          :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+          @update:model-value="v => (store.prefs.componentView = v)"
+        />
+        <Button
+          v-if="designView"
+          v-tooltip.bottom="'Hold to see the preset without your Button changes'"
+          label="Compare"
+          icon="pi pi-clone"
+          severity="secondary"
+          size="small"
+          outlined
+          :class="store.prefs.compare ? '!bg-surface-200 dark:!bg-surface-700' : ''"
+          @pointerdown="compare(true)"
+          @pointerup="compare(false)"
+          @pointerleave="compare(false)"
+          @keydown.space.prevent="compare(true)"
+          @keyup.space="compare(false)"
+        />
+      </div>
       <SelectButton
+        v-if="!designView"
         v-model="scheme"
         :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
         option-label="label"
@@ -289,7 +332,7 @@ function showInGallery() {
         class="w-full"
         :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
       />
-      <IconField>
+      <IconField v-if="!designView">
         <InputIcon class="pi pi-search" />
         <InputText
           v-model="query"
@@ -299,7 +342,10 @@ function showInGallery() {
           class="w-full"
         />
       </IconField>
-      <div class="flex items-center justify-between gap-2">
+      <div
+        v-if="!designView"
+        class="flex items-center justify-between gap-2"
+      >
         <SelectButton
           v-model="show"
           :options="[{ value: 'all', label: 'All' }, { value: 'custom', label: `Custom (${store.componentOverrideCounts[component] ?? 0})` }]"
@@ -370,8 +416,25 @@ function showInGallery() {
       </div>
     </div>
 
+    <template v-if="designView">
+      <p
+        v-if="!store.prefs.stage"
+        class="flex flex-wrap items-center gap-x-2 text-xs text-surface-500"
+      >
+        The preview shows the page, not the {{ meta.label }} stage.
+        <Button
+          label="Show the stage"
+          size="small"
+          text
+          class="!p-0"
+          @click="store.prefs.stage = true"
+        />
+      </p>
+      <EditorStudioButton v-if="component === 'button'" />
+    </template>
+
     <p
-      v-if="!groups.length"
+      v-else-if="!groups.length"
       class="py-8 text-center text-sm text-surface-500"
     >
       {{ show === 'custom' && !query ? `No custom ${meta.label} tokens yet. Expand a token to change it.` : 'No tokens match your search.' }}
@@ -419,7 +482,10 @@ function showInGallery() {
       </AccordionPanel>
     </Accordion>
 
-    <p class="text-xs text-surface-500">
+    <p
+      v-if="!designView"
+      class="text-xs text-surface-500"
+    >
       <span class="mr-1 inline-block size-2 rounded-full bg-surface-900 align-middle dark:bg-surface-0" /> custom value
       <span class="ml-3 mr-1 inline-block size-2 rounded-full border border-surface-500 align-middle" /> set by a design section
     </p>
