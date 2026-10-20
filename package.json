@@ -20,7 +20,7 @@
     "@primeuix/themes": "2.0.3",
     "@primevue/nuxt-module": "4.5.5",
     "@tailwindcss/vite": "4.3.3",
-    "nuxt": "^4.6.1",
+    "nuxt": "^4.6.2",
     "pinia": "4.0.3",
     "primeicons": "7.0.0",
     "primevue": "4.5.5",
