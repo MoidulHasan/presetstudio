@@ -16,7 +16,7 @@ const severityOf = (s: (typeof SEVERITIES)[number]) => (s === 'primary' ? undefi
 <template>
   <PreviewStageSchemes intro="Every severity in all four sizes, as a dot and on an icon. Click a badge to edit it.">
     <template #default>
-      <div class="grid grid-cols-[5.5rem_repeat(6,max-content)] items-center gap-x-5 gap-y-4">
+      <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[5.5rem_repeat(6,max-content)] items-center gap-x-5 gap-y-4">
         <span />
         <span
           v-for="size in SIZES"

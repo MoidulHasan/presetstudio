@@ -31,7 +31,7 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
     stacked
   >
     <template #default>
-      <div class="grid grid-cols-[5.5rem_repeat(5,minmax(0,1fr))] items-center gap-x-3 gap-y-4">
+      <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[5.5rem_repeat(5,minmax(5.5rem,1fr))] items-center gap-x-3 gap-y-4">
         <span />
         <span
           v-for="state in STATES"
@@ -126,7 +126,7 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
         </div>
       </div>
 
-      <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-end gap-x-3 gap-y-2">
+      <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[5.5rem_repeat(4,minmax(6rem,1fr))] items-end gap-x-3 gap-y-2">
         <span />
         <span
           v-for="label in ['Empty', 'Focused', 'Floated', 'Invalid']"
@@ -161,15 +161,18 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
         <span class="w-[5.5rem] text-xs text-muted-color">Sizes</span>
         <InputText
           placeholder="Small"
+          class="max-w-full"
           size="small"
           tabindex="-1"
         />
         <InputText
           placeholder="Normal"
+          class="max-w-full"
           tabindex="-1"
         />
         <InputText
           placeholder="Large"
+          class="max-w-full"
           size="large"
           tabindex="-1"
         />

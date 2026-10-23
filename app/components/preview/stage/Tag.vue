@@ -9,7 +9,7 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 <template>
   <PreviewStageSchemes intro="Every severity plain, as a pill and with an icon. Click a tag to edit it.">
     <template #default>
-      <div class="grid grid-cols-[5.5rem_repeat(3,max-content)] items-center gap-x-6 gap-y-4">
+      <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[5.5rem_repeat(3,max-content)] items-center gap-x-6 gap-y-4">
         <span />
         <span class="text-[11px] text-muted-color">Plain</span>
         <span class="text-[11px] text-muted-color">Pill</span>

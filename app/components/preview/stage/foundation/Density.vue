@@ -21,15 +21,18 @@ const MENU = [{ label: 'New', icon: 'pi pi-plus' }, { label: 'Search', icon: 'pi
         <div class="flex flex-wrap items-center gap-3">
           <InputText
             placeholder="Small"
+            class="max-w-full"
             size="small"
             tabindex="-1"
           />
           <InputText
             placeholder="Normal"
+            class="max-w-full"
             tabindex="-1"
           />
           <InputText
             placeholder="Large"
+            class="max-w-full"
             size="large"
             tabindex="-1"
           />

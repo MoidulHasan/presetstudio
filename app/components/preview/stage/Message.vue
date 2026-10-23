@@ -26,7 +26,7 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
           {{ style.label }}
         </h3>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[repeat(2,minmax(13rem,1fr))] gap-3">
           <template
             v-for="severity in SEVERITIES"
             :key="severity"

@@ -14,7 +14,7 @@ const ROWS = [
 <template>
   <PreviewStageSchemes intro="Each severity across buttons, tags, badges and messages. Click a row to edit that severity.">
     <template #default>
-      <div class="grid grid-cols-[5rem_auto_auto_auto_minmax(0,1fr)] items-center gap-x-4 gap-y-3">
+      <div class="-m-2 overflow-x-auto p-2 grid grid-cols-[5rem_auto_auto_auto_minmax(14rem,1fr)] items-center gap-x-4 gap-y-3">
         <template
           v-for="row in ROWS"
           :key="row.kind"
