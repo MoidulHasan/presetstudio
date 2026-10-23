@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { CATEGORY_META } from '~/utils/preview-categories'
+import { partsStudio } from '~/utils/theme/parts-studio'
 import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS, groupComponentTokens, studioFor, tokenLabel } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { matchesQuery, tokenSource } from '~/utils/theme/semantic'
@@ -85,6 +86,7 @@ const STUDIO_SUBTITLES: Record<string, string> = {
   toast: 'Severities with summary, detail and close button',
   tag: 'Severities, plain and pill',
   badge: 'Severities in four sizes, plus dots',
+  datatable: 'Column headers, rows, header and footer',
 }
 
 function visualHint(name: string): string {
@@ -506,6 +508,11 @@ function showInGallery() {
 
     <template v-if="designView">
       <EditorStudioButton v-if="component === 'button'" />
+      <EditorStudioParts
+        v-else-if="partsStudio(component)"
+        :key="component"
+        :component="component"
+      />
       <EditorStudioSeverity
         v-else
         :key="component"

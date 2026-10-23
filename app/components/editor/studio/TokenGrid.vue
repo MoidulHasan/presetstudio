@@ -12,7 +12,11 @@ const props = defineProps<{
   title: string
 }>()
 
+const emit = defineEmits<{ select: [] }>()
+
 const selected = ref<{ row: string, column: string } | null>(null)
+// Several grids in one panel (parts studio) keep a single selection: tell the panel.
+watch(selected, value => value && emit('select'))
 const highlight = ref<string | null>(null)
 const root = ref<HTMLElement | null>(null)
 
@@ -49,7 +53,11 @@ async function focus(row: string, column?: string) {
   }, 1600)
 }
 
-defineExpose({ focus })
+function clear() {
+  selected.value = null
+}
+
+defineExpose({ focus, clear })
 </script>
 
 <template>
@@ -71,8 +79,8 @@ defineExpose({ focus })
       <span
         v-for="column in columns"
         :key="column.key"
-        class="truncate text-center text-[11px] font-medium"
-        :class="highlight === column.key ? 'text-primary' : 'text-surface-500'"
+        class="min-w-0 text-center text-[11px] font-medium leading-tight"
+        :class="[highlight === column.key ? 'text-primary' : 'text-surface-500', column.label.includes(' ') ? '' : 'truncate']"
         :title="column.label"
       >{{ column.label }}</span>
       <template

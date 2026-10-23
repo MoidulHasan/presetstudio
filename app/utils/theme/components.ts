@@ -121,7 +121,7 @@ export const COMPONENT_META: Record<string, ComponentMeta> = {
 export const COMPONENT_NAMES = Object.keys(COMPONENT_META)
 
 /** Components with a visual editor and stage (the rest use the token list). */
-export const STUDIO_COMPONENTS: readonly string[] = ['button', 'message', 'toast', 'tag', 'badge']
+export const STUDIO_COMPONENTS: readonly string[] = ['button', 'message', 'toast', 'tag', 'badge', 'datatable']
 
 /** Icons of the visual editors (sidebar, component list). */
 export const STUDIO_ICONS: Readonly<Record<string, string>> = {
@@ -130,6 +130,7 @@ export const STUDIO_ICONS: Readonly<Record<string, string>> = {
   toast: 'pi pi-bell',
   tag: 'pi pi-tag',
   badge: 'pi pi-circle-fill',
+  datatable: 'pi pi-table',
 }
 
 /**
