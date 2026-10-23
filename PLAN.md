@@ -4,7 +4,7 @@ Hand-off for continuing the work in a new session (e.g. a Claude Code cloud sess
 Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
 This file is the task list plus everything a fresh session needs to know that isn't in the code.
 
-Last updated: 2026-10-23 (cloud session: P0 checks, P1.1–P1.4).
+Last updated: 2026-10-23 (cloud session: P0 checks, P1 done).
 
 ---
 
@@ -187,7 +187,10 @@ Done when production runs the current editor.
 - Approach: in the focus rewrite also handle `.p-focus` on component roots (e.g. `.p-select.p-focus` → `.ps-show-focus .p-select`), but not on list options/menu items (`.p-*-option.p-focus`, `.p-*-item.p-focus`): those would highlight every option. Add tests next to the existing ones.
 - Done when: Focus ring → In context shows rings on selects too.
 
-**P1.5 Inspect hover highlight**
+**P1.5 Inspect hover highlight** ✅ (`fix/inspect-hover`)
+- Verified with real pointer moves (Playwright): box and label match the hovered component,
+  single and side by side. Fixed: on scroll/resize the pointer position is re-hit-tested
+  (`elementFromPoint`), and leaving the preview (`pointerout` with no `relatedTarget`) clears the box.
 - Where: `app/composables/usePreviewInspector.ts`.
 - Clicking works; hovering wasn't verifiable with automation. Manually verify the hover box and label follow the pointer, including in side-by-side mode and while scrolling; fix if not.
 
