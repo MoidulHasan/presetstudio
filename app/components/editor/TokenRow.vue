@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { parseColor } from '~/utils/theme/color'
-import { normalizeHex } from '~/utils/theme/palette'
+import { displayColor } from '~/utils/theme/color'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 import { hasPath } from '~/utils/theme/tree'
@@ -20,7 +19,19 @@ const raw = computed(() => String(resolved.value?.raw ?? props.token.defaultValu
 const source = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens))
 const hasDesignValue = computed(() => hasPath(store.designTokens, props.token.path))
 const isColor = computed(() => props.token.kind === 'color')
-const swatch = computed(() => (isColor.value && resolved.value && parseColor(resolved.value.value) ? resolved.value.value : null))
+// Translucent colors (tints like `color-mix(…, transparent 96%)`) are shown as they look on the
+// scheme's content background, so the swatch and picker never fall back to black.
+const display = computed(() => {
+  if (!isColor.value || !resolved.value) return null
+  return displayColor(resolved.value.value, resolver.value?.resolve('content-background')?.value ?? '')
+})
+const swatch = computed(() => (display.value && display.value.alpha > 0 ? display.value.hex : null))
+const mixed = computed(() => !!display.value && (display.value.alpha < 1 || /color-mix\(/i.test(resolved.value?.value ?? '')))
+const mixedHint = computed(() => {
+  const alpha = display.value?.alpha ?? 1
+  const opacity = alpha < 1 ? `${Math.round(alpha * 100)}% opacity, shown on the background. ` : ''
+  return `Mixed color: ${opacity}Picking a color replaces it with a solid one.`
+})
 
 const SOURCE_LABEL = { base: 'Base preset', design: 'Design setting', custom: 'Custom' } as const
 
@@ -65,7 +76,8 @@ function complete(event: { query: string }) {
 }
 
 const pickerColor = computed({
-  get: () => (swatch.value ? (normalizeHex(swatch.value) ?? '#000000').slice(1) : '000000'),
+  // The picker only writes when the user changes it, so a mixed value stays until then.
+  get: () => (display.value?.hex ?? '#000000').slice(1),
   set: (value: string) => {
     draft.value = `#${value}`
     store.setToken(props.token.path, draft.value)
@@ -150,10 +162,21 @@ const inputId = useId()
       </div>
 
       <div class="flex flex-col gap-1">
-        <label
-          :for="inputId"
-          class="text-xs font-medium"
-        >Value or reference</label>
+        <div class="flex items-center gap-2">
+          <label
+            :for="inputId"
+            class="text-xs font-medium"
+          >Value or reference</label>
+          <Tag
+            v-if="mixed"
+            v-tooltip.top="mixedHint"
+            value="mixed"
+            severity="secondary"
+            class="shrink-0 !px-1.5 !py-0 !text-[10px]"
+            tabindex="0"
+            :aria-label="mixedHint"
+          />
+        </div>
         <div class="flex items-center gap-2">
           <ColorPicker
             v-if="isColor"

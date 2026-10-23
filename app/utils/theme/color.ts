@@ -70,6 +70,20 @@ export function composite(top: Rgba, bottom: Rgba): Rgba {
   }
 }
 
+/**
+ * How a token color looks on screen, as an opaque hex: translucent values (rgba, `color-mix` with
+ * `transparent`) are composited over `backdrop` (the surface they usually sit on). `alpha` is the
+ * value's own opacity, so callers can tell a solid color from a tint.
+ */
+export function displayColor(value: string, backdrop: string): { hex: string, alpha: number } | null {
+  const color = parseColor(value)
+  if (!color) return null
+  if (color.a >= 1) return { hex: toHex(color), alpha: 1 }
+  const base = parseColor(backdrop)
+  const opaqueBase = base && base.a >= 1 ? base : { r: 255, g: 255, b: 255, a: 1 }
+  return { hex: toHex(composite(color, opaqueBase)), alpha: color.a }
+}
+
 export function toHex({ r, g, b }: Rgba): string {
   const h = (v: number) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')
   return `#${h(r)}${h(g)}${h(b)}`

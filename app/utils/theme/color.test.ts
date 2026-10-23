@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contrastRatio, oklchToRgb, parseColor, rgbToOklch, toHex } from './color'
+import { contrastRatio, displayColor, oklchToRgb, parseColor, rgbToOklch, toHex } from './color'
 import { generateNeutralPalette, generateOklchPalette } from './palette'
 import { SHADES } from './types'
 
@@ -15,6 +15,28 @@ describe('parseColor', () => {
     expect(mixed.a).toBeCloseTo(0.12)
     expect(toHex(parseColor('color-mix(in srgb, #000000 50%, #ffffff)')!)).toBe('#808080')
     expect(parseColor('{primary.500}')).toBeNull()
+  })
+})
+
+describe('displayColor', () => {
+  it('keeps opaque colors, including opaque color-mix results', () => {
+    expect(displayColor('#10B981', '#000')).toEqual({ hex: '#10b981', alpha: 1 })
+    expect(displayColor('color-mix(in srgb, #000000 50%, #ffffff)', '#18181b')).toEqual({ hex: '#808080', alpha: 1 })
+  })
+
+  it('composites translucent tints over the backdrop', () => {
+    // Aura dark: outlined primary hover = color-mix(in srgb, {primary.color}, transparent 96%) on surface.900
+    const tint = displayColor('color-mix(in srgb, #34d399, transparent 96%)', '#18181b')!
+    expect(tint.alpha).toBeCloseTo(0.04)
+    expect(tint.hex).toBe(toHex({ r: 0x34 * 0.04 + 0x18 * 0.96, g: 0xd3 * 0.04 + 0x18 * 0.96, b: 0x99 * 0.04 + 0x1b * 0.96, a: 1 }))
+    expect(tint.hex).not.toBe('#000000')
+    expect(displayColor('rgba(255,255,255,0.16)', '#000000')!.hex).toBe('#292929')
+  })
+
+  it('shows fully transparent values as the backdrop and falls back to white', () => {
+    expect(displayColor('transparent', '#18181b')).toEqual({ hex: '#18181b', alpha: 0 })
+    expect(displayColor('rgba(0,0,0,0.5)', '{surface.0}')!.hex).toBe('#808080')
+    expect(displayColor('{primary.500}', '#fff')).toBeNull()
   })
 })
 
