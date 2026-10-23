@@ -4,7 +4,7 @@ Hand-off for continuing the work in a new session (e.g. a Claude Code cloud sess
 Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
 This file is the task list plus everything a fresh session needs to know that isn't in the code.
 
-Last updated: 2026-10-24.
+Last updated: 2026-10-23 (cloud session: P0 checks, P1.1).
 
 ---
 
@@ -30,19 +30,18 @@ context**; panels have **Design | All tokens**. Cross-links use **"Used by N com
 
 ### Git / deploy state (verify with `git log`, `git status`)
 
-- `origin/main` = `d942723` → this is what production (Vercel) runs.
-- `origin/feat/component-studio` = `c97c7ec` → an older preview.
-- Local `main` = 20+ commits ahead of `origin/main`, **not pushed**, ending with this plan.
-  A cloud session only sees what's on GitHub: the owner must push first (see task P0).
+- `origin/main` = `63192a4` (ends with this plan's first version) → production once Vercel deploys it.
+- Each task gets its own branch from `main` (`fix/…`, `feat/…`); the owner reviews and merges.
 - Vercel builds every pushed branch; previews need a Vercel login (Deployment Protection).
   The latest preview URL is shown in GitHub's commit status (`gh api repos/MoidulHasan/presetstudio/commits/<sha>/statuses`).
 
 ### Health
 
-- `pnpm test`: 17 files, 140 tests, all passing (pure logic in `app/utils/theme/`).
-- `pnpm lint` and `vue-tsc --noEmit -p .nuxt/tsconfig.app.json`: clean.
-- `pnpm build`: last run green on Vercel for `c97c7ec`; **not run since**. Run it (P0).
-- No new dependencies since the license check.
+- `pnpm test`: 17 files, all passing (pure logic in `app/utils/theme/`).
+- `pnpm lint`, `vue-tsc --noEmit -p .nuxt/tsconfig.app.json`, `pnpm build`: clean on Node 24 (2026-10-23).
+- `pnpm license:check`: PrimeTek packages OK. It also lists build-tool transitives outside the
+  permissive allowlist (lightningcss MPL-2.0, caniuse-lite CC-BY-4.0, argparse Python-2.0,
+  spdx-exceptions CC-BY-3.0); these are dev/build-only and not shipped as our code.
 
 ---
 
@@ -107,6 +106,15 @@ Overflow check used for every panel (paste in the console; returns offending ele
 Narrow widths: load `/editor` in fixed-width iframes (390 / 1100) inside the page and run the
 same check on `iframe.contentDocument`.
 
+### Cloud sessions
+
+- The container may ship an older Node. Install Node 24 from nodejs.org (verify SHASUMS256) into
+  e.g. `/opt/node24`, put it first on `PATH`, `corepack enable` (pnpm version from `packageManager`).
+- Playwright + Chromium are preinstalled: import `playwright` from `/opt/node-tools/node_modules`
+  and launch with `executablePath: '/opt/pw-browsers/chromium'`. Headless pages are visible, so
+  the background-tab gotcha below doesn't apply. Hover can be tested with `page.mouse.move`.
+- In the token list, groups are collapsed accordions: expand the header (`[data-pc-name=accordionheader]`) before looking for rows.
+
 ### Gotchas (cost real time before)
 
 - **Background tab**: browser automation often runs with `document.visibilityState === 'hidden'`. `requestAnimationFrame` and timers stall, so the preview doesn't update and scripted waits time out. Take a screenshot (makes the tab visible) before checking the preview, and run long scripted checks in small chunks.
@@ -127,7 +135,7 @@ same check on `iframe.contentDocument`.
 
 Each task: goal · where · approach · done when.
 
-### P0. Ship what's built
+### P0. Ship what's built ✅ (checks green, `main` pushed)
 
 1. Run the full checks above (`pnpm build` included) on local `main`; fix anything that fails.
 2. Ask the owner to push `main` to a preview branch (or push with their OK): `git push origin main:feat/foundations-patterns`.
@@ -137,7 +145,10 @@ Done when production runs the current editor.
 
 ### P1. Fixes
 
-**P1.1 Color picker shows black for mixed colors**
+**P1.1 Color picker shows black for mixed colors** ✅ (`fix/color-picker-mixed`)
+- Done: `displayColor(value, backdrop)` in `color.ts` composites translucent values over the
+  scheme's `content-background`; `TokenRow` uses it for swatch + picker and shows a "mixed" tag
+  (tooltip: opacity, picking replaces it with a solid color). The picker only writes on change.
 - Where: `app/components/editor/TokenRow.vue` (`swatch`, `pickerColor`); helpers in `app/utils/theme/color.ts` (`parseColor`, `composite`, `toHex`).
 - Cause: values like `color-mix(in srgb, {primary.400}, transparent 96%)` resolve to colors with alpha (or don't parse), so the swatch is null and the picker falls back to `#000000`.
 - Approach: parse the resolved value with `parseColor`; if it has alpha, `composite` it over the scheme's content background for the swatch and picker. Picking a color should write an opaque hex only after the user changes it; leave the original `color-mix` until then. Show a small "mixed" hint next to the value.
