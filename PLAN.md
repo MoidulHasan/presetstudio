@@ -4,7 +4,7 @@ Hand-off for continuing the work in a new session (e.g. a Claude Code cloud sess
 Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
 This file is the task list plus everything a fresh session needs to know that isn't in the code.
 
-Last updated: 2026-10-23 (cloud session: P0 checks, P1 done).
+Last updated: 2026-10-23 (cloud session: P0 checks, P1 done, P2.1 DataTable).
 
 ---
 
@@ -19,7 +19,7 @@ An editor (`/editor`) with three panes: section nav · live preview (iframe, `/p
 | Start | Quick start (base preset, brand color, corners, neutrals) |
 | Foundations | Primary color (+ states grid), Surfaces (built-in, tinted, custom color, tinted backgrounds), Status colors, Text, Shape (scales + custom px), Density (presets + custom scale), Focus ring |
 | Patterns | Form fields, Lists, Menus, Overlays (+ backdrop), Containers, Selection: each edits one semantic group |
-| Components | All components (88, every token, inspect/reveal in preview) + visual editors: Button (+ SplitButton, SpeedDial, ButtonGroup family), Message, Toast, Tag, Badge |
+| Components | All components (88, every token, inspect/reveal in preview) + visual editors: Button (+ SplitButton, SpeedDial, ButtonGroup family), Message, Toast, Tag, Badge, DataTable |
 | Advanced | All tokens (raw semantic list) |
 | Review | Accessibility (contrast pairs) |
 
@@ -197,11 +197,18 @@ Done when production runs the current editor.
 ### P2. Features
 
 **P2.1 More visual editors** (highest user value)
-- Next components, by usage: DataTable · Tabs + Accordion · Checkbox / RadioButton / ToggleSwitch · Menu family (Menu, Menubar, TieredMenu, ContextMenu, PanelMenu) · Card + Panel + Fieldset.
+- ✅ DataTable (`feat/datatable-studio`): parts studio recipe (below). Next: Tabs + Accordion · Checkbox / RadioButton / ToggleSwitch · Menu family (Menu, Menubar, TieredMenu, ContextMenu, PanelMenu) · Card + Panel + Fieldset.
 - Two recipes exist:
   - **Severity components** (variants keyed by severity): add the name to `STUDIO_COMPONENTS` and `STUDIO_ICONS` (`app/utils/theme/components.ts`), its controls to `STUDIO_CONFIG` (`app/utils/theme/studio-controls.ts`; the test checks paths in all presets), a stage in `app/components/preview/stage/<Name>.vue` (use `PreviewStageSchemes`, emit `pick` targets `<style>:<severity>:<state>` or `section:<key>[:<size>]`), dispatch it in `app/pages/preview.vue`, and a subtitle in `STUDIO_SUBTITLES` (`ComponentsPanel.vue`). `Severity.vue` does the rest.
   - **Hand-built** (Button): `components/editor/studio/Button.vue`, using `VariantColors`, `Control`, `Length`, `Weight`, `Shadow`.
-- Most of the next components aren't severity-shaped. Build a third generic recipe: **parts studio**. Rows = the component's parts (`groupComponentTokens` in `components.ts`, e.g. DataTable header, headerCell, row, bodyCell, footer), each with a state grid from `stateMatrix` (`studio.ts`; extend `propertyState` for `selected*`, `striped*`, `focus*` prefixes), plus `STUDIO_CONFIG`-style controls. Reuse `TokenGrid` / `VariantColors`.
+  - **Parts studio** ✅ (built with DataTable): add `PARTS_STUDIO[<name>]` in `parts-studio.ts`
+    (parts = grids of component paths × columns, `sections` = controls, `related` = links to
+    the pattern sections it inherits from), register in `STUDIO_COMPONENTS`/`STUDIO_ICONS`/
+    `STUDIO_SUBTITLES`, write the stage and dispatch it in `preview.vue`. `Parts.vue` does the
+    rest. Explicit paths (like the pattern editors) instead of deriving rows from
+    `stateMatrix`: plainer labels and states the token names don't encode (sorted, striped).
+    Extend `ELSEWHERE` in `parts-studio.test.ts` for color tokens you leave to All tokens.
+- (Original note) Most of the next components aren't severity-shaped. Build a third generic recipe: **parts studio**. Rows = the component's parts (`groupComponentTokens` in `components.ts`, e.g. DataTable header, headerCell, row, bodyCell, footer), each with a state grid from `stateMatrix` (`studio.ts`; extend `propertyState` for `selected*`, `striped*`, `focus*` prefixes), plus `STUDIO_CONFIG`-style controls. Reuse `TokenGrid` / `VariantColors`.
 - Stages must show the component's real states (DataTable: header, sorted column, hover row (force), selected row, striped rows, small/large; Tabs: active, hover, disabled, scroll buttons; etc.).
 - Done when each new editor has a stage with clickable cells, a Design view, tests for its paths, and appears in the sidebar/pinned list automatically.
 
