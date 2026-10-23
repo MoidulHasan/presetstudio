@@ -4,7 +4,7 @@ Hand-off for continuing the work in a new session (e.g. a Claude Code cloud sess
 Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
 This file is the task list plus everything a fresh session needs to know that isn't in the code.
 
-Last updated: 2026-10-23 (cloud session: P0 checks, P1.1–P1.3).
+Last updated: 2026-10-23 (cloud session: P0 checks, P1.1–P1.4).
 
 ---
 
@@ -177,7 +177,11 @@ Done when production runs the current editor.
 - Approach: below `xl`, show a small Light | Dark switch at the top of the stage instead of stacking both (keep both side by side from `xl` up); for `stacked` stages (Form fields) let the grid scroll horizontally inside its card on phones.
 - Done when: every stage is usable at 390 / 768 / 1100 without long scrolling.
 
-**P1.4 "Show focus states" (In context) misses JS-focused components**
+**P1.4 "Show focus states" (In context) misses JS-focused components** ✅ (`fix/focus-pfocus`)
+- Done: the focus pattern in `preview-css.ts` also matches `.p-focus` and `.p-inputwrapper-focus`;
+  matches whose compound selector is an option/item/chip (`ITEM_CLASS_RE`) are left alone.
+  `.p-floatlabel:has(.p-inputwrapper-focus) label` becomes `:has(*)`, fine inside the scope.
+  Note: the Focus ring section always turns focus states on; compare in another section.
 - Where: `app/utils/theme/preview-css.ts` (`forcedStateSelector`), `usePreviewForcedStyles.ts`.
 - Problem: Select, CascadeSelect, TreeSelect, MultiSelect… mark focus with a `.p-focus` class, not `:focus`, so the copied rules don't apply.
 - Approach: in the focus rewrite also handle `.p-focus` on component roots (e.g. `.p-select.p-focus` → `.ps-show-focus .p-select`), but not on list options/menu items (`.p-*-option.p-focus`, `.p-*-item.p-focus`): those would highlight every option. Add tests next to the existing ones.
