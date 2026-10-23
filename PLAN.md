@@ -4,7 +4,7 @@ Hand-off for continuing the work in a new session (e.g. a Claude Code cloud sess
 Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
 This file is the task list plus everything a fresh session needs to know that isn't in the code.
 
-Last updated: 2026-10-23 (cloud session: P0 checks, P1.1).
+Last updated: 2026-10-23 (cloud session: P0 checks, P1.1–P1.3).
 
 ---
 
@@ -113,6 +113,10 @@ same check on `iframe.contentDocument`.
 - Playwright + Chromium are preinstalled: import `playwright` from `/opt/node-tools/node_modules`
   and launch with `executablePath: '/opt/pw-browsers/chromium'`. Headless pages are visible, so
   the background-tab gotcha below doesn't apply. Hover can be tested with `page.mouse.move`.
+- Scripts used for P1.2/P1.3 (inspector overflow sweep, stage clipping check): see the P1.2
+  notes; a stage check walks `section.ps-scheme` in the iframe and flags elements past the card
+  that aren't inside a horizontal scroller. Changing the editor's color scheme reloads the
+  iframe: look up `page.frames()` again afterwards.
 - In the token list, groups are collapsed accordions: expand the header (`[data-pc-name=accordionheader]`) before looking for rows.
 
 ### Gotchas (cost real time before)
@@ -154,12 +158,20 @@ Done when production runs the current editor.
 - Approach: parse the resolved value with `parseColor`; if it has alpha, `composite` it over the scheme's content background for the swatch and picker. Picking a color should write an opaque hex only after the user changes it; leave the original `color-mix` until then. Show a small "mixed" hint next to the value.
 - Done when: Aura dark Button "outlined primary hover background" shows its real tint in the picker and swatch; a unit test covers parsing/compositing.
 
-**P1.2 Phone-width pass for the new sections**
+**P1.2 Phone-width pass for the new sections** ✅ (`fix/stages-narrow`, with P1.3)
+- Done: the inspector overflow check is clean for every section and visual editor at
+  1920 / 1100 / 390, light and dark, with a stage cell picked; no console errors. The stage
+  problems it found (clipped Status/Message/Tag/Badge/Form field grids, inputs wider than the
+  card in Density/Form fields) are fixed with P1.3.
 - Where: Foundations, Patterns, visual component panels and stages at 390px (and 1100px).
 - Approach: run the overflow check (section 2) on every section with a grid cell selected; screenshot each stage in the Preview pane.
 - Done when: no overflow anywhere; stages are readable on a phone (see P1.3).
 
-**P1.3 Stages below 1280px**
+**P1.3 Stages below 1280px** ✅ (`fix/stages-narrow`)
+- Done: below `xl`, `Schemes.vue` shows one scheme with a Light | Dark SelectButton
+  (`useStageScheme`, set by `preview.vue` whenever the editor's scheme changes); both side by
+  side from `xl` up. Wide grids get `-m-2 overflow-x-auto p-2` (room for rings and shadows) and
+  minimum cell widths so they scroll inside the card. The Button stage now uses `Schemes` too.
 - Where: `app/components/preview/stage/Schemes.vue`.
 - Problem: below `xl` the dark column sits under the light column (long scroll); on phones, wide grids (Form fields: 5 states) get cramped.
 - Approach: below `xl`, show a small Light | Dark switch at the top of the stage instead of stacking both (keep both side by side from `xl` up); for `stacked` stages (Form fields) let the grid scroll horizontally inside its card on phones.
