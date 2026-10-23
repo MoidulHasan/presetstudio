@@ -29,8 +29,13 @@ const category = ref<PreviewCategory>('form')
 const themed = ref(false)
 
 let applyId = 0
+const stageScheme = useStageScheme()
+let lastScheme: ColorScheme | null = null
 async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
   const id = ++applyId
+  // Narrow stages show one scheme: follow the editor's when it changes.
+  if (colorScheme !== lastScheme) stageScheme.value = colorScheme
+  lastScheme = colorScheme
   const base = await loadBasePreset(state.basePreset)
   // A newer state arrived while the base preset was loading.
   if (id !== applyId) return
