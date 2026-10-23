@@ -101,11 +101,24 @@ export function usePreviewInspector(onPick: (component: string) => void) {
 
   // --- Inspect mode ----------------------------------------------------------------------
   let hovered: HTMLElement | null = null
+  let pointer: { x: number, y: number } | null = null
 
-  function onMove(event: PointerEvent) {
-    const hit = componentAt(event.target as Element)
+  function hover(target: Element | null) {
+    const hit = componentAt(target)
     hovered = hit?.element ?? null
     highlight(hovered, hit?.name)
+  }
+
+  function onMove(event: PointerEvent) {
+    pointer = { x: event.clientX, y: event.clientY }
+    hover(event.target as Element)
+  }
+
+  // Leaving the preview (e.g. into the other pane side by side) clears the highlight.
+  function onLeave(event: PointerEvent) {
+    if (event.relatedTarget) return
+    pointer = null
+    hover(null)
   }
 
   // Swallow interaction so clicking a button or opening a dropdown doesn't happen while picking.
@@ -120,8 +133,9 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     if (hit) onPick(hit.name)
   }
 
+  // Scrolling moves content under a still pointer: highlight what's there now.
   function onScrollOrResize() {
-    if (hovered) highlight(hovered, componentAt(hovered)?.name)
+    if (pointer) hover(document.elementFromPoint(pointer.x, pointer.y))
   }
 
   const BLOCKED = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'dblclick', 'contextmenu'] as const
@@ -133,10 +147,13 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     const method = on ? 'addEventListener' : 'removeEventListener'
     window[method]('pointermove', onMove as EventListener, true)
     window[method]('click', onClick as EventListener, true)
+    document.documentElement[method]('pointerout', onLeave as EventListener)
     window[method]('scroll', onScrollOrResize, true)
+    window[method]('resize', onScrollOrResize)
     for (const type of BLOCKED) window[method](type, block, true)
     if (!on) {
       hovered = null
+      pointer = null
       highlight(null)
     }
   }
