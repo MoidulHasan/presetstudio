@@ -12,9 +12,40 @@
 export type ForcedState = 'focus' | 'hover' | 'active'
 
 const STATE_RE: Record<ForcedState, RegExp> = {
-  focus: /:focus(?:-visible)?(?![-\w])/,
+  // JS-focused components (Select, MultiSelect, CascadeSelect, TreeSelect, …) mark focus with a
+  // class on their root (`.p-focus`, `.p-inputwrapper-focus`) instead of :focus.
+  focus: /:focus(?:-visible)?(?![-\w])|\.p-(?:inputwrapper-)?focus(?![-\w])/,
   hover: /:hover(?![-\w])/,
   active: /:active(?![-\w])/,
+}
+
+/** List options and menu items use `.p-focus` for keyboard navigation: forcing it would highlight every one. */
+const ITEM_CLASS_RE = /-(?:option|item|chip)(?![a-z])/
+
+/** The compound selector (no combinators) around `offset`, e.g. `.p-select:not(.p-disabled).p-focus`. */
+function compoundAt(selector: string, offset: number): string {
+  const isBoundary = (c: string) => /[\s>+~,]/.test(c)
+  let start = offset
+  for (let depth = 0; start > 0; start--) {
+    const c = selector[start - 1]!
+    if (c === ')') depth++
+    else if (c === '(') {
+      if (depth === 0) break
+      depth--
+    }
+    else if (depth === 0 && isBoundary(c)) break
+  }
+  let end = offset
+  for (let depth = 0; end < selector.length; end++) {
+    const c = selector[end]!
+    if (c === '(') depth++
+    else if (c === ')') {
+      if (depth === 0) break
+      depth--
+    }
+    else if (depth === 0 && isBoundary(c)) break
+  }
+  return selector.slice(start, end)
 }
 
 /** Splits a selector list on top-level commas (not those inside :is(), :not(), …). */
@@ -38,19 +69,24 @@ export function splitSelectorList(selector: string): string[] {
 /**
  * Rewrites a selector list so its `state` styles apply without the interaction, inside `scope`.
  * Returns null when no selector in the list depends on the state.
- * `.p-button:not(:disabled):hover` → `.scope .p-button:not(:disabled)`.
+ * `.p-button:not(:disabled):hover` → `.scope .p-button:not(:disabled)`,
+ * `.p-select:not(.p-disabled).p-focus` → `.scope .p-select:not(.p-disabled)` (focus).
  */
 export function forcedStateSelector(selector: string, scope: string, state: ForcedState): string | null {
-  const re = STATE_RE[state]
-  const all = new RegExp(re.source, 'g')
-  const negated = new RegExp(`:not\\([^)]*${re.source.slice(0, re.source.indexOf('('))}`)
+  const all = new RegExp(STATE_RE[state].source, 'g')
+  const forcedMatches = (s: string) => [...s.matchAll(all)]
+    .filter(m => !(m[0].startsWith('.') && ITEM_CLASS_RE.test(compoundAt(s, m.index))))
   const rewritten = splitSelectorList(selector)
     // Negated states (`:not(:focus)`) can't be forced meaningfully.
-    .filter(s => re.test(s) && !negated.test(s))
+    .filter(s => forcedMatches(s).length && !forcedMatches(s).some(m => /:not\([^)]*$/.test(s.slice(0, m.index))))
     .map((s) => {
+      const forced = new Set(forcedMatches(s).map(m => m.index))
       // A bare `:focus-visible` (no compound before it) means "any element".
-      const forced = s.replace(all, (_, offset: number) => (offset === 0 || /[\s>+~(]/.test(s[offset - 1]!) ? '*' : ''))
-      return `${scope} ${forced.trim()}`
+      const out = s.replace(all, (match, offset: number) => {
+        if (!forced.has(offset)) return match
+        return offset === 0 || /[\s>+~(]/.test(s[offset - 1]!) ? '*' : ''
+      })
+      return `${scope} ${out.trim()}`
     })
   return rewritten.length ? rewritten.join(', ') : null
 }

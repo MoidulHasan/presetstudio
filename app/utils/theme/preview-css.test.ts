@@ -24,6 +24,25 @@ describe('forcedFocusSelector', () => {
     expect(forcedFocusSelector('.a:not(:focus)', '.s')).toBeNull()
   })
 
+  it('forces the focus class of JS-focused components', () => {
+    expect(forcedFocusSelector('.p-select:not(.p-disabled).p-focus', '.s')).toBe('.s .p-select:not(.p-disabled)')
+    expect(forcedFocusSelector('.p-autocomplete.p-focus .p-autocomplete-input-multiple:not(.p-disabled)', '.s')).toBe('.s .p-autocomplete .p-autocomplete-input-multiple:not(.p-disabled)')
+    expect(forcedFocusSelector('.p-inputgroup .p-component.p-focus ~ label', '.s')).toBe('.s .p-inputgroup .p-component ~ label')
+    expect(forcedFocusSelector('.p-floatlabel:has(.p-inputwrapper-focus) label', '.s')).toBe('.s .p-floatlabel:has(*) label')
+    expect(forcedFocusSelector('.p-focus', '.s')).toBe('.s *')
+  })
+
+  it('leaves the focus class of options, menu items and chips alone', () => {
+    expect(forcedFocusSelector('.p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-listbox:not(.p-disabled) .p-listbox-option.p-listbox-option-selected.p-focus', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-tieredmenu-item.p-focus > .p-tieredmenu-item-content', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-autocomplete-chip-item.p-focus .p-autocomplete-chip', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-rating-option.p-focus-visible', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-select.p-focus, .p-select-option.p-focus', '.s')).toBe('.s .p-select')
+    expect(forcedFocusSelector('.a:not(.p-focus)', '.s')).toBeNull()
+    expect(forcedStateSelector('.p-select.p-focus', '.s', 'hover')).toBeNull()
+  })
+
   it('fills in a bare focus selector', () => {
     expect(forcedFocusSelector(':focus-visible', '.s')).toBe('.s *')
     expect(forcedFocusSelector('.a > :focus-visible', '.s')).toBe('.s .a > *')
