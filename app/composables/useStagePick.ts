@@ -6,10 +6,10 @@ import { useEditorStore } from '~/stores/editor'
  * after the pick (opening SplitButton picks its section of the Button editor).
  */
 export function useStagePick(handle: (parts: string[]) => unknown) {
-  const store = useEditorStore()
-  watch(() => store.stagePick, async (pick) => {
+  const editor = useEditorStore()
+  watch(() => editor.stagePick, async (pick) => {
     if (!pick) return
-    store.stagePick = null
+    editor.stagePick = null
     await nextTick()
     await handle(pick.target.split(':'))
   }, { immediate: true })

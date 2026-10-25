@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { useEditorStore, type PreviewViewport } from '~/stores/editor'
+import { useEditorStore } from '~/stores/editor'
+import type { PreviewViewport } from '~/utils/editor-sections'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { PREVIEW_CATEGORIES, type PreviewTemplate } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
-const store = useEditorStore()
+const editor = useEditorStore()
 
 const templates: Array<{ value: PreviewTemplate, label: string, icon: string }> = [
   { value: 'components', label: 'Components', icon: 'pi pi-th-large' },
@@ -24,10 +25,10 @@ const modeOptions: Array<{ value: PreviewMode, label: string, icon: string }> = 
 // One control for what the preview shows. In side-by-side mode the edited scheme
 // (prefs.colorScheme) is kept and can be switched from the pane headers.
 const mode = computed<PreviewMode>({
-  get: () => (store.prefs.split ? 'split' : store.prefs.colorScheme),
+  get: () => (editor.prefs.split ? 'split' : editor.prefs.colorScheme),
   set: (value) => {
-    store.prefs.split = value === 'split'
-    if (value !== 'split') store.prefs.colorScheme = value
+    editor.prefs.split = value === 'split'
+    if (value !== 'split') editor.prefs.colorScheme = value
   },
 })
 
@@ -39,13 +40,13 @@ const viewportOptions: Array<{ value: PreviewViewport, label: string, icon: stri
 
 const categoryOptions = PREVIEW_CATEGORIES.map(value => ({ value, ...CATEGORY_META[value] }))
 
-const stageMeta = computed(() => (store.stageName ? { label: store.stageLabel } : null))
+const stageMeta = computed(() => (editor.stageName ? { label: editor.stageLabel } : null))
 const stageOptions = computed(() => [
   { value: true, label: 'Stage', icon: 'pi pi-th-large', hint: `What ${stageMeta.value?.label ?? 'this'} affects, every state, light and dark` },
   { value: false, label: 'In context', icon: 'pi pi-window-maximize', hint: 'The usual preview pages' },
 ])
 
-const currentTemplate = computed(() => templates.find(t => t.value === store.prefs.template)!)
+const currentTemplate = computed(() => templates.find(t => t.value === editor.prefs.template)!)
 </script>
 
 <template>
@@ -53,7 +54,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
     <!-- With a visual editor open, the preview shows its stage or the usual pages. -->
     <SelectButton
       v-if="stageMeta"
-      v-model="store.prefs.stage"
+      v-model="editor.prefs.stage"
       :options="stageOptions"
       option-label="label"
       option-value="value"
@@ -74,9 +75,9 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         </span>
       </template>
     </SelectButton>
-    <template v-if="!store.activeStage">
+    <template v-if="!editor.activeStage">
       <Select
-        v-model="store.prefs.template"
+        v-model="editor.prefs.template"
         :options="templates"
         option-label="label"
         option-value="value"
@@ -105,8 +106,8 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
       </Select>
 
       <Select
-        v-if="store.prefs.template === 'components'"
-        v-model="store.prefs.category"
+        v-if="editor.prefs.template === 'components'"
+        v-model="editor.prefs.category"
         :options="categoryOptions"
         option-label="label"
         option-value="value"
@@ -117,10 +118,10 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         <template #value>
           <span class="flex items-center gap-2">
             <i
-              :class="CATEGORY_META[store.prefs.category].icon"
+              :class="CATEGORY_META[editor.prefs.category].icon"
               aria-hidden="true"
             />
-            {{ CATEGORY_META[store.prefs.category].label }}
+            {{ CATEGORY_META[editor.prefs.category].label }}
           </span>
         </template>
         <template #option="{ option }">
@@ -141,7 +142,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
 
       <!-- Phones are already narrow; the width presets only matter on larger screens. -->
       <SelectButton
-        v-model="store.prefs.viewport"
+        v-model="editor.prefs.viewport"
         :options="viewportOptions"
         option-label="label"
         option-value="value"
@@ -162,8 +163,8 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
 
     <div class="ml-auto flex items-center gap-2">
       <ToggleButton
-        v-model="store.prefs.inspect"
-        v-tooltip.bottom="store.prefs.inspect ? 'Click a component in the preview to edit its tokens' : 'Pick a component in the preview to edit its tokens'"
+        v-model="editor.prefs.inspect"
+        v-tooltip.bottom="editor.prefs.inspect ? 'Click a component in the preview to edit its tokens' : 'Pick a component in the preview to edit its tokens'"
         on-label="Inspect"
         off-label="Inspect"
         on-icon="pi pi-search"
@@ -172,8 +173,8 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         aria-label="Inspect components"
       />
       <ToggleButton
-        v-model="store.prefs.showFocus"
-        v-tooltip.bottom="store.prefs.showFocus ? 'Showing every component focused' : 'Show every component focused (focus rings)'"
+        v-model="editor.prefs.showFocus"
+        v-tooltip.bottom="editor.prefs.showFocus ? 'Showing every component focused' : 'Show every component focused (focus rings)'"
         on-label="Focus"
         off-label="Focus"
         on-icon="pi pi-bullseye"
@@ -182,7 +183,7 @@ const currentTemplate = computed(() => templates.find(t => t.value === store.pre
         aria-label="Show focus states"
       />
       <SelectButton
-        v-if="!store.activeStage"
+        v-if="!editor.activeStage"
         v-model="mode"
         :options="modeOptions"
         option-label="label"

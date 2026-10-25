@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { DENSITY_SCALE_RANGE, densityFactor } from '~/utils/theme/design'
 import type { Density } from '~/utils/theme/types'
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 const options: Array<{ value: Density, label: string, hint: string }> = [
   { value: 'compact', label: 'Compact', hint: 'Data-dense apps, admin tools' },
@@ -12,12 +14,12 @@ const options: Array<{ value: Density, label: string, hint: string }> = [
   { value: 'custom', label: 'Custom', hint: 'Pick your own spacing scale' },
 ]
 
-const design = computed(() => store.theme.design)
+const design = computed(() => workspace.theme.design)
 
 function setDensity(value: Density) {
   // A custom scale starts from the current one.
   const scale = value === 'custom' && design.value.density !== 'custom' ? densityFactor(design.value.density, design.value.densityScale) : null
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.density = value
     if (scale !== null) d.design.densityScale = scale
   })
@@ -25,14 +27,14 @@ function setDensity(value: Density) {
 
 function setScale(value: number | number[]) {
   const n = Array.isArray(value) ? value[0]! : value
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.density = 'custom'
     d.design.densityScale = Math.round(n * 100) / 100
   }, 'density.scale')
 }
 
 const samples = computed(() => {
-  const r = store.resolvers?.light
+  const r = preset.resolvers?.light
   return [
     { label: 'Input padding', value: r?.resolve('form-field-padding-y')?.value + ' / ' + r?.resolve('form-field-padding-x')?.value },
     { label: 'Button padding', value: r?.resolve('button-padding-y')?.value + ' / ' + r?.resolve('button-padding-x')?.value },
@@ -60,7 +62,7 @@ const samples = computed(() => {
           :key="option.value"
           name="density"
           :value="option.value"
-          :selected="store.theme.design.density === option.value"
+          :selected="workspace.theme.design.density === option.value"
           :label="option.label"
           :hint="option.hint"
           @select="setDensity(option.value)"

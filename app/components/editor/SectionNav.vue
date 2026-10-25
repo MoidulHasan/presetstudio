@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import { PATTERN_SECTION_KEYS, useEditorStore, type EditorSection } from '~/stores/editor'
+import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
+import { PATTERN_SECTION_KEYS, SECTION_META, type EditorSection } from '~/utils/editor-sections'
 import { PATTERN_SECTIONS, type PatternSection } from '~/utils/theme/semantic-studio'
-import { SECTION_META } from '~/utils/editor-sections'
 import { COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
 import type { DesignSection } from '~/utils/theme/sections'
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const preset = usePresetStore()
 
 const MAX_SIDEBAR_STUDIOS = 8
 const OVERVIEW_SECTIONS: EditorSection[] = ['start', 'semantic', 'accessibility']
@@ -20,20 +22,20 @@ const sectionItem = (section: EditorSection): NavItem => ({
   label: SECTION_META[section].label,
   icon: SECTION_META[section].icon,
   open: () => {
-    store.prefs.section = section
+    editor.prefs.section = section
     // Overview sections look at everything.
-    if (OVERVIEW_SECTIONS.includes(section)) store.showAllComponents()
+    if (OVERVIEW_SECTIONS.includes(section)) editor.showAllComponents()
   },
-  active: store.prefs.section === section,
+  active: editor.prefs.section === section,
   modified: section === 'semantic'
-    ? store.semanticOverrideCount > 0
+    ? preset.semanticOverrideCount > 0
     : PATTERN_SECTIONS[section as PatternSection]
-      ? (store.semanticGroupCounts[PATTERN_SECTIONS[section as PatternSection]] ?? 0) > 0
-      : store.modifiedSections.has(section as DesignSection),
+      ? (preset.semanticGroupCounts[PATTERN_SECTIONS[section as PatternSection]] ?? 0) > 0
+      : preset.modifiedSections.has(section as DesignSection),
 })
 
 const openStudio = computed(() =>
-  store.prefs.section === 'components' && store.prefs.component && STUDIO_COMPONENTS.includes(store.prefs.component) ? store.prefs.component : null)
+  editor.prefs.section === 'components' && editor.prefs.component && STUDIO_COMPONENTS.includes(editor.prefs.component) ? editor.prefs.component : null)
 
 const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
   { label: 'Start', items: [sectionItem('start')] },
@@ -47,9 +49,9 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
         key: 'components',
         label: SECTION_META.components.label,
         icon: SECTION_META.components.icon,
-        open: () => store.openComponentList(),
-        active: store.prefs.section === 'components' && !openStudio.value,
-        modified: store.componentOverrideCount > 0,
+        open: () => editor.openComponentList(),
+        active: editor.prefs.section === 'components' && !openStudio.value,
+        modified: preset.componentOverrideCount > 0,
         count: COMPONENT_NAMES.length,
       },
       // Capped so the sidebar doesn't grow with every new editor; all of them are pinned in the list.
@@ -57,14 +59,14 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
         key: `component:${name}`,
         label: COMPONENT_META[name]!.label,
         icon: STUDIO_ICONS[name] ?? 'pi pi-box',
-        open: () => store.openComponent(name),
+        open: () => editor.openComponent(name),
         active: openStudio.value === name,
-        modified: (store.componentOverrideCounts[name] ?? 0) > 0,
+        modified: (preset.componentOverrideCounts[name] ?? 0) > 0,
         visual: true,
       })),
     ],
   },
-  { label: 'Advanced', items: [{ ...sectionItem('semantic'), badge: store.semanticOverrideCount || undefined }] },
+  { label: 'Advanced', items: [{ ...sectionItem('semantic'), badge: preset.semanticOverrideCount || undefined }] },
   { label: 'Review', items: [sectionItem('accessibility')] },
 ])
 
@@ -126,11 +128,11 @@ const model = computed<MenuItem[]>(() => groups.value.map(group => ({
             size="small"
           />
           <Badge
-            v-if="item.key === 'accessibility' && store.contrastIssues"
-            :value="store.contrastIssues"
+            v-if="item.key === 'accessibility' && preset.contrastIssues"
+            :value="preset.contrastIssues"
             severity="danger"
             size="small"
-            :aria-label="`${store.contrastIssues} contrast issues introduced by this theme`"
+            :aria-label="`${preset.contrastIssues} contrast issues introduced by this theme`"
           />
         </a>
       </template>

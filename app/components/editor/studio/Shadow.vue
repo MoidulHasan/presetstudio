@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
 // A shadow token as presets (the preset's own value shows as "Preset" when it's not one of them).
 const props = defineProps<{ token: TokenDescriptor, label: string, hint?: string }>()
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const id = useId()
 
 interface ShadowPreset { value: string, label: string }
@@ -18,8 +20,8 @@ const SHADOWS: ShadowPreset[] = [
   { value: '0 4px 12px -2px rgba(0, 0, 0, 0.25)', label: 'Strong' },
 ]
 
-const raw = computed(() => String(store.resolvers?.light.resolve(props.token.name)?.raw ?? ''))
-const custom = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens) === 'custom')
+const raw = computed(() => String(preset.resolvers?.light.resolve(props.token.name)?.raw ?? ''))
+const custom = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens) === 'custom')
 const options = computed(() => {
   if (SHADOWS.some(s => s.value === raw.value)) return SHADOWS
   return [{ value: raw.value, label: custom.value ? 'Custom' : 'Preset' }, ...SHADOWS]
@@ -52,7 +54,7 @@ const options = computed(() => {
         option-value="value"
         size="small"
         class="w-36"
-        @update:model-value="(v: string) => store.setToken(token.path, v)"
+        @update:model-value="(v: string) => preset.setToken(token.path, v)"
       />
       <Button
         v-if="custom"
@@ -64,7 +66,7 @@ const options = computed(() => {
         rounded
         class="!size-6"
         :aria-label="`Reset ${label}`"
-        @click="store.resetToken(token.path)"
+        @click="preset.resetToken(token.path)"
       />
     </div>
   </div>

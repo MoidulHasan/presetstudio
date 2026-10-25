@@ -6,7 +6,7 @@ import { COMPONENT_META, studioFor } from '~/utils/theme/components'
 // Components with a visual editor are marked and listed first.
 const props = withDefaults(defineProps<{ components: string[], text?: string }>(), { text: 'A change here reaches all of them.' })
 
-const store = useEditorStore()
+const editor = useEditorStore()
 const SHOWN = 10
 const showAll = ref(false)
 
@@ -35,7 +35,7 @@ const users = computed(() => props.components
         outlined
         class="!px-2 !py-0.5 !text-xs"
         :aria-label="`Open ${user.label}`"
-        @click="store.openComponent(user.name)"
+        @click="editor.openComponent(user.name)"
       />
       <Button
         v-if="users.length > SHOWN"

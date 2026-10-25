@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
 // A font weight token as a select.
 const props = defineProps<{ token: TokenDescriptor, label: string, hint?: string }>()
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const id = useId()
 
 const WEIGHTS = [
@@ -18,9 +20,9 @@ const WEIGHTS = [
   { value: '800', label: 'Extra bold' },
 ]
 
-const value = computed(() => store.resolvers?.light.resolve(props.token.name)?.value)
+const value = computed(() => preset.resolvers?.light.resolve(props.token.name)?.value)
 const options = computed(() => (WEIGHTS.some(w => w.value === value.value) || !value.value ? WEIGHTS : [...WEIGHTS, { value: value.value, label: value.value }]))
-const custom = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens) === 'custom')
+const custom = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens) === 'custom')
 </script>
 
 <template>
@@ -49,7 +51,7 @@ const custom = computed(() => tokenSource(props.token, store.theme.overrides, st
         option-value="value"
         size="small"
         class="w-36"
-        @update:model-value="(v: string) => store.setToken(token.path, v)"
+        @update:model-value="(v: string) => preset.setToken(token.path, v)"
       />
       <Button
         v-if="custom"
@@ -61,7 +63,7 @@ const custom = computed(() => tokenSource(props.token, store.theme.overrides, st
         rounded
         class="!size-6"
         :aria-label="`Reset ${label}`"
-        @click="store.resetToken(token.path)"
+        @click="preset.resetToken(token.path)"
       />
     </div>
   </div>

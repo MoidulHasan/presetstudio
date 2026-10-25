@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
@@ -8,14 +9,15 @@ import { tokenSource } from '~/utils/theme/semantic'
 const props = defineProps<{ light?: TokenDescriptor, dark?: TokenDescriptor, label: string, selected?: boolean }>()
 defineEmits<{ select: [] }>()
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 const value = (token: TokenDescriptor | undefined, scheme: 'light' | 'dark') =>
-  token ? store.resolvers?.[scheme].resolve(token.name)?.value ?? null : null
+  token ? preset.resolvers?.[scheme].resolve(token.name)?.value ?? null : null
 
 const lightValue = computed(() => value(props.light, 'light'))
 const darkValue = computed(() => value(props.dark, 'dark'))
-const custom = computed(() => [props.light, props.dark].some(t => t && tokenSource(t, store.theme.overrides, store.designTokens) === 'custom'))
+const custom = computed(() => [props.light, props.dark].some(t => t && tokenSource(t, workspace.theme.overrides, preset.designTokens) === 'custom'))
 
 const EMPTY = 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(127,127,127,.25) 3px 6px)'
 </script>

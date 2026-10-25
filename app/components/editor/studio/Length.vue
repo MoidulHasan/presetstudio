@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEditorStore, type LinkedToken } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore, type LinkedToken } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
@@ -7,10 +8,11 @@ import { tokenSource } from '~/utils/theme/semantic'
 // (e.g. "form field padding x") until it's given its own value.
 const props = withDefaults(defineProps<{ token?: TokenDescriptor, label: string, hint?: string, max?: number, min?: number, step?: number, linked?: LinkedToken[] }>(), { token: undefined, hint: undefined, max: 40, min: 0, step: 1, linked: () => [] })
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const resolved = computed(() => (props.token ? store.resolvers?.light.resolve(props.token.name) ?? null : null))
-const source = computed(() => (props.token ? tokenSource(props.token, store.theme.overrides, store.designTokens) : 'base'))
+const resolved = computed(() => (props.token ? preset.resolvers?.light.resolve(props.token.name) ?? null : null))
+const source = computed(() => (props.token ? tokenSource(props.token, workspace.theme.overrides, preset.designTokens) : 'base'))
 
 /** Value in px, or null when it isn't a single length (e.g. '0 1rem'). */
 const px = computed(() => {
@@ -33,7 +35,7 @@ function set(value: number | number[]) {
   const n = Array.isArray(value) ? value[0]! : value
   if (!props.token) return
   const text = usesRem.value ? `${Math.round((n / 16) * 1000) / 1000}rem` : `${n}px`
-  store.setToken(props.token.path, n === 0 ? '0' : text, props.linked)
+  preset.setToken(props.token.path, n === 0 ? '0' : text, props.linked)
 }
 
 const display = computed(() => (px.value === null ? resolved.value?.value ?? 'â€”' : `${Math.round(px.value * 10) / 10}px`))
@@ -70,7 +72,7 @@ const display = computed(() => (px.value === null ? resolved.value?.value ?? 'â€
           rounded
           class="!size-6"
           :aria-label="`Reset ${label}`"
-          @click="store.resetToken(token.path, linked)"
+          @click="preset.resetToken(token.path, linked)"
         />
       </span>
     </div>

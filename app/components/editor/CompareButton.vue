@@ -5,10 +5,10 @@ import { useEditorStore } from '~/stores/editor'
 // Every way a press can end (release, leaving, a cancelled touch, losing focus) ends it.
 const props = defineProps<{ subject: string }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
 
 function compare(on: boolean) {
-  store.prefs.compare = on
+  editor.prefs.compare = on
 }
 onBeforeUnmount(() => compare(false))
 </script>
@@ -21,7 +21,7 @@ onBeforeUnmount(() => compare(false))
     severity="secondary"
     size="small"
     outlined
-    :class="store.prefs.compare ? '!bg-surface-200 dark:!bg-surface-700' : ''"
+    :class="editor.prefs.compare ? '!bg-surface-200 dark:!bg-surface-700' : ''"
     @pointerdown="compare(true)"
     @pointerup="compare(false)"
     @pointerleave="compare(false)"

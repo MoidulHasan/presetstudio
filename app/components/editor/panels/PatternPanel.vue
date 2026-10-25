@@ -4,11 +4,11 @@ import { semanticStudio } from '~/utils/theme/semantic-studio'
 
 // A pattern section (form fields, lists, menus, …) or Text: one semantic group in its visual
 // editor, with its stage in the preview, or as its token list.
-const store = useEditorStore()
+const editor = useEditorStore()
 
-const group = computed(() => store.sectionGroup!)
+const group = computed(() => editor.sectionGroup!)
 const studio = computed(() => semanticStudio(group.value)!)
-const designView = computed(() => store.prefs.semanticView === 'design')
+const designView = computed(() => editor.prefs.semanticView === 'design')
 // Overlays also cover the backdrop (mask) behind dialogs.
 const listGroups = computed(() => (group.value === 'overlay' ? ['overlay', 'mask'] : [group.value]))
 </script>
@@ -21,7 +21,7 @@ const listGroups = computed(() => (group.value === 'overlay' ? ['overlay', 'mask
     >
       <div class="flex items-center gap-2">
         <SelectButton
-          :model-value="store.prefs.semanticView"
+          :model-value="editor.prefs.semanticView"
           :options="[{ value: 'design', label: 'Design' }, { value: 'tokens', label: 'All tokens' }]"
           option-label="label"
           option-value="value"
@@ -30,7 +30,7 @@ const listGroups = computed(() => (group.value === 'overlay' ? ['overlay', 'mask
           size="small"
           class="flex-1"
           :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-          @update:model-value="store.setSemanticView"
+          @update:model-value="editor.setSemanticView"
         />
         <EditorCompareButton :subject="studio.label.toLowerCase()" />
       </div>

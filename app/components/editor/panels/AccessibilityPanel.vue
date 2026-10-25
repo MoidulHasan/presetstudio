@@ -1,14 +1,19 @@
 <script setup lang="ts">
-import { useEditorStore, type EditorSection } from '~/stores/editor'
+import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
+import type { EditorSection } from '~/utils/editor-sections'
 import { contrastRatio, parseColor } from '~/utils/theme/color'
 import type { ClassifiedContrast, ContrastStatus } from '~/utils/theme/contrast'
 import { BASE_PRESET_LABELS, type ColorScheme } from '~/utils/theme/types'
 
-const store = useEditorStore()
-const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 // The previewed scheme first.
-const schemes = computed<ColorScheme[]>(() => (store.prefs.colorScheme === 'dark' ? ['dark', 'light'] : ['light', 'dark']))
+const schemes = computed<ColorScheme[]>(() => (editor.prefs.colorScheme === 'dark' ? ['dark', 'light'] : ['light', 'dark']))
 
 // Where to go to fix each pair.
 const fixSection: Record<string, EditorSection> = {
@@ -25,7 +30,7 @@ const CONTRAST_CANDIDATES = ['#ffffff', '{surface.0}', '{surface.950}', '{surfac
 
 /** Best contrast color for text on the primary color, if one passes. */
 function bestPrimaryText(scheme: ColorScheme): string | null {
-  const r = store.resolvers?.[scheme]
+  const r = preset.resolvers?.[scheme]
   const bg = r && parseColor(r.resolve('primary-color')?.value ?? '')
   if (!r || !bg) return null
   let best: { value: string, ratio: number } | null = null
@@ -41,7 +46,7 @@ function bestPrimaryText(scheme: ColorScheme): string | null {
 function fixPrimaryText(scheme: ColorScheme) {
   const value = bestPrimaryText(scheme)
   if (!value) return
-  store.update((d) => {
+  workspace.update((d) => {
     const semantic = (d.overrides.semantic ??= {}) as Record<string, unknown>
     const schemesTree = (semantic.colorScheme ??= {}) as Record<string, Record<string, Record<string, string>>>
     const s = (schemesTree[scheme] ??= {})
@@ -58,7 +63,7 @@ const STATUS: Record<ContrastStatus, { severity: string, value: string, tooltip?
 }
 
 const counts = computed(() => {
-  const all = [...(store.contrast?.light ?? []), ...(store.contrast?.dark ?? [])]
+  const all = [...(preset.contrast?.light ?? []), ...(preset.contrast?.dark ?? [])]
   return {
     introduced: all.filter(r => r.status === 'introduced').length,
     inherited: all.filter(r => r.status === 'inherited').length,
@@ -101,7 +106,7 @@ const canFix = (result: ClassifiedContrast, scheme: ColorScheme) =>
     >
       <ul class="flex flex-col divide-y divide-surface-200 rounded-lg border border-surface-200 dark:divide-surface-700 dark:border-surface-700">
         <li
-          v-for="result in store.contrast?.[scheme] ?? []"
+          v-for="result in preset.contrast?.[scheme] ?? []"
           :key="result.pair.id"
           class="flex items-center gap-3 p-2"
         >
@@ -137,7 +142,7 @@ const canFix = (result: ClassifiedContrast, scheme: ColorScheme) =>
             text
             rounded
             :aria-label="`Adjust ${result.pair.label}`"
-            @click="store.prefs.section = fixSection[result.pair.id]!"
+            @click="editor.prefs.section = fixSection[result.pair.id]!"
           />
           <Tag
             v-tooltip.left="STATUS[result.status].tooltip"

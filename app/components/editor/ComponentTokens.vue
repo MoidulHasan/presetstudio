@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_META, STUDIO_COMPONENTS, groupComponentTokens, tokenLabel } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -15,30 +17,32 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ open: [name: string] }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 const meta = computed(() => COMPONENT_META[props.component]!)
 
 // The edited scheme is the previewed scheme, like the other token panels.
 const scheme = computed<ColorScheme>({
-  get: () => store.prefs.colorScheme,
+  get: () => editor.prefs.colorScheme,
   set: (value) => {
-    store.prefs.colorScheme = value
+    editor.prefs.colorScheme = value
   },
 })
 
 const keyOf = (token: TokenDescriptor) => token.path.join('.')
-const isCustom = (token: TokenDescriptor) => tokenSource(token, store.theme.overrides, store.designTokens) === 'custom'
+const isCustom = (token: TokenDescriptor) => tokenSource(token, workspace.theme.overrides, preset.designTokens) === 'custom'
 
 const query = ref(props.initialQuery ?? '')
 const show = ref<'all' | 'custom'>('all')
 const expanded = ref<string | null>(null)
 const openGroups = ref<string[]>([])
 
-const allGroups = computed(() => groupComponentTokens(store.descriptors, props.component, scheme.value))
+const allGroups = computed(() => groupComponentTokens(preset.descriptors, props.component, scheme.value))
 
 const groups = computed(() => {
-  const resolver = store.resolvers?.[scheme.value]
+  const resolver = preset.resolvers?.[scheme.value]
   return allGroups.value
     .map(group => ({
       ...group,
@@ -73,19 +77,19 @@ function toggle(token: TokenDescriptor) {
 
 /** Components with a visual editor default to it; the token list is always one click away. */
 const hasStudio = computed(() => STUDIO_COMPONENTS.includes(props.component))
-const designView = computed(() => hasStudio.value && store.prefs.componentView === 'design')
+const designView = computed(() => hasStudio.value && editor.prefs.componentView === 'design')
 
-const revealedHere = computed(() => (store.revealed?.component === props.component ? store.revealed : null))
+const revealedHere = computed(() => (editor.revealed?.component === props.component ? editor.revealed : null))
 
 function showInPreview() {
-  store.prefs.pane = 'preview'
-  store.revealComponent(props.component)
+  editor.prefs.pane = 'preview'
+  editor.revealComponent(props.component)
 }
 
 function showInGallery() {
-  store.prefs.template = 'components'
-  store.prefs.category = meta.value.category
-  store.revealComponent(props.component)
+  editor.prefs.template = 'components'
+  editor.prefs.category = meta.value.category
+  editor.revealComponent(props.component)
 }
 </script>
 
@@ -103,7 +107,7 @@ function showInGallery() {
           size="small"
           text
           class="-ml-2"
-          @click="store.openComponentList()"
+          @click="editor.openComponentList()"
         />
         <Button
           v-tooltip.left="'Scroll the preview to this component'"
@@ -121,7 +125,7 @@ function showInGallery() {
         class="flex items-center gap-2"
       >
         <SelectButton
-          :model-value="store.prefs.componentView"
+          :model-value="editor.prefs.componentView"
           :options="[{ value: 'design', label: 'Design' }, { value: 'tokens', label: 'All tokens' }]"
           option-label="label"
           option-value="value"
@@ -130,7 +134,7 @@ function showInGallery() {
           size="small"
           class="flex-1"
           :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-          @update:model-value="v => (store.prefs.componentView = v)"
+          @update:model-value="v => (editor.prefs.componentView = v)"
         />
         <EditorCompareButton
           v-if="designView"
@@ -165,7 +169,7 @@ function showInGallery() {
       >
         <SelectButton
           v-model="show"
-          :options="[{ value: 'all', label: 'All' }, { value: 'custom', label: `Custom (${store.componentOverrideCounts[component] ?? 0})` }]"
+          :options="[{ value: 'all', label: 'All' }, { value: 'custom', label: `Custom (${preset.componentOverrideCounts[component] ?? 0})` }]"
           option-label="label"
           option-value="value"
           :allow-empty="false"
@@ -199,7 +203,7 @@ function showInGallery() {
       <span class="flex flex-wrap items-center gap-x-2">
         {{ meta.label }} isn't on this preview page.
         <Button
-          v-if="store.prefs.template !== 'components' || store.prefs.category !== meta.category"
+          v-if="editor.prefs.template !== 'components' || editor.prefs.category !== meta.category"
           :label="`Show ${CATEGORY_META[meta.category].label} components`"
           size="small"
           text

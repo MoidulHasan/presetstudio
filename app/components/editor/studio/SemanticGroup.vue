@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
 import { semanticCell, semanticStudio, semanticTokens, semanticUsedBy } from '~/utils/theme/semantic-studio'
 import { SIZE_LABELS, controlPath, type StudioSection, type StudioSize } from '~/utils/theme/studio-controls'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -8,11 +8,11 @@ import type { TokenDescriptor } from '~/utils/theme/schema'
 // (light|dark pairs) and its shared settings by purpose.
 const props = defineProps<{ group: string }>()
 
-const store = useEditorStore()
+const preset = usePresetStore()
 const studio = computed(() => semanticStudio(props.group)!)
 
 // --- Used by -------------------------------------------------------------------------
-const usedBy = computed(() => semanticUsedBy(store.descriptors, props.group))
+const usedBy = computed(() => semanticUsedBy(preset.descriptors, props.group))
 
 // --- Colors ----------------------------------------------------------------------------
 const grid = computed(() => {
@@ -23,7 +23,7 @@ const grid = computed(() => {
     rows: config.rows.map(row => ({
       key: row.key,
       label: row.label,
-      cells: Object.fromEntries(Object.entries(row.cells).map(([column, path]) => [column, semanticCell(store.descriptors, path)])),
+      cells: Object.fromEntries(Object.entries(row.cells).map(([column, path]) => [column, semanticCell(preset.descriptors, path)])),
     })),
   }
 })
@@ -45,7 +45,7 @@ function controlsOf(section: StudioSection) {
   for (const control of section.controls) {
     const path = controlPath(control, size)
     if (!path) continue
-    const tokens = semanticTokens(store.descriptors, path)
+    const tokens = semanticTokens(preset.descriptors, path)
     for (const token of tokens) {
       const hint = tokens.length > 1 ? (token.scheme === 'dark' ? 'dark mode' : 'light mode') : control.hint
       out.push({ key: token.path.join('.'), token, label: control.label, hint, min: control.min, max: control.max })

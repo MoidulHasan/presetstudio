@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
 import { componentPath } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { BUTTON_STYLE_LABELS, buttonVariants, type ButtonStyle, type StudioState } from '~/utils/theme/studio'
 
 // Visual editor for Button: colors per variant (shared VariantColors), then shape, size, text
 // and effects, and the Button family (SplitButton, SpeedDial, ButtonGroup).
-const store = useEditorStore()
+const editor = useEditorStore()
+const preset = usePresetStore()
 
-const buttonTokens = computed(() => store.descriptors.filter(t => t.component === 'button'))
-const variants = computed(() => buttonVariants(store.descriptors))
+const buttonTokens = computed(() => preset.descriptors.filter(t => t.component === 'button'))
+const variants = computed(() => buttonVariants(preset.descriptors))
 const styleLabel = (style: string) => BUTTON_STYLE_LABELS[style as ButtonStyle] ?? style
 
 /** Shared (both modes) Button token by its path below `components.button`, e.g. 'root.paddingX'. */
@@ -24,7 +26,7 @@ const sizePath = (key: string) => (size.value === 'normal' ? `root.${key}` : `ro
 // --- Button family ---------------------------------------------------------------------
 /** Shared token of another component of the family, e.g. ('splitbutton', 'root.borderRadius'). */
 function familyToken(component: string, path: string): TokenDescriptor | undefined {
-  return store.descriptors.find(t => t.component === component && t.scheme === null && componentPath(t).join('.') === path)
+  return preset.descriptors.find(t => t.component === component && t.scheme === null && componentPath(t).join('.') === path)
 }
 const { current: familyHighlight, flash: flashFamily } = useFlash<string>()
 
@@ -34,8 +36,8 @@ const splitWrapperLink = computed(() => {
   const wrapper = familyToken('splitbutton', 'root.borderRadius')
   return wrapper ? [{ path: wrapper.path, value: '{button.border.radius}' }] : []
 })
-const buttonRadius = computed(() => store.resolvers?.light.resolve('button-border-radius')?.value ?? '')
-const familyChanged = (component: string) => (store.componentOverrideCounts[component] ?? 0) > 0
+const buttonRadius = computed(() => preset.resolvers?.light.resolve('button-border-radius')?.value ?? '')
+const familyChanged = (component: string) => (preset.componentOverrideCounts[component] ?? 0) > 0
 
 // --- Stage picks -----------------------------------------------------------------------
 const sections = ref<Record<string, HTMLElement | null>>({})
@@ -179,7 +181,7 @@ useStagePick(async ([style, key, state]) => {
               size="small"
               text
               class="!py-0.5 !text-xs"
-              @click="store.openComponent('splitbutton', { view: 'tokens' })"
+              @click="editor.openComponent('splitbutton', { view: 'tokens' })"
             />
           </div>
           <p class="text-xs text-surface-500 dark:text-surface-400">
@@ -216,7 +218,7 @@ useStagePick(async ([style, key, state]) => {
               size="small"
               text
               class="!py-0.5 !text-xs"
-              @click="store.openComponent('speeddial', { view: 'tokens' })"
+              @click="editor.openComponent('speeddial', { view: 'tokens' })"
             />
           </div>
           <EditorStudioLength

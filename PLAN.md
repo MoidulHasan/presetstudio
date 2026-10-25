@@ -110,7 +110,7 @@ same check on `iframe.contentDocument`.
 ### Gotchas (cost real time before)
 
 - **Background tab**: browser automation often runs with `document.visibilityState === 'hidden'`. `requestAnimationFrame` and timers stall, so the preview doesn't update and scripted waits time out. Take a screenshot (makes the tab visible) before checking the preview, and run long scripted checks in small chunks.
-- **Pinia store changes don't hot-reload**: after editing `app/stores/editor.ts`, reload the page, otherwise new actions are "not a function".
+- **Pinia store changes don't hot-reload**: after editing a store in `app/stores/`, reload the page, otherwise new actions are "not a function".
 - **Nuxt dev overlay replays old errors** after a reload; check the console for new ones before believing them.
 - **Owner's data**: the workspace lives in `localStorage['presetstudio:workspace']`, prefs in `presetstudio:prefs`. Back both up before testing on their machine and restore after; leave edits you didn't make.
 - **vue-tsc in templates**: assigning to a ref or indexing a const map inside a template expression (`x = {...}`, `MAP[key]` inside `.map()`) gives "Property 'value' does not exist". Move it into a script function.
@@ -221,7 +221,7 @@ Done when production runs the current editor.
 | Tokens, resolver, schema | `tokens.ts`, `schema.ts`, `semantic.ts`, `components.ts` |
 | Visual editor model | `studio.ts` (variants, state matrix), `studio-controls.ts` (component controls), `semantic-studio.ts` (patterns, `PATTERN_SECTIONS`), `recolor.ts`, `stages.ts` |
 | Preview protocol + CSS | `messages.ts`, `preview-css.ts`, `app/composables/usePreviewForcedStyles.ts`, `usePreviewInspector.ts`, `app/pages/preview.vue` |
-| Store | `app/stores/editor.ts` (prefs, sections, stages, compare, reset, open helpers) |
+| Stores | `app/stores/workspace.ts` (themes, history, persistence), `preset.ts` (resolvers, contrast, token edits, export), `editor.ts` (prefs, sections, stages, compare, open helpers) |
 | Editor shell | `app/pages/editor.vue`, `components/editor/SectionNav.vue`, `Inspector.vue`, `PreviewToolbar.vue`, `PreviewStage.vue`, `PreviewFrame.vue` |
 | Panels | `components/editor/panels/*` (Primary, Surface, Status, Shape, Density, Focus, Pattern, Components, Semantic, Accessibility, QuickStart) |
 | Visual editor UI | `components/editor/studio/*` (VariantColors, TokenGrid, ColorPair, PalettePicker, Control, Length, Spacing, Weight, Shadow, Number, Button, Severity, SemanticGroup), `components/editor/UsedBy.vue`, `TokenRow.vue`, `SemanticTokenList.vue` |

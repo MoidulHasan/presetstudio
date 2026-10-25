@@ -1,31 +1,35 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette, generateSurfacePalette, normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type SurfaceDesign } from '~/utils/theme/types'
 
-const store = useEditorStore()
-const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 // The edited scheme is the previewed scheme: you always edit what you see.
 const scheme = computed<ColorScheme>({
-  get: () => store.prefs.colorScheme,
+  get: () => editor.prefs.colorScheme,
   set: (value) => {
-    store.prefs.colorScheme = value
+    editor.prefs.colorScheme = value
   },
 })
 const other = computed<ColorScheme>(() => (scheme.value === 'light' ? 'dark' : 'light'))
-const current = computed(() => store.theme.design.surface[scheme.value])
+const current = computed(() => workspace.theme.design.surface[scheme.value])
 
 const surfaceId = (s: SurfaceDesign) => (s.kind === 'palette' ? s.name : s.kind)
 const sameAsOther = computed(() => {
-  const o = store.theme.design.surface[other.value]
+  const o = workspace.theme.design.surface[other.value]
   return JSON.stringify(current.value) === JSON.stringify(o)
 })
 
 function setSurface(value: SurfaceDesign, key: string | null = null) {
   const target = scheme.value
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.surface[target] = value
   }, key)
 }
@@ -37,7 +41,7 @@ const CUSTOM_SEED = '#64748b'
 function chooseCustom() {
   if (custom.value) return
   // Start from the current mid-tone, so switching to Custom changes nothing yet.
-  const seed = normalizeHex(store.resolvedScale('surface', scheme.value)?.['500'] ?? '') ?? CUSTOM_SEED
+  const seed = normalizeHex(preset.resolvedScale('surface', scheme.value)?.['500'] ?? '') ?? CUSTOM_SEED
   setSurface({ kind: 'custom', color: seed, shades: {} })
 }
 
@@ -48,7 +52,7 @@ function setCustomColor(value: string | undefined) {
 
 const customPreview = computed(() => generateSurfacePalette(custom.value?.color ?? CUSTOM_SEED))
 
-const palette = computed(() => store.resolvedScale('surface', scheme.value))
+const palette = computed(() => preset.resolvedScale('surface', scheme.value))
 const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
   custom,
   palette,
@@ -58,7 +62,7 @@ const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
 })
 
 function setTintedBackgrounds(value: boolean) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.tintedBackgrounds = value
   })
 }
@@ -66,19 +70,19 @@ function setTintedBackgrounds(value: boolean) {
 function applyToOther() {
   const target = other.value
   const value = { ...current.value }
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.surface[target] = value
   })
 }
 
 const isSelected = (value: SurfaceDesign) => surfaceId(current.value) === surfaceId(value)
 
-const swatch = (name: string, shade: string) => store.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
+const swatch = (name: string, shade: string) => preset.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
 
 const tint = computed(() => (current.value.kind === 'tinted' ? Math.round(current.value.chroma * 1000) : 14))
 
 const tintedPreview = computed(() =>
-  store.basePreset ? generateNeutralPalette(primaryHue(store.theme.design.primary, store.basePreset), tint.value / 1000) : null)
+  preset.basePreset ? generateNeutralPalette(primaryHue(workspace.theme.design.primary, preset.basePreset), tint.value / 1000) : null)
 
 function setTint(value: number | number[]) {
   const n = Array.isArray(value) ? value[0]! : value
@@ -259,7 +263,7 @@ function setTint(value: number | number[]) {
       <label class="flex items-center justify-between gap-3 text-sm">
         Tint white backgrounds
         <ToggleSwitch
-          :model-value="store.theme.design.tintedBackgrounds"
+          :model-value="workspace.theme.design.tintedBackgrounds"
           @update:model-value="setTintedBackgrounds"
         />
       </label>

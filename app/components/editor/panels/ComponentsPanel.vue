@@ -4,10 +4,10 @@ import { COMPONENT_META } from '~/utils/theme/components'
 
 // Two levels, like the preset: the component list, then one component (its visual editor or
 // its tokens grouped by part).
-const store = useEditorStore()
+const editor = useEditorStore()
 
 const component = computed(() => {
-  const name = store.prefs.component
+  const name = editor.prefs.component
   return name && COMPONENT_META[name] ? name : null
 })
 
@@ -18,7 +18,7 @@ const initialQuery = computed(() => (carried.value?.component === component.valu
 
 function open(name: string, query = '') {
   carried.value = { component: name, query }
-  store.openComponent(name)
+  editor.openComponent(name)
 }
 </script>
 

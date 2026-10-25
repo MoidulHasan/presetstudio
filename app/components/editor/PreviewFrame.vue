@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
 import { createApplyMessage, createRevealMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const props = defineProps<{ colorScheme: ColorScheme, label: string, hideScrollbar?: boolean }>()
 const emit = defineEmits<{ scroll: [position: ScrollPosition] }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
@@ -18,14 +20,14 @@ function sendState() {
   cancelAnimationFrame(pending)
   pending = requestAnimationFrame(() => {
     // While Compare is held, the open editor's own edits are left out.
-    const state = store.prefs.compare ? { ...store.theme, overrides: store.compareOverrides() } : store.theme
+    const state = editor.prefs.compare ? { ...workspace.theme, overrides: editor.compareOverrides() } : workspace.theme
     target.postMessage(createApplyMessage(state, props.colorScheme, {
-      template: store.prefs.template,
-      category: store.prefs.category,
+      template: editor.prefs.template,
+      category: editor.prefs.category,
       hideScrollbar: props.hideScrollbar,
-      showFocus: store.prefs.showFocus,
-      inspect: store.prefs.inspect,
-      stage: store.activeStage,
+      showFocus: editor.prefs.showFocus,
+      inspect: editor.prefs.inspect,
+      stage: editor.activeStage,
     }), window.location.origin)
   })
 }
@@ -43,22 +45,22 @@ function onMessage(event: MessageEvent) {
   }
   else if (message?.type === 'preview:inspect') {
     // One pick per Inspect click, like browser dev tools.
-    store.prefs.inspect = false
-    store.openComponent(message.component)
+    editor.prefs.inspect = false
+    editor.openComponent(message.component)
     // On narrow screens the picked component's tokens are in the other pane.
-    store.prefs.pane = 'edit'
+    editor.prefs.pane = 'edit'
   }
   else if (message?.type === 'preview:stage-pick') {
-    store.pickOnStage(message.target)
-    store.prefs.pane = 'edit'
+    editor.pickOnStage(message.target)
+    editor.prefs.pane = 'edit'
   }
   else if (message?.type === 'preview:revealed') {
-    store.reportRevealed(message.component, message.found, message.uses)
+    editor.reportRevealed(message.component, message.found, message.uses)
   }
 }
 
 // Sent after the pending state message, so a category switch is applied before the reveal.
-watch(() => store.revealRequest, (request) => {
+watch(() => editor.revealRequest, (request) => {
   const target = frame.value?.contentWindow
   if (!request || !ready.value || !target) return
   requestAnimationFrame(() => requestAnimationFrame(() => target.postMessage(createRevealMessage(request.component), window.location.origin)))
@@ -77,7 +79,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(pending)
 })
 
-watch([() => store.theme, () => props.colorScheme, () => store.prefs.template, () => store.prefs.category, () => props.hideScrollbar, () => store.prefs.showFocus, () => store.prefs.inspect, () => store.activeStage, () => store.prefs.compare], sendState)
+watch([() => workspace.theme, () => props.colorScheme, () => editor.prefs.template, () => editor.prefs.category, () => props.hideScrollbar, () => editor.prefs.showFocus, () => editor.prefs.inspect, () => editor.activeStage, () => editor.prefs.compare], sendState)
 </script>
 
 <template>

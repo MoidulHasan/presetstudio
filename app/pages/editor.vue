@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { BASE_PRESET_LABELS } from '~/utils/theme/types'
 
 definePageMeta({ layout: 'editor' })
 useSeoMeta({ title: 'Editor · Preset Studio', robots: 'noindex' })
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const exportVisible = ref(false)
 
 function reload() {
@@ -14,7 +18,7 @@ function reload() {
 
 // Themes are shared between tabs; say when another tab changed the open one.
 const toast = useToast()
-watch(() => store.externalChange, (change) => {
+watch(() => workspace.externalChange, (change) => {
   if (!change) return
   toast.add(change.kind === 'updated'
     ? { severity: 'info', summary: 'Changed in another tab', detail: `"${change.name}" was edited in another tab. Undo to go back to the version you had.`, life: 6000 }
@@ -24,9 +28,9 @@ watch(() => store.externalChange, (change) => {
 // Below lg there's room for one pane at a time.
 type Pane = 'edit' | 'preview'
 const pane = computed<Pane>({
-  get: () => store.prefs.pane,
+  get: () => editor.prefs.pane,
   set: (value) => {
-    store.prefs.pane = value
+    editor.prefs.pane = value
   },
 })
 const paneOptions: Array<{ value: Pane, label: string, icon: string }> = [
@@ -36,13 +40,13 @@ const paneOptions: Array<{ value: Pane, label: string, icon: string }> = [
 
 // Focus rings only show on keyboard focus; while editing them, show every component focused.
 let autoFocusStates = false
-watch(() => store.prefs.section, (section, previous) => {
-  if (section === 'focus' && !store.prefs.showFocus) {
-    store.prefs.showFocus = true
+watch(() => editor.prefs.section, (section, previous) => {
+  if (section === 'focus' && !editor.prefs.showFocus) {
+    editor.prefs.showFocus = true
     autoFocusStates = true
   }
   else if (previous === 'focus' && autoFocusStates) {
-    store.prefs.showFocus = false
+    editor.prefs.showFocus = false
     autoFocusStates = false
   }
 }, { immediate: true })
@@ -58,11 +62,11 @@ function onKeydown(event: KeyboardEvent) {
   const key = event.key.toLowerCase()
   if (key === 'z' && !event.shiftKey) {
     event.preventDefault()
-    store.undo()
+    workspace.undo()
   }
   else if ((key === 'z' && event.shiftKey) || key === 'y') {
     event.preventDefault()
-    store.redo()
+    workspace.redo()
   }
 }
 
@@ -70,7 +74,7 @@ function onKeydown(event: KeyboardEvent) {
 const systemDark = ref(false)
 let media: MediaQueryList | undefined
 const onMediaChange = (event: MediaQueryListEvent) => (systemDark.value = event.matches)
-const uiDark = computed(() => store.prefs.uiTheme === 'dark' || (store.prefs.uiTheme === 'system' && systemDark.value))
+const uiDark = computed(() => editor.prefs.uiTheme === 'dark' || (editor.prefs.uiTheme === 'system' && systemDark.value))
 watch(uiDark, dark => document.documentElement.classList.toggle('ps-dark', dark))
 
 onMounted(() => {
@@ -92,12 +96,12 @@ onBeforeUnmount(() => {
     <EditorTopBar @export="exportVisible = true" />
 
     <Message
-      v-if="store.basePresetError"
+      v-if="preset.basePresetError"
       severity="error"
       class="m-3"
     >
       <div class="flex flex-wrap items-center justify-between gap-3">
-        <span>The {{ BASE_PRESET_LABELS[store.basePresetError] }} preset couldn't be loaded. Your work is saved; reloading usually fixes this.</span>
+        <span>The {{ BASE_PRESET_LABELS[preset.basePresetError] }} preset couldn't be loaded. Your work is saved; reloading usually fixes this.</span>
         <Button
           label="Reload"
           icon="pi pi-refresh"

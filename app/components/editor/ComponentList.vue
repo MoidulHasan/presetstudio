@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS, studioFor } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -12,7 +13,8 @@ const emit = defineEmits<{
   open: [name: string, query: string]
 }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const preset = usePresetStore()
 
 const listQuery = ref('')
 const listShow = ref<'all' | 'custom'>('all')
@@ -20,7 +22,7 @@ const listShow = ref<'all' | 'custom'>('all')
 /** Token names per component (both schemes), for search and counts. */
 const tokensByComponent = computed(() => {
   const map = new Map<string, TokenDescriptor[]>()
-  for (const d of store.descriptors) {
+  for (const d of preset.descriptors) {
     if (d.layer !== 'component' || !d.component) continue
     const list = map.get(d.component) ?? []
     list.push(d)
@@ -40,7 +42,7 @@ const listItems = computed(() => {
     const tokenMatches = q && !nameMatch
       ? new Set((tokensByComponent.value.get(name) ?? []).filter(t => matchesQuery(t, q, String(t.defaultValue))).map(t => t.name)).size
       : 0
-    return { name, meta, custom: store.componentOverrideCounts[name] ?? 0, nameMatch, tokenMatches }
+    return { name, meta, custom: preset.componentOverrideCounts[name] ?? 0, nameMatch, tokenMatches }
   })
     .filter(item => (item.nameMatch || item.tokenMatches > 0) && (listShow.value === 'all' || item.custom > 0))
     .sort((a, b) => a.meta.label.localeCompare(b.meta.label))
@@ -106,7 +108,7 @@ function open(name: string, carryQuery: boolean) {
       <div class="flex items-center justify-between gap-2">
         <SelectButton
           v-model="listShow"
-          :options="[{ value: 'all', label: 'All' }, { value: 'custom', label: `Customized (${Object.keys(store.componentOverrideCounts).length})` }]"
+          :options="[{ value: 'all', label: 'All' }, { value: 'custom', label: `Customized (${Object.keys(preset.componentOverrideCounts).length})` }]"
           option-label="label"
           option-value="value"
           :allow-empty="false"
@@ -119,11 +121,11 @@ function open(name: string, carryQuery: boolean) {
 
     <!-- One-time tip: the preview is the fastest way to find a component. -->
     <Message
-      v-if="!store.prefs.dismissedTips.includes('inspect')"
+      v-if="!editor.prefs.dismissedTips.includes('inspect')"
       severity="secondary"
       size="small"
       closable
-      @close="store.prefs.dismissedTips = [...store.prefs.dismissedTips, 'inspect']"
+      @close="editor.prefs.dismissedTips = [...editor.prefs.dismissedTips, 'inspect']"
     >
       <span class="text-xs">
         Tip: click <span class="font-semibold"><i
@@ -169,8 +171,8 @@ function open(name: string, carryQuery: boolean) {
           <span class="truncate text-xs text-surface-500">{{ STUDIO_SUBTITLES[name] ?? 'Every variant and state, light and dark' }}</span>
         </span>
         <Badge
-          v-if="store.componentOverrideCounts[name]"
-          :value="`${store.componentOverrideCounts[name]} custom`"
+          v-if="preset.componentOverrideCounts[name]"
+          :value="`${preset.componentOverrideCounts[name]} custom`"
           severity="contrast"
           size="small"
           class="shrink-0"

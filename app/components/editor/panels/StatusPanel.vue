@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { statusComponents } from '~/utils/theme/design'
 import { tokenContrast, worseThanBase } from '~/utils/theme/contrast'
 import { normalizeHex } from '~/utils/theme/palette'
@@ -14,7 +15,8 @@ import {
   type StatusKind,
 } from '~/utils/theme/types'
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 // Clicks on the Status stage bring that severity into view.
 const sections = ref<Record<string, HTMLElement | null>>({})
@@ -24,8 +26,8 @@ useStagePick(([kind, severity]) => {
   sections.value[severity]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   flash(severity)
 })
-const usedBy = computed(() => (store.basePreset ? statusComponents(store.basePreset) : []))
-const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
+const usedBy = computed(() => (preset.basePreset ? statusComponents(preset.basePreset) : []))
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 const META: Record<StatusKind, { label: string, hint: string }> = {
   info: { label: 'Info', hint: 'Hints and neutral notices' },
@@ -40,11 +42,11 @@ const CHROMATIC = PRIMITIVE_COLORS.filter(c => !(NEUTRAL_COLORS as readonly stri
 type Choice = 'base' | 'custom' | PrimitiveColorName
 const choiceOf = (s: StatusDesign): Choice => (s.kind === 'palette' ? s.name : s.kind)
 
-const swatch = (name: string, shade = '500') => store.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
+const swatch = (name: string, shade = '500') => preset.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
 
 /** The primitive a preset uses for a severity's buttons, e.g. 'sky' for info in Aura. */
 function baseColor(kind: StatusKind): string {
-  const last = store.baseResolvers?.light.resolve(`button-${kind}-background`)?.chain.at(-1) ?? ''
+  const last = preset.baseResolvers?.light.resolve(`button-${kind}-background`)?.chain.at(-1) ?? ''
   return last.replace(/-\d+$/, '')
 }
 
@@ -57,13 +59,13 @@ function options(kind: StatusKind) {
 }
 
 function setStatus(kind: StatusKind, value: StatusDesign, key: string | null = null) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.status[kind] = value
   }, key)
 }
 
 function choose(kind: StatusKind, choice: Choice) {
-  if (choice === choiceOf(store.theme.design.status[kind])) return
+  if (choice === choiceOf(workspace.theme.design.status[kind])) return
   if (choice === 'base') return setStatus(kind, { kind: 'base' })
   // A custom color starts from what the buttons use now.
   if (choice === 'custom') return setStatus(kind, { kind: 'custom', color: normalizeHex(preview.value[kind].button) ?? '#3b82f6' })
@@ -71,7 +73,7 @@ function choose(kind: StatusKind, choice: Choice) {
 }
 
 function pickerValue(kind: StatusKind) {
-  const s = store.theme.design.status[kind]
+  const s = workspace.theme.design.status[kind]
   return s.kind === 'custom' ? s.color.slice(1) : '000000'
 }
 
@@ -85,18 +87,18 @@ const buttonContrast = (r: TokenResolver | null | undefined, kind: StatusKind) =
   tokenContrast(r, `button-${kind}-color`, `button-${kind}-background`)
 
 const preview = computed(() => {
-  const r = store.resolvers?.light
+  const r = preset.resolvers?.light
   const v = (name: string) => r?.resolve(name)?.value ?? 'transparent'
   return Object.fromEntries(STATUS_KINDS.map((kind) => {
     const ratio = buttonContrast(r, kind)
-    const baseRatio = buttonContrast(store.baseResolvers?.light, kind)
+    const baseRatio = buttonContrast(preset.baseResolvers?.light, kind)
     return [kind, {
       button: v(`button-${kind}-background`),
       text: v(`button-${kind}-color`),
       tagBackground: v(`tag-${kind}-background`),
       tagColor: v(`tag-${kind}-color`),
       ratio,
-      worse: store.theme.design.status[kind].kind !== 'base' && worseThanBase(ratio, baseRatio),
+      worse: workspace.theme.design.status[kind].kind !== 'base' && worseThanBase(ratio, baseRatio),
     }]
   })) as Record<StatusKind, { button: string, text: string, tagBackground: string, tagColor: string, ratio: number | null, worse: boolean }>
 })
@@ -139,7 +141,7 @@ const preview = computed(() => {
       </div>
 
       <Select
-        :model-value="choiceOf(store.theme.design.status[kind])"
+        :model-value="choiceOf(workspace.theme.design.status[kind])"
         :options="options(kind)"
         option-label="label"
         option-value="value"
@@ -178,7 +180,7 @@ const preview = computed(() => {
       </Select>
 
       <div
-        v-if="store.theme.design.status[kind].kind === 'custom'"
+        v-if="workspace.theme.design.status[kind].kind === 'custom'"
         class="flex items-center gap-2"
       >
         <ColorPicker
@@ -187,7 +189,7 @@ const preview = computed(() => {
           @update:model-value="(v: string) => setCustom(kind, v)"
         />
         <InputText
-          :model-value="(store.theme.design.status[kind] as { color: string }).color"
+          :model-value="(workspace.theme.design.status[kind] as { color: string }).color"
           :aria-label="`${META[kind].label} color hex`"
           size="small"
           class="w-28 font-mono"

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { tokenContrast, worseThanBase } from '~/utils/theme/contrast'
 import { recolorChoice, type PaletteChoice } from '~/utils/theme/recolor'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -17,9 +18,10 @@ const props = withDefaults(defineProps<{
   styleLabel?: (style: string) => string
 }>(), { styleLabel: defaultStyleLabel })
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const isCustom = (t: TokenDescriptor) => tokenSource(t, store.theme.overrides, store.designTokens) === 'custom'
+const isCustom = (t: TokenDescriptor) => tokenSource(t, workspace.theme.overrides, preset.designTokens) === 'custom'
 
 const openRow = ref<string | null>(null)
 const rowStyle = ref<Record<string, string>>({})
@@ -58,10 +60,10 @@ function setStyle(key: string, style: string) {
   rowStyle.value = { ...rowStyle.value, [key]: style }
 }
 
-const choiceOf = (row: VariantRow): PaletteChoice | null => recolorChoice(store.theme.overrides, row.tokens, props.component, row.key)
+const choiceOf = (row: VariantRow): PaletteChoice | null => recolorChoice(workspace.theme.overrides, row.tokens, props.component, row.key)
 
 function recolor(row: VariantRow, choice: PaletteChoice | null) {
-  store.recolorGroup(props.component, row.key, row.tokens, choice)
+  preset.recolorGroup(props.component, row.key, row.tokens, choice)
 }
 
 /** Default-state token of the default style, e.g. the background of a filled variant. */
@@ -75,7 +77,7 @@ function swatches(row: VariantRow): [string, string] {
   const property = mainToken(row, 'background', 'light') ? 'background' : 'color'
   const pick = (scheme: 'light' | 'dark') => {
     const token = mainToken(row, property, scheme)
-    return (token && store.resolvers?.[scheme].resolve(token.name)?.value) || 'transparent'
+    return (token && preset.resolvers?.[scheme].resolve(token.name)?.value) || 'transparent'
   }
   return [pick('light'), pick('dark')]
 }
@@ -95,8 +97,8 @@ function contrastOf(row: VariantRow, scheme: 'light' | 'dark', resolver: TokenRe
 function lowContrast(row: VariantRow): number | null {
   let worst: number | null = null
   for (const scheme of ['light', 'dark'] as const) {
-    const now = contrastOf(row, scheme, store.resolvers?.[scheme])
-    const before = contrastOf(row, scheme, store.baseResolvers?.[scheme])
+    const now = contrastOf(row, scheme, preset.resolvers?.[scheme])
+    const before = contrastOf(row, scheme, preset.baseResolvers?.[scheme])
     if (now !== null && worseThanBase(now, before)) worst = Math.min(worst ?? 99, now)
   }
   return worst

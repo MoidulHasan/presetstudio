@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
 import { COMPONENT_META, componentPath } from '~/utils/theme/components'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { SIZE_LABELS, STUDIO_CONFIG, controlPath, type StudioSize } from '~/utils/theme/studio-controls'
@@ -9,15 +10,16 @@ import { severityVariants, type StudioState } from '~/utils/theme/studio'
 // then the component's shared settings by purpose (studio-controls.ts).
 const props = defineProps<{ component: string }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const preset = usePresetStore()
 
 const config = computed(() => STUDIO_CONFIG[props.component]!)
 const label = computed(() => COMPONENT_META[props.component]?.label ?? props.component)
-const variants = computed(() => severityVariants(store.descriptors, props.component))
+const variants = computed(() => severityVariants(preset.descriptors, props.component))
 
 const tokensByPath = computed(() => {
   const map = new Map<string, TokenDescriptor>()
-  for (const t of store.descriptors) {
+  for (const t of preset.descriptors) {
     if (t.component === props.component && t.scheme === null) map.set(componentPath(t).join('.'), t)
   }
   return map
@@ -105,7 +107,7 @@ useStagePick(async ([first, second, third]) => {
       severity="secondary"
       outlined
       class="!w-full !justify-start !gap-2.5 !p-3 text-left"
-      @click="store.prefs.section = 'status'"
+      @click="editor.prefs.section = 'status'"
     >
       <i
         class="pi pi-info-circle shrink-0"

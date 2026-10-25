@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
 // A padding token ('0.5rem 0.75rem') as vertical and horizontal sliders in px.
 const props = withDefaults(defineProps<{ token: TokenDescriptor, label: string, hint?: string, max?: number }>(), { hint: undefined, max: 40 })
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const resolved = computed(() => store.resolvers?.light.resolve(props.token.name) ?? null)
-const source = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens))
+const resolved = computed(() => preset.resolvers?.light.resolve(props.token.name) ?? null)
+const source = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens))
 
 const LENGTH_RE = /^(-?\d*\.?\d+)(px|rem|em)?$/
 const toPx = (part: string) => {
@@ -33,7 +35,7 @@ function set(axis: 0 | 1, value: number | number[]) {
   if (!parts.value) return
   const next: [number, number] = [...parts.value]
   next[axis] = n
-  store.setToken(props.token.path, `${format(next[0])} ${format(next[1])}`)
+  preset.setToken(props.token.path, `${format(next[0])} ${format(next[1])}`)
 }
 
 const follows = computed(() => {
@@ -69,7 +71,7 @@ const follows = computed(() => {
           rounded
           class="!size-6"
           :aria-label="`Reset ${label}`"
-          @click="store.resetToken(token.path)"
+          @click="preset.resetToken(token.path)"
         />
       </span>
     </div>

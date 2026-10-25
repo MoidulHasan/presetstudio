@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESET_LABELS, type FocusRingDesign } from '~/utils/theme/types'
 
-const store = useEditorStore()
-const focus = computed(() => store.theme.design.focusRing)
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
+const focus = computed(() => workspace.theme.design.focusRing)
 const outline = computed(() => (focus.value.kind === 'outline' ? focus.value : null))
-const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 function setFocus(value: FocusRingDesign, key: string | null = null) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.focusRing = value
   }, key)
 }
@@ -34,7 +36,7 @@ const customColor = computed({
 })
 
 /** Describes how the base preset draws focus, from its own (unedited) tokens. */
-const baseResolver = computed(() => store.baseResolvers?.light ?? null)
+const baseResolver = computed(() => preset.baseResolvers?.light ?? null)
 const baseDescription = computed(() => {
   const r = baseResolver.value
   if (!r) return ''

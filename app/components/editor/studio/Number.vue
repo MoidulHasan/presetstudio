@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
 // A unitless number (opacity) or a duration ('0.2s', '150ms') as a slider.
 const props = defineProps<{ token: TokenDescriptor, label: string, hint?: string }>()
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const resolved = computed(() => store.resolvers?.light.resolve(props.token.name)?.value ?? '')
-const source = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens))
+const resolved = computed(() => preset.resolvers?.light.resolve(props.token.name)?.value ?? '')
+const source = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens))
 const duration = computed(() => /^\d*\.?\d+m?s$/.test(resolved.value.trim()))
 
 /** Opacity as 0–1, durations in ms. */
@@ -25,7 +27,7 @@ const display = computed(() => (value.value === null ? resolved.value : duration
 
 function set(v: number | number[]) {
   const n = Array.isArray(v) ? v[0]! : v
-  store.setToken(props.token.path, duration.value ? `${Math.round(n)}ms` : String(Math.round(n * 100) / 100))
+  preset.setToken(props.token.path, duration.value ? `${Math.round(n)}ms` : String(Math.round(n * 100) / 100))
 }
 </script>
 
@@ -56,7 +58,7 @@ function set(v: number | number[]) {
           rounded
           class="!size-6"
           :aria-label="`Reset ${label}`"
-          @click="store.resetToken(token.path)"
+          @click="preset.resetToken(token.path)"
         />
       </span>
     </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
 import { normalizeHex } from '~/utils/theme/palette'
 import type { PaletteChoice } from '~/utils/theme/recolor'
 import { PRIMITIVE_COLORS } from '~/utils/theme/types'
@@ -9,11 +9,11 @@ import { PRIMITIVE_COLORS } from '~/utils/theme/types'
 const props = defineProps<{ modelValue: PaletteChoice | null, label: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: PaletteChoice | null] }>()
 
-const store = useEditorStore()
+const preset = usePresetStore()
 
 type Option = { value: string, label: string, swatch: string | null }
 
-const swatch = (name: string) => store.resolvers?.light.resolve(`${name}-500`)?.value ?? 'transparent'
+const swatch = (name: string) => preset.resolvers?.light.resolve(`${name}-500`)?.value ?? 'transparent'
 
 const options = computed<Option[]>(() => [
   { value: 'base', label: 'Preset', swatch: null },

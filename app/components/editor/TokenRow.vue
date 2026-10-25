@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { parseColor } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
 import type { TokenDescriptor } from '~/utils/theme/schema'
@@ -12,13 +13,14 @@ import { referenceFor, sanitizeTokenValue } from '~/utils/theme/values'
 const props = defineProps<{ token: TokenDescriptor, scheme: ColorScheme, expanded: boolean, label: string }>()
 const emit = defineEmits<{ toggle: [] }>()
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const resolver = computed(() => store.resolvers?.[props.token.scheme ?? props.scheme])
+const resolver = computed(() => preset.resolvers?.[props.token.scheme ?? props.scheme])
 const resolved = computed(() => resolver.value?.resolve(props.token.name) ?? null)
 const raw = computed(() => String(resolved.value?.raw ?? props.token.defaultValue))
-const source = computed(() => tokenSource(props.token, store.theme.overrides, store.designTokens))
-const hasDesignValue = computed(() => hasPath(store.designTokens, props.token.path))
+const source = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens))
+const hasDesignValue = computed(() => hasPath(preset.designTokens, props.token.path))
 const isColor = computed(() => props.token.kind === 'color')
 const swatch = computed(() => (isColor.value && resolved.value && parseColor(resolved.value.value) ? resolved.value.value : null))
 
@@ -39,13 +41,13 @@ const invalid = computed(() => attempted.value && sanitizeTokenValue(draft.value
 function apply() {
   if (draft.value.trim() === raw.value) return
   attempted.value = true
-  store.setToken(props.token.path, draft.value)
+  preset.setToken(props.token.path, draft.value)
 }
 
 const suggestions = ref<string[]>([])
 const metaByName = computed(() => {
   const map = new Map<string, { kind: string, layer: string }>()
-  for (const d of store.descriptors) if (!map.has(d.name)) map.set(d.name, { kind: d.kind, layer: d.layer })
+  for (const d of preset.descriptors) if (!map.has(d.name)) map.set(d.name, { kind: d.kind, layer: d.layer })
   return map
 })
 
@@ -68,7 +70,7 @@ const pickerColor = computed({
   get: () => (swatch.value ? (normalizeHex(swatch.value) ?? '#000000').slice(1) : '000000'),
   set: (value: string) => {
     draft.value = `#${value}`
-    store.setToken(props.token.path, draft.value)
+    preset.setToken(props.token.path, draft.value)
   },
 })
 
@@ -124,7 +126,7 @@ const inputId = useId()
         rounded
         class="shrink-0"
         :aria-label="`Reset ${props.label}`"
-        @click="store.resetToken(props.token.path)"
+        @click="preset.resetToken(props.token.path)"
       />
     </div>
 

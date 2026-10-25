@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { RADIUS_VALUES, primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette } from '~/utils/theme/palette'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
-const store = useEditorStore()
-const design = computed(() => store.theme.design)
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
+const design = computed(() => workspace.theme.design)
 
 const presetHints: Record<BasePresetName, string> = {
   aura: 'Clean and modern, subtle borders',
@@ -15,7 +19,7 @@ const presetHints: Record<BasePresetName, string> = {
 }
 
 function setBase(value: BasePresetName) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.basePreset = value
   })
 }
@@ -24,7 +28,7 @@ const brandColor = computed(() => (design.value.primary.kind === 'custom' ? desi
 
 function setBrand(color: string) {
   const current = design.value.primary
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.primary = { kind: 'custom', color, algorithm: current.kind === 'custom' ? current.algorithm : 'oklch', shades: {} }
   }, 'start.brand')
 }
@@ -37,11 +41,11 @@ const corners: Array<{ value: Exclude<RadiusScale, 'custom'>, label: string }> =
 ]
 
 function cornerPreview(value: Exclude<RadiusScale, 'custom'>): string {
-  return value === 'base' ? (store.resolvers?.light.entries.get('border-radius-md')?.raw.toString() ?? '6px') : RADIUS_VALUES[value].md!
+  return value === 'base' ? (preset.resolvers?.light.entries.get('border-radius-md')?.raw.toString() ?? '6px') : RADIUS_VALUES[value].md!
 }
 
 function setRadius(value: RadiusScale) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.radius = value
   })
 }
@@ -64,19 +68,19 @@ const activeNeutral = computed(() => {
 })
 
 function setNeutral(value: SurfaceDesign) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.surface = { light: { ...value }, dark: { ...value } }
   })
 }
 
 const tintedPreview = computed(() =>
-  store.basePreset ? generateNeutralPalette(primaryHue(design.value.primary, store.basePreset), 0.014) : null)
+  preset.basePreset ? generateNeutralPalette(primaryHue(design.value.primary, preset.basePreset), 0.014) : null)
 
 // "Preset" shows the base preset's own neutrals, not whatever surface is set now.
-const baseResolver = computed(() => store.baseResolvers?.light ?? null)
+const baseResolver = computed(() => preset.baseResolvers?.light ?? null)
 
 function neutralSwatch(option: (typeof neutrals)[number], shade: string): string {
-  const r = option.id === 'base' ? baseResolver.value : store.resolvers?.light
+  const r = option.id === 'base' ? baseResolver.value : preset.resolvers?.light
   if (!r) return 'transparent'
   if (option.id === 'tinted') return tintedPreview.value?.[shade as '500'] ?? 'transparent'
   return r.resolve(`${option.swatch}-${shade}`)?.value ?? 'transparent'
@@ -99,7 +103,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
           :key="name"
           name="start-base"
           :value="name"
-          :selected="store.theme.basePreset === name"
+          :selected="workspace.theme.basePreset === name"
           :label="BASE_PRESET_LABELS[name]"
           :hint="presetHints[name]"
           class="h-full"
@@ -195,7 +199,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         severity="secondary"
         text
         class="!justify-start"
-        @click="store.prefs.section = 'accessibility'"
+        @click="editor.prefs.section = 'accessibility'"
       >
         <i
           class="pi pi-eye"
@@ -203,8 +207,8 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         />
         <span class="flex-1 text-left">Check contrast</span>
         <Tag
-          v-if="store.contrastIssues"
-          :value="`${store.contrastIssues} issue${store.contrastIssues === 1 ? '' : 's'}`"
+          v-if="preset.contrastIssues"
+          :value="`${preset.contrastIssues} issue${preset.contrastIssues === 1 ? '' : 's'}`"
           severity="danger"
         />
         <Tag
@@ -217,7 +221,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         severity="secondary"
         text
         class="!justify-start"
-        @click="store.prefs.section = 'primary'"
+        @click="editor.prefs.section = 'primary'"
       >
         <i
           class="pi pi-sliders-h"
@@ -229,7 +233,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         severity="secondary"
         text
         class="!justify-start"
-        @click="store.openComponentList()"
+        @click="editor.openComponentList()"
       >
         <i
           class="pi pi-th-large"

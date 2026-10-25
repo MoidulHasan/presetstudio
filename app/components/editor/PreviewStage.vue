@@ -1,18 +1,19 @@
 <script setup lang="ts">
-import { useEditorStore, type PreviewViewport } from '~/stores/editor'
+import { useEditorStore } from '~/stores/editor'
+import type { PreviewViewport } from '~/utils/editor-sections'
 import type { ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 // The preview area: one frame or light/dark side by side, at the chosen viewport width.
 // Scheme-aware inspector panels have their own light/dark switch for what to edit.
-const store = useEditorStore()
+const editor = useEditorStore()
 
 const VIEWPORT_WIDTH: Record<PreviewViewport, string | null> = { full: null, tablet: '768px', mobile: '390px' }
 
 // A component stage shows light and dark itself, so it needs one pane.
-const split = computed(() => store.prefs.split && !store.activeStage)
-const panes = computed<ColorScheme[]>(() => (split.value ? ['light', 'dark'] : [store.prefs.colorScheme]))
-const width = computed(() => VIEWPORT_WIDTH[store.prefs.viewport])
+const split = computed(() => editor.prefs.split && !editor.activeStage)
+const panes = computed<ColorScheme[]>(() => (split.value ? ['light', 'dark'] : [editor.prefs.colorScheme]))
+const width = computed(() => VIEWPORT_WIDTH[editor.prefs.viewport])
 
 // Side by side, both panes scroll together so the same component is always compared.
 type FrameHandle = { scrollTo: (position: ScrollPosition) => void }

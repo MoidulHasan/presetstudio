@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import type { MenuItem } from 'primevue/menuitem'
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const toast = useToast()
 const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
 
@@ -16,17 +18,17 @@ const deleteVisible = ref(false)
 const dialogTitle = computed(() => ({ create: 'New theme', duplicate: 'Duplicate theme', rename: 'Rename theme' })[dialog.value ?? 'create'])
 
 function openDialog(mode: DialogMode) {
-  nameInput.value = mode === 'rename' ? store.activeDoc.name : mode === 'duplicate' ? `${store.activeDoc.name} copy` : 'New theme'
+  nameInput.value = mode === 'rename' ? workspace.activeDoc.name : mode === 'duplicate' ? `${workspace.activeDoc.name} copy` : 'New theme'
   dialog.value = mode
 }
 
 function submitDialog() {
   const name = nameInput.value.trim()
   if (!name || !dialog.value) return
-  if (dialog.value === 'rename') store.renameTheme(store.activeDoc.id, name)
+  if (dialog.value === 'rename') workspace.renameTheme(workspace.activeDoc.id, name)
   else {
-    store.createTheme(name, dialog.value === 'duplicate' ? 'duplicate' : 'blank')
-    toast.add({ severity: 'success', summary: `Created “${store.activeDoc.name}”`, life: 2500 })
+    workspace.createTheme(name, dialog.value === 'duplicate' ? 'duplicate' : 'blank')
+    toast.add({ severity: 'success', summary: `Created “${workspace.activeDoc.name}”`, life: 2500 })
   }
   dialog.value = null
 }
@@ -37,20 +39,20 @@ const items = computed<MenuItem[]>(() => [
   { label: 'Rename', icon: 'pi pi-pencil', command: () => openDialog('rename') },
   { separator: true },
   { label: 'Reset to base preset', icon: 'pi pi-refresh', command: () => {
-    store.resetTheme()
+    preset.resetTheme()
     toast.add({ severity: 'secondary', summary: 'Theme reset to the base preset', detail: `Press ${undoHint} to undo.`, life: 3000 })
   } },
   {
     label: 'Delete',
     icon: 'pi pi-trash',
-    disabled: store.workspace.themes.length <= 1,
+    disabled: workspace.state.themes.length <= 1,
     command: () => (deleteVisible.value = true),
   },
 ])
 
 function confirmDelete() {
-  const name = store.activeDoc.name
-  store.deleteTheme(store.activeDoc.id)
+  const name = workspace.activeDoc.name
+  workspace.deleteTheme(workspace.activeDoc.id)
   toast.add({ severity: 'secondary', summary: `Deleted “${name}”`, life: 2500 })
   deleteVisible.value = false
 }
@@ -59,14 +61,14 @@ function confirmDelete() {
 <template>
   <div class="flex items-center gap-1">
     <Select
-      :model-value="store.workspace.activeId"
-      :options="store.workspace.themes"
+      :model-value="workspace.state.activeId"
+      :options="workspace.state.themes"
       option-label="name"
       option-value="id"
       aria-label="Active theme"
       size="small"
       class="w-32 min-w-0 sm:w-48"
-      @update:model-value="store.switchTheme"
+      @update:model-value="workspace.switchTheme"
     />
     <Button
       v-tooltip.bottom="'Theme actions'"
@@ -134,7 +136,7 @@ function confirmDelete() {
       :style="{ width: '24rem' }"
     >
       <p class="mb-4 text-sm">
-        "{{ store.activeDoc.name }}" will be removed from this browser. This can't be undone.
+        "{{ workspace.activeDoc.name }}" will be removed from this browser. This can't be undone.
       </p>
       <div class="flex justify-end gap-2">
         <Button

@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { MAX_RADIUS, RADIUS_VALUES, radiusScaleFrom } from '~/utils/theme/design'
 import { BASE_PRESET_LABELS, RADIUS_STEPS, type CustomRadius, type RadiusScale, type RadiusStep } from '~/utils/theme/types'
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 const options: Array<{ value: RadiusScale, label: string }> = [
   { value: 'none', label: 'Square' },
@@ -30,7 +32,7 @@ const NOTABLE: Array<[label: string, token: string]> = [
 ]
 
 const usedBy = computed<Record<RadiusStep, string>>(() => {
-  const r = store.resolvers?.light
+  const r = preset.resolvers?.light
   return Object.fromEntries(RADIUS_STEPS.map((step) => {
     const labels = NOTABLE.filter(([, token]) => r?.resolve(token)?.chain.includes(`border-radius-${step}`)).map(([label]) => label)
     const text = labels.join(', ')
@@ -38,7 +40,7 @@ const usedBy = computed<Record<RadiusStep, string>>(() => {
   })) as Record<RadiusStep, string>
 })
 
-const custom = computed(() => store.theme.design.radius === 'custom')
+const custom = computed(() => workspace.theme.design.radius === 'custom')
 
 const px = (value: string | undefined) => {
   const n = Number.parseFloat(value ?? '')
@@ -47,19 +49,19 @@ const px = (value: string | undefined) => {
 
 /** The scale currently in effect, in px. */
 const current = computed<CustomRadius>(() =>
-  Object.fromEntries(RADIUS_STEPS.map(step => [step, px(store.resolvers?.light.resolve(`border-radius-${step}`)?.value)])) as CustomRadius)
+  Object.fromEntries(RADIUS_STEPS.map(step => [step, px(preset.resolvers?.light.resolve(`border-radius-${step}`)?.value)])) as CustomRadius)
 
 function setRadius(value: RadiusScale) {
   // A new custom scale starts from what's on screen.
   const seed = value === 'custom' && !custom.value ? { ...current.value } : null
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.radius = value
     if (seed) d.design.customRadius = seed
   })
 }
 
 function setCustom(values: Partial<CustomRadius>, key: string) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.radius = 'custom'
     d.design.customRadius = { ...d.design.customRadius, ...values }
   }, key)
@@ -69,9 +71,9 @@ const sliderValue = (v: number | number[]) => (Array.isArray(v) ? v[0]! : v)
 
 /** The md radius for an option (what most components use). */
 function previewRadius(value: RadiusScale): string {
-  if (value === 'custom') return `${store.theme.design.customRadius.md}px`
+  if (value === 'custom') return `${workspace.theme.design.customRadius.md}px`
   if (value !== 'base') return RADIUS_VALUES[value].md!
-  return store.resolvers?.light.entries.get('border-radius-md')?.raw.toString() ?? '6px'
+  return preset.resolvers?.light.entries.get('border-radius-md')?.raw.toString() ?? '6px'
 }
 </script>
 
@@ -89,7 +91,7 @@ function previewRadius(value: RadiusScale): string {
           name="radius"
           :value="option.value"
           :label="option.label"
-          :selected="store.theme.design.radius === option.value"
+          :selected="workspace.theme.design.radius === option.value"
           layout="stacked"
           @select="setRadius(option.value)"
         >
@@ -111,10 +113,10 @@ function previewRadius(value: RadiusScale): string {
         </EditorOptionCard>
       </div>
       <p
-        v-if="store.theme.design.radius === 'base'"
+        v-if="workspace.theme.design.radius === 'base'"
         class="text-xs text-surface-500 dark:text-surface-400"
       >
-        Using {{ BASE_PRESET_LABELS[store.theme.basePreset] }}'s radius scale.
+        Using {{ BASE_PRESET_LABELS[workspace.theme.basePreset] }}'s radius scale.
       </p>
     </EditorInspectorGroup>
 
@@ -127,9 +129,9 @@ function previewRadius(value: RadiusScale): string {
         <label
           id="radius-base"
           class="flex justify-between text-xs font-medium"
-        >Base (md) <span class="font-mono text-surface-500">{{ store.theme.design.customRadius.md }}px</span></label>
+        >Base (md) <span class="font-mono text-surface-500">{{ workspace.theme.design.customRadius.md }}px</span></label>
         <Slider
-          :model-value="store.theme.design.customRadius.md"
+          :model-value="workspace.theme.design.customRadius.md"
           :min="0"
           :max="24"
           :step="1"
@@ -145,7 +147,7 @@ function previewRadius(value: RadiusScale): string {
         >
           <span
             class="size-8 shrink-0 border border-surface-400 bg-surface-100 dark:bg-surface-800"
-            :style="{ borderRadius: `${store.theme.design.customRadius[step]}px` }"
+            :style="{ borderRadius: `${workspace.theme.design.customRadius[step]}px` }"
             aria-hidden="true"
           />
           <span class="min-w-0 flex-1">
@@ -153,7 +155,7 @@ function previewRadius(value: RadiusScale): string {
             <span class="block truncate text-xs text-surface-500 dark:text-surface-400">{{ usedBy[step] }}</span>
           </span>
           <InputNumber
-            :model-value="store.theme.design.customRadius[step]"
+            :model-value="workspace.theme.design.customRadius[step]"
             :min="0"
             :max="MAX_RADIUS"
             suffix="px"

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { groupSemanticTokens, matchesQuery, semanticPath, tokenSource } from '~/utils/theme/semantic'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import type { ColorScheme } from '~/utils/theme/types'
@@ -8,17 +10,19 @@ import type { ColorScheme } from '~/utils/theme/types'
 // every group (Advanced → All tokens) or only `groups` (a pattern section's "All tokens").
 const props = defineProps<{ groups?: readonly string[] }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
 // The edited scheme is the previewed scheme, like the Surfaces panel.
 const scheme = computed<ColorScheme>({
-  get: () => store.prefs.colorScheme,
+  get: () => editor.prefs.colorScheme,
   set: (value) => {
-    store.prefs.colorScheme = value
+    editor.prefs.colorScheme = value
   },
 })
 
-const isCustom = (t: TokenDescriptor) => tokenSource(t, store.theme.overrides, store.designTokens) === 'custom'
+const isCustom = (t: TokenDescriptor) => tokenSource(t, workspace.theme.overrides, preset.designTokens) === 'custom'
 
 const query = ref('')
 const show = ref<'all' | 'custom'>('all')
@@ -42,8 +46,8 @@ function labelOf(token: TokenDescriptor, groupKey: string): string {
 const filtering = computed(() => query.value.trim() !== '' || show.value === 'custom')
 
 const groups = computed(() => {
-  const resolver = store.resolvers?.[scheme.value]
-  return groupSemanticTokens(store.descriptors, scheme.value)
+  const resolver = preset.resolvers?.[scheme.value]
+  return groupSemanticTokens(preset.descriptors, scheme.value)
     .filter(g => !props.groups || props.groups.includes(g.key))
     .map(g => ({
       ...g,
@@ -56,7 +60,7 @@ const groups = computed(() => {
 })
 
 const total = computed(() => groups.value.reduce((n, g) => n + g.tokens.length, 0))
-const customTotal = computed(() => groupSemanticTokens(store.descriptors, scheme.value)
+const customTotal = computed(() => groupSemanticTokens(preset.descriptors, scheme.value)
   .filter(g => !props.groups || props.groups.includes(g.key))
   .reduce((n, g) => n + g.tokens.filter(isCustom).length, 0))
 

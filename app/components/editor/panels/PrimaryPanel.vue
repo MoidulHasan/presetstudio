@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { parseColor, rgbToOklch } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
 import { semanticCell, semanticStudio, semanticUsedBy } from '~/utils/theme/semantic-studio'
 import { BASE_PRESET_LABELS, PRIMITIVE_COLORS, type PaletteAlgorithm, type PrimaryDesign } from '~/utils/theme/types'
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 
-const usedBy = computed(() => semanticUsedBy(store.descriptors, 'primary'))
+const usedBy = computed(() => semanticUsedBy(preset.descriptors, 'primary'))
 
 // Clicks on the Primary stage select the matching state cell.
 const grid = ref<{ focus: (row: string, column?: string) => Promise<void> } | null>(null)
@@ -23,12 +25,12 @@ const stateGrid = computed(() => {
     rows: config.rows.map(row => ({
       key: row.key,
       label: row.label,
-      cells: Object.fromEntries(Object.entries(row.cells).map(([column, path]) => [column, semanticCell(store.descriptors, path)])),
+      cells: Object.fromEntries(Object.entries(row.cells).map(([column, path]) => [column, semanticCell(preset.descriptors, path)])),
     })),
   }
 })
-const primary = computed(() => store.theme.design.primary)
-const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
+const primary = computed(() => workspace.theme.design.primary)
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 const modeOptions = [
   { value: 'base', label: 'Preset' },
@@ -37,7 +39,7 @@ const modeOptions = [
 ] as const
 
 function setPrimary(value: PrimaryDesign, key: string | null = null) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.design.primary = value
   }, key)
 }
@@ -47,12 +49,12 @@ function setMode(kind: PrimaryDesign['kind']) {
   if (kind === 'base') return setPrimary({ kind: 'base' })
   if (kind === 'palette') return setPrimary({ kind: 'palette', name: 'indigo' })
   // Start the custom color from whatever primary-500 currently is.
-  const current = normalizeHex(store.resolvedScale('primary', 'light')?.['500'] ?? '') ?? '#6366f1'
+  const current = normalizeHex(preset.resolvedScale('primary', 'light')?.['500'] ?? '') ?? '#6366f1'
   setPrimary({ kind: 'custom', color: current, algorithm: 'oklch', shades: {} })
 }
 
 // --- Built-in palettes -------------------------------------------------------------
-const swatch = (name: string) => store.resolvers?.light.resolve(`${name}-500`)?.value ?? 'transparent'
+const swatch = (name: string) => preset.resolvers?.light.resolve(`${name}-500`)?.value ?? 'transparent'
 
 // --- Custom color --------------------------------------------------------------------
 const custom = computed(() => (primary.value.kind === 'custom' ? primary.value : null))
@@ -79,7 +81,7 @@ const lightnessWarning = computed(() => {
 })
 
 // --- Per-shade tweaks ------------------------------------------------------------------
-const palette = computed(() => store.resolvedScale('primary', 'light'))
+const palette = computed(() => preset.resolvedScale('primary', 'light'))
 const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
   custom,
   palette,
@@ -90,7 +92,7 @@ const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
 
 // Which shade each scheme uses as "the" primary color, e.g. {primary.500} / {primary.400}.
 const usage = computed(() => {
-  const r = store.resolvers
+  const r = preset.resolvers
   if (!r) return null
   const shadeOf = (raw: string | number | undefined) => /\{primary\.(\d+)\}/.exec(String(raw ?? ''))?.[1] ?? '?'
   return {

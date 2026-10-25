@@ -1,4 +1,14 @@
-import type { EditorSection } from '~/stores/editor'
+/** Pattern sections: shared looks that many components use (each edits one semantic group). */
+export const PATTERN_SECTION_KEYS = ['formfield', 'list', 'menu', 'overlay', 'container', 'selection'] as const
+
+export const EDITOR_SECTIONS = ['start', 'primary', 'surface', 'status', 'text', 'shape', 'density', 'focus', ...PATTERN_SECTION_KEYS, 'components', 'semantic', 'accessibility'] as const
+export type EditorSection = (typeof EDITOR_SECTIONS)[number]
+
+export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
+export type PreviewViewport = (typeof PREVIEW_VIEWPORTS)[number]
+
+export const UI_THEMES = ['system', 'light', 'dark'] as const
+export type UiTheme = (typeof UI_THEMES)[number]
 
 export interface SectionMeta {
   label: string

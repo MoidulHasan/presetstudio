@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import { generateNuxtSnippets, generateVueSnippet } from '~/utils/theme/export'
 
 const visible = defineModel<boolean>('visible', { required: true })
 
-const store = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const toast = useToast()
 const tab = ref('preset')
 
@@ -16,7 +18,7 @@ interface Snippet {
 }
 
 const snippets = computed<Record<string, Snippet[]>>(() => {
-  const { identifier, fileBase, code } = store.exportInfo
+  const { identifier, fileBase, code } = preset.exportInfo
   const nuxt = generateNuxtSnippets(identifier, fileBase)
   return {
     preset: [{ title: 'Preset', fileName: `${fileBase}.ts`, code, download: true }],
@@ -60,10 +62,10 @@ function download(snippet: Snippet) {
   >
     <template #header>
       <div class="flex flex-col">
-        <span class="text-lg font-semibold">Export “{{ store.activeDoc.name }}”</span>
+        <span class="text-lg font-semibold">Export “{{ workspace.activeDoc.name }}”</span>
         <span class="text-xs text-surface-500 dark:text-surface-400">
-          {{ store.exportInfo.tokenCount }} changed token{{ store.exportInfo.tokenCount === 1 ? '' : 's' }}
-          on top of {{ store.theme.basePreset.charAt(0).toUpperCase() + store.theme.basePreset.slice(1) }}.
+          {{ preset.exportInfo.tokenCount }} changed token{{ preset.exportInfo.tokenCount === 1 ? '' : 's' }}
+          on top of {{ workspace.theme.basePreset.charAt(0).toUpperCase() + workspace.theme.basePreset.slice(1) }}.
           Only changes are exported; everything else comes from the base preset.
         </span>
       </div>

@@ -1,10 +1,15 @@
 <script setup lang="ts">
-import { useEditorStore, type UiTheme } from '~/stores/editor'
+import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
+import type { UiTheme } from '~/utils/editor-sections'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName } from '~/utils/theme/types'
 
 defineEmits<{ export: [] }>()
 
-const store = useEditorStore()
+const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const toast = useToast()
 const presetOptions = BASE_PRESETS.map(value => ({ value, label: BASE_PRESET_LABELS[value] }))
 const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -17,15 +22,15 @@ const UI_THEME_META: Record<UiTheme, { icon: string, label: string }> = {
   dark: { icon: 'pi pi-moon', label: 'Editor appearance: dark' },
 }
 
-const uiTheme = computed(() => UI_THEME_META[store.prefs.uiTheme] ?? UI_THEME_META.system)
+const uiTheme = computed(() => UI_THEME_META[editor.prefs.uiTheme] ?? UI_THEME_META.system)
 
 function resetTheme() {
-  store.resetTheme()
+  preset.resetTheme()
   toast.add({ severity: 'secondary', summary: 'Theme reset to the base preset', detail: `Press ${mod}Z to undo.`, life: 3000 })
 }
 
 function setBase(value: BasePresetName) {
-  store.update((d) => {
+  workspace.update((d) => {
     d.basePreset = value
   })
 }
@@ -53,8 +58,8 @@ function setBase(value: BasePresetName) {
           text
           rounded
           aria-label="Undo"
-          :disabled="!store.canUndo"
-          @click="store.undo()"
+          :disabled="!workspace.canUndo"
+          @click="workspace.undo()"
         />
         <Button
           v-tooltip.bottom="`Redo (${isMac ? '⇧⌘Z' : 'Ctrl+Y'})`"
@@ -65,18 +70,18 @@ function setBase(value: BasePresetName) {
           text
           rounded
           aria-label="Redo"
-          :disabled="!store.canRedo"
-          @click="store.redo()"
+          :disabled="!workspace.canRedo"
+          @click="workspace.redo()"
         />
         <Button
-          v-tooltip.bottom="store.pristine ? 'Nothing to reset' : 'Reset the whole theme to the base preset'"
+          v-tooltip.bottom="preset.pristine ? 'Nothing to reset' : 'Reset the whole theme to the base preset'"
           icon="pi pi-refresh"
           severity="secondary"
           size="small"
           text
           rounded
           aria-label="Reset theme"
-          :disabled="store.pristine"
+          :disabled="preset.pristine"
           @click="resetTheme"
         />
       </div>
@@ -86,7 +91,7 @@ function setBase(value: BasePresetName) {
         class="hidden text-sm text-surface-500 md:inline"
       >Base</label>
       <Select
-        :model-value="store.theme.basePreset"
+        :model-value="workspace.theme.basePreset"
         :options="presetOptions"
         option-label="label"
         option-value="value"
@@ -104,7 +109,7 @@ function setBase(value: BasePresetName) {
         rounded
         :aria-label="uiTheme.label"
         class="!hidden sm:!inline-flex"
-        @click="store.prefs.uiTheme = UI_THEME_NEXT[store.prefs.uiTheme] ?? 'light'"
+        @click="editor.prefs.uiTheme = UI_THEME_NEXT[editor.prefs.uiTheme] ?? 'light'"
       />
       <Button
         label="Export"

@@ -1,64 +1,25 @@
 import { defineStore } from 'pinia'
-import { buildEffectivePreset, buildPresetOverrides } from '~/utils/theme/build'
-import { designToTokens } from '~/utils/theme/design'
-import { checkContrast, classifyContrast, type ClassifiedContrast } from '~/utils/theme/contrast'
-import { countTokens, generatePresetCode, presetFileBase, presetIdentifier } from '~/utils/theme/export'
-import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
 import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
-import { loadBasePreset } from '~/utils/theme/presets'
-import { describePreset } from '~/utils/theme/schema'
-import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
-import { COMPONENT_META, STUDIO_COMPONENTS, countComponentOverrides, isComponentName, studioFor } from '~/utils/theme/components'
-import { clearRecolor, recolorOverrides, withoutComponent, type PaletteChoice } from '~/utils/theme/recolor'
-import type { TokenDescriptor } from '~/utils/theme/schema'
-import { countSemanticOverrides } from '~/utils/theme/semantic'
-import { PATTERN_SECTIONS, SEMANTIC_STUDIO_KEYS, countSemanticGroup, semanticStageName, semanticStudio, withoutSemanticGroup, type PatternSection } from '~/utils/theme/semantic-studio'
-import { deletePath, getPath, setPath } from '~/utils/theme/tree'
-import { sanitizeTokenValue } from '~/utils/theme/values'
-import {
-  createThemeDocument,
-  createWorkspace,
-  deserializeThemeState,
-  deserializeWorkspace,
-  mergeWorkspaces,
-  sanitizeThemeName,
-} from '~/utils/theme/serialize'
+import { COMPONENT_META, STUDIO_COMPONENTS, isComponentName, studioFor } from '~/utils/theme/components'
+import { withoutComponent } from '~/utils/theme/recolor'
+import { PATTERN_SECTIONS, semanticStageName, semanticStudio, withoutSemanticGroup, type PatternSection } from '~/utils/theme/semantic-studio'
 import { FOUNDATION_STAGES, type FoundationSection } from '~/utils/theme/stages'
-import { createResolver, type TokenResolver } from '~/utils/theme/tokens'
-import { SECTION_META } from '~/utils/editor-sections'
+import { COLOR_SCHEMES, type ColorScheme, type TokenTree } from '~/utils/theme/types'
 import {
-  COLOR_SCHEMES,
-  SHADES,
-  createDefaultThemeState,
-  type BasePresetName,
-  type ColorPalette,
-  type ColorScheme,
-  type ThemeState,
-  type TokenTree,
-  type Workspace,
-} from '~/utils/theme/types'
+  EDITOR_SECTIONS,
+  PREVIEW_VIEWPORTS,
+  SECTION_META,
+  UI_THEMES,
+  type EditorSection,
+  type PreviewViewport,
+  type UiTheme,
+} from '~/utils/editor-sections'
+import { PREFS_KEY, readStorage, writeStorage } from '~/utils/storage'
+import { useWorkspaceStore } from './workspace'
 
-/** A token that follows another one's edit (set to `value`, usually a reference). */
-export interface LinkedToken {
-  path: string[]
-  value: string
-}
-
-const WORKSPACE_KEY = 'presetstudio:workspace'
-const LEGACY_THEME_KEY = 'presetstudio:theme'
-const PREFS_KEY = 'presetstudio:prefs'
-
-/** Pattern sections: shared looks that many components use (each edits one semantic group). */
-export const PATTERN_SECTION_KEYS = ['formfield', 'list', 'menu', 'overlay', 'container', 'selection'] as const
-
-export const EDITOR_SECTIONS = ['start', 'primary', 'surface', 'status', 'text', 'shape', 'density', 'focus', ...PATTERN_SECTION_KEYS, 'components', 'semantic', 'accessibility'] as const
-export type EditorSection = (typeof EDITOR_SECTIONS)[number]
-
-export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
-export type PreviewViewport = (typeof PREVIEW_VIEWPORTS)[number]
-
-export const UI_THEMES = ['system', 'light', 'dark'] as const
-export type UiTheme = (typeof UI_THEMES)[number]
+// The editor UI: preferences (section, preview options, views), what the preview's stage shows,
+// and navigation between sections, components and the preview (reveal, stage picks, Compare).
+// Theme data lives in the workspace store, derived preset data in the preset store.
 
 interface EditorPrefs {
   /** Scheme shown in the preview and edited by scheme-aware panels. */
@@ -92,33 +53,6 @@ interface EditorPrefs {
   uiTheme: UiTheme
 }
 
-function readStorage(key: string): string | null {
-  if (!import.meta.client) return null
-  try {
-    return window.localStorage.getItem(key)
-  }
-  catch {
-    return null
-  }
-}
-
-function writeStorage(key: string, value: string): void {
-  if (!import.meta.client) return
-  try {
-    window.localStorage.setItem(key, value)
-  }
-  catch {
-    // Persistence is best-effort (private mode, quota, blocked storage).
-  }
-}
-
-function loadWorkspace(): Workspace {
-  const saved = deserializeWorkspace(readStorage(WORKSPACE_KEY))
-  if (saved) return saved
-  // Migrate the single v1 theme, if any.
-  return createWorkspace(deserializeThemeState(readStorage(LEGACY_THEME_KEY)) ?? undefined)
-}
-
 function loadPrefs(): EditorPrefs {
   const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system' }
   try {
@@ -148,165 +82,12 @@ function loadPrefs(): EditorPrefs {
   }
 }
 
-const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
-
 export const useEditorStore = defineStore('editor', () => {
-  const workspace = ref<Workspace>(loadWorkspace())
+  const workspace = useWorkspaceStore()
   const prefs = ref<EditorPrefs>(loadPrefs())
+  watch(prefs, value => writeStorage(PREFS_KEY, JSON.stringify(value)), { deep: true })
 
-  const activeDoc = computed(() => workspace.value.themes.find(t => t.id === workspace.value.activeId) ?? workspace.value.themes[0]!)
-
-  // Undo history for the active theme; reset when switching themes.
-  const history = shallowRef<History<ThemeState>>(createHistory(clone(activeDoc.value.theme)))
-  const theme = computed(() => history.value.present)
-
-  function syncActiveDoc() {
-    const doc = activeDoc.value
-    doc.theme = clone(history.value.present)
-    doc.updatedAt = Date.now()
-  }
-
-  /**
-   * Applies a change to the active theme as one undo step.
-   * `key` coalesces rapid edits of the same control (e.g. dragging a slider).
-   */
-  function update(mutate: (draft: ThemeState) => void, key: string | null = null) {
-    const draft = clone(history.value.present)
-    mutate(draft)
-    if (JSON.stringify(draft) === JSON.stringify(history.value.present)) return
-    history.value = commit(history.value, draft, key)
-    syncActiveDoc()
-  }
-
-  function undoChange() {
-    history.value = undo(history.value)
-    syncActiveDoc()
-  }
-
-  function redoChange() {
-    history.value = redo(history.value)
-    syncActiveDoc()
-  }
-
-  // --- Base preset + derived data ------------------------------------------------
-
-  const loadedPreset = shallowRef<{ name: BasePresetName, preset: TokenTree } | null>(null)
-  /** Base preset that failed to load (e.g. a stale chunk after a deploy); a reload fixes it. */
-  const basePresetError = ref<BasePresetName | null>(null)
-  let loadToken = 0
-  watch(
-    () => theme.value.basePreset,
-    async (name) => {
-      const token = ++loadToken
-      try {
-        const preset = (await loadBasePreset(name)) as unknown as TokenTree
-        if (token !== loadToken) return
-        loadedPreset.value = { name, preset }
-        basePresetError.value = null
-      }
-      catch (error) {
-        if (token !== loadToken) return
-        console.error(`Couldn't load the ${name} preset`, error)
-        basePresetError.value = name
-      }
-    },
-    { immediate: true },
-  )
-
-  // Only the theme's own base preset: while another one loads, derived data waits instead of
-  // mixing the previous base with the new theme.
-  const basePreset = computed(() => (loadedPreset.value?.name === theme.value.basePreset ? loadedPreset.value.preset : null))
-
-  const effectivePreset = computed(() => (basePreset.value ? buildEffectivePreset(theme.value, basePreset.value) : null))
-
-  const resolvers = computed<Record<ColorScheme, TokenResolver> | null>(() => {
-    const preset = effectivePreset.value
-    if (!preset) return null
-    return { light: createResolver(preset, 'light'), dark: createResolver(preset, 'dark') }
-  })
-
-  /** Resolved 50–950 scale of a palette token group (e.g. 'primary', 'surface') for a scheme. */
-  function resolvedScale(group: string, scheme: ColorScheme = prefs.value.colorScheme): ColorPalette | null {
-    const resolver = resolvers.value?.[scheme]
-    if (!resolver) return null
-    return Object.fromEntries(SHADES.map(s => [s, resolver.resolve(`${group}-${s}`)?.value ?? 'transparent'])) as ColorPalette
-  }
-
-  /** Resolvers of the untouched base preset, to compare the theme with the preset's own values. */
-  const baseResolvers = computed<Record<ColorScheme, TokenResolver> | null>(() => {
-    const base = basePreset.value
-    return base ? { light: createResolver(base, 'light'), dark: createResolver(base, 'dark') } : null
-  })
-
-  // Contrast of the untouched base preset, to tell inherited problems from new ones.
-  const baselineContrast = computed(() => {
-    const r = baseResolvers.value
-    return r ? { light: checkContrast(r.light), dark: checkContrast(r.dark) } : null
-  })
-
-  const contrast = computed<Record<ColorScheme, ClassifiedContrast[]> | null>(() => {
-    const r = resolvers.value
-    const baseline = baselineContrast.value
-    if (!r || !baseline) return null
-    return {
-      light: classifyContrast(checkContrast(r.light), baseline.light),
-      dark: classifyContrast(checkContrast(r.dark), baseline.dark),
-    }
-  })
-
-  /** Contrast failures introduced by this theme (not inherited from the base preset). */
-  const contrastIssues = computed(() => {
-    const c = contrast.value
-    return c ? [...c.light, ...c.dark].filter(r => r.status === 'introduced').length : 0
-  })
-
-  // --- Token-level editing ---------------------------------------------------------
-
-  /** Every token of the base preset with inferred kind and labels. */
-  const descriptors = computed(() => (basePreset.value ? describePreset(basePreset.value) : []))
-
-  /** Tokens set by design decisions (to tell 'design' from 'base' values). */
-  const designTokens = computed(() => (basePreset.value ? designToTokens(theme.value.design, basePreset.value) : {}))
-
-  const semanticOverrideCount = computed(() => countSemanticOverrides(theme.value.overrides))
-
-  /**
-   * Sets a raw token override. Returns false if the value isn't a safe token value.
-   * `linked` tokens follow along in the same undo step, unless they already have their own
-   * value (e.g. SplitButton's wrapper radius follows Button's corner radius).
-   */
-  function setToken(path: string[], value: string, linked: LinkedToken[] = []): boolean {
-    const safe = sanitizeTokenValue(value)
-    if (safe === null) return false
-    update((d) => {
-      d.overrides = setPath(d.overrides, path, safe)
-      for (const link of linked) {
-        if (getPath(d.overrides, link.path) === undefined) d.overrides = setPath(d.overrides, link.path, link.value)
-      }
-    }, `token:${path.join('.')}`)
-    return true
-  }
-
-  /** Removes a token override, and linked tokens that still only follow it. */
-  function resetToken(path: string[], linked: LinkedToken[] = []) {
-    update((d) => {
-      d.overrides = deletePath(d.overrides, path)
-      for (const link of linked) {
-        if (getPath(d.overrides, link.path) === link.value) d.overrides = deletePath(d.overrides, link.path)
-      }
-    })
-  }
-
-  /** Clears the custom values of one semantic group, or of every semantic token. */
-  function resetSemantic(group: string | null = null) {
-    update((d) => {
-      d.overrides = group ? withoutSemanticGroup(d.overrides, group) : deletePath(d.overrides, ['semantic'])
-    })
-  }
-
-  /** Custom value count per semantic group. */
-  const semanticGroupCounts = computed(() =>
-    Object.fromEntries(SEMANTIC_STUDIO_KEYS.map(key => [key, countSemanticGroup(theme.value.overrides, key)])) as Record<string, number>)
+  // --- Sections ----------------------------------------------------------------------
 
   /** Semantic group edited by the current section (pattern sections and Text), if any. */
   const sectionGroup = computed(() => PATTERN_SECTIONS[prefs.value.section as PatternSection] ?? null)
@@ -316,30 +97,62 @@ export const useEditorStore = defineStore('editor', () => {
     prefs.value.semanticView = view
   }
 
-  // --- Component tokens ---------------------------------------------------------------
+  // --- Stage ---------------------------------------------------------------------------
 
-  /** Custom token count per component. */
-  const componentOverrideCounts = computed(() => countComponentOverrides(theme.value.overrides))
-  const componentOverrideCount = computed(() => Object.values(componentOverrideCounts.value).reduce((n, c) => n + c, 0))
+  /** Component with a visual editor that's open (its stage is available, in either view), if any. */
+  const stageComponent = computed(() => {
+    const component = prefs.value.component
+    return prefs.value.section === 'components' && component && STUDIO_COMPONENTS.includes(component) ? component : null
+  })
 
-  /** Clears the custom tokens of one component, or of every component. */
-  function resetComponents(component: string | null = null) {
-    update((d) => {
-      d.overrides = deletePath(d.overrides, component ? ['components', component] : ['components'])
-      // Links that only followed this component (SplitButton's radius → Button's) go too.
-      const others = d.overrides.components
-      if (component && others && typeof others === 'object') {
-        const prefix = `{${component}.`
-        const walk = (node: TokenTree, path: string[]) => {
-          for (const [key, value] of Object.entries(node)) {
-            if (typeof value === 'object') walk(value, [...path, key])
-            else if (typeof value === 'string' && value.startsWith(prefix) && /^\{[^{}]+\}$/.test(value)) d.overrides = deletePath(d.overrides, [...path, key])
-          }
-        }
-        walk(others, ['components'])
-      }
-    })
+  /**
+   * Stage available for the current section ('button', 'semantic-formfield', 'foundation-shape').
+   * Independent of the panel's Design / All tokens view: both edit what the stage shows.
+   */
+  const stageName = computed(() => {
+    if (stageComponent.value) return stageComponent.value
+    if (sectionGroup.value) return semanticStageName(sectionGroup.value)
+    return FOUNDATION_STAGES[prefs.value.section as FoundationSection] ?? null
+  })
+
+  /** What the stage shows, for the preview toolbar. */
+  const stageLabel = computed(() => {
+    if (stageComponent.value) return COMPONENT_META[stageComponent.value]?.label ?? stageComponent.value
+    if (sectionGroup.value) return semanticStudio(sectionGroup.value)?.label ?? ''
+    return SECTION_META[prefs.value.section]?.label ?? ''
+  })
+
+  /** Stage the preview shows, if any (the user can switch to the pages). */
+  const activeStage = computed(() => (prefs.value.stage ? stageName.value : null))
+
+  /**
+   * Latest click on the stage ('root:danger:hover'), handled by the Design view of the stage's
+   * editor (`useStagePick`); the id makes repeats observable.
+   */
+  const stagePick = shallowRef<{ target: string, id: number, stage: string | null } | null>(null)
+  let pickId = 0
+  function pickOnStage(target: string) {
+    // The token list doesn't handle picks: bring up the Design view, which has the clicked control.
+    if (stageComponent.value) prefs.value.componentView = 'design'
+    else if (sectionGroup.value) prefs.value.semanticView = 'design'
+    stagePick.value = { target, id: ++pickId, stage: stageName.value }
   }
+  // A pick nobody handled belongs to its stage; drop it rather than replay it in another editor.
+  watch(stageName, (name) => {
+    if (stagePick.value && stagePick.value.stage !== name) stagePick.value = null
+  })
+
+  /** Overrides with the open editor's own edits removed, while Compare is held. */
+  function compareOverrides(): TokenTree {
+    const overrides = workspace.theme.overrides
+    if (!prefs.value.compare) return overrides
+    if (stageComponent.value) return withoutComponent(overrides, stageComponent.value)
+    if (prefs.value.section === 'components' && prefs.value.component) return withoutComponent(overrides, prefs.value.component)
+    if (sectionGroup.value) return withoutSemanticGroup(overrides, sectionGroup.value)
+    return overrides
+  }
+
+  // --- Components and the preview ----------------------------------------------------
 
   /** Latest request to scroll a component into view in the preview (the id makes repeats observable). */
   const revealRequest = shallowRef<{ component: string, id: number } | null>(null)
@@ -357,6 +170,12 @@ export const useEditorStore = defineStore('editor', () => {
     const current = revealed.value
     if (current?.component === component && current.found) return
     revealed.value = { component, found, uses }
+  }
+
+  /** Shows every component in the gallery (overview sections: Quick start, catalogs). */
+  function showAllComponents() {
+    prefs.value.template = 'components'
+    prefs.value.category = 'all'
   }
 
   /**
@@ -390,249 +209,23 @@ export const useEditorStore = defineStore('editor', () => {
     showAllComponents()
   }
 
-  // --- Component studio ----------------------------------------------------------------
-
-  /** Component with a visual editor that's open (its stage is available, in either view), if any. */
-  const stageComponent = computed(() => {
-    const component = prefs.value.component
-    return prefs.value.section === 'components' && component && STUDIO_COMPONENTS.includes(component) ? component : null
-  })
-
-  /** Semantic group of the current pattern section (or Text), if any. */
-  const stageSemanticGroup = computed(() => sectionGroup.value)
-
-  /**
-   * Stage available for the current section ('button', 'semantic-formfield', 'foundation-shape').
-   * Independent of the panel's Design / All tokens view: both edit what the stage shows.
-   */
-  const stageName = computed(() => {
-    if (stageComponent.value) return stageComponent.value
-    if (stageSemanticGroup.value) return semanticStageName(stageSemanticGroup.value)
-    return FOUNDATION_STAGES[prefs.value.section as FoundationSection] ?? null
-  })
-
-  /** What the stage shows, for the preview toolbar. */
-  const stageLabel = computed(() => {
-    if (stageComponent.value) return COMPONENT_META[stageComponent.value]?.label ?? stageComponent.value
-    if (stageSemanticGroup.value) return semanticStudio(stageSemanticGroup.value)?.label ?? ''
-    return SECTION_META[prefs.value.section]?.label ?? ''
-  })
-
-  /** Shows every component in the gallery (overview sections: Quick start, catalogs). */
-  function showAllComponents() {
-    prefs.value.template = 'components'
-    prefs.value.category = 'all'
-  }
-
-  /** Stage the preview shows, if any (the user can switch to the pages). */
-  const activeStage = computed(() => (prefs.value.stage ? stageName.value : null))
-
-  /** Overrides with the open editor's own edits removed, while Compare is held. */
-  function compareOverrides(): TokenTree {
-    const overrides = theme.value.overrides
-    if (!prefs.value.compare) return overrides
-    if (stageComponent.value) return withoutComponent(overrides, stageComponent.value)
-    if (prefs.value.section === 'components' && prefs.value.component) return withoutComponent(overrides, prefs.value.component)
-    if (sectionGroup.value) return withoutSemanticGroup(overrides, sectionGroup.value)
-    return overrides
-  }
-
-  /**
-   * Latest click on the stage ('root:danger:hover'), handled by the Design view of the stage's
-   * editor; the id makes repeats observable.
-   */
-  const stagePick = shallowRef<{ target: string, id: number, stage: string | null } | null>(null)
-  let pickId = 0
-  function pickOnStage(target: string) {
-    // The token list doesn't handle picks: bring up the Design view, which has the clicked control.
-    if (stageComponent.value) prefs.value.componentView = 'design'
-    else if (sectionGroup.value) prefs.value.semanticView = 'design'
-    stagePick.value = { target, id: ++pickId, stage: stageName.value }
-  }
-  // A pick nobody handled belongs to its stage; drop it rather than replay it in another editor.
-  watch(stageName, (name) => {
-    if (stagePick.value && stagePick.value.stage !== name) stagePick.value = null
-  })
-
-  /** Recolors a group of a component's tokens (e.g. Button 'info') with a palette, or resets it (null). */
-  function recolorGroup(component: string, group: string, tokens: TokenDescriptor[], choice: PaletteChoice | null) {
-    const r = resolvers.value
-    if (!r) return
-    update((d) => {
-      d.overrides = choice
-        ? recolorOverrides(d.overrides, tokens, r, component, group, choice)
-        : clearRecolor(d.overrides, tokens, component, group)
-    }, choice?.kind === 'custom' ? `recolor:${component}:${group}` : null)
-  }
-
-  const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
-
-  function resetDesignSection(section: DesignSection) {
-    update(draft => Object.assign(draft, resetSection(draft, section)))
-  }
-
-  const exportInfo = computed(() => {
-    const base = basePreset.value
-    const identifier = presetIdentifier(activeDoc.value.name)
-    const fileBase = presetFileBase(activeDoc.value.name)
-    if (!base) return { identifier, fileBase, code: '', tokenCount: 0 }
-    return {
-      identifier,
-      fileBase,
-      code: generatePresetCode(theme.value, base, { name: identifier }),
-      tokenCount: countTokens(buildPresetOverrides(theme.value, base)),
-    }
-  })
-
-  // --- Theme management ------------------------------------------------------------
-
-  function switchTheme(id: string) {
-    if (!workspace.value.themes.some(t => t.id === id) || id === workspace.value.activeId) return
-    workspace.value.activeId = id
-    history.value = createHistory(clone(activeDoc.value.theme))
-  }
-
-  function createTheme(name: string, from: 'blank' | 'duplicate' = 'blank') {
-    const base = from === 'duplicate' ? clone(theme.value) : createDefaultThemeState(theme.value.basePreset)
-    const doc = createThemeDocument(sanitizeThemeName(name), base)
-    workspace.value.themes.push(doc)
-    switchTheme(doc.id)
-  }
-
-  function renameTheme(id: string, name: string) {
-    const doc = workspace.value.themes.find(t => t.id === id)
-    if (!doc) return
-    doc.name = sanitizeThemeName(name, doc.name)
-    doc.updatedAt = Date.now()
-  }
-
-  function deleteTheme(id: string) {
-    const themes = workspace.value.themes
-    if (themes.length <= 1) return
-    const index = themes.findIndex(t => t.id === id)
-    if (index < 0) return
-    themes.splice(index, 1)
-    // Remembered so other tabs' copies don't bring it back.
-    workspace.value.deleted[id] = Date.now()
-    if (workspace.value.activeId === id) {
-      workspace.value.activeId = ''
-      switchTheme(themes[Math.max(0, index - 1)]!.id)
-    }
-  }
-
-  function resetTheme() {
-    update(draft => Object.assign(draft, createDefaultThemeState(draft.basePreset)))
-  }
-
-  // --- Persistence -------------------------------------------------------------------
-
-  // Several tabs share one saved workspace: each save and each change another tab saves are
-  // merged per theme (newest wins, deletes stick), so no tab overwrites another's work.
-
-  /** Latest change another tab made to the open theme (shown as a toast); the id makes repeats observable. */
-  const externalChange = shallowRef<{ kind: 'updated' | 'deleted', name: string, id: number } | null>(null)
-  let externalId = 0
-
-  function adoptWorkspace(merged: Workspace) {
-    if (JSON.stringify(merged) === JSON.stringify(workspace.value)) return
-    const previous = { id: activeDoc.value.id, name: activeDoc.value.name }
-    workspace.value = merged
-    const doc = activeDoc.value
-    if (doc.id !== previous.id) {
-      history.value = createHistory(clone(doc.theme))
-      externalChange.value = { kind: 'deleted', name: previous.name, id: ++externalId }
-    }
-    else if (JSON.stringify(doc.theme) !== JSON.stringify(history.value.present)) {
-      // One undo step, so this tab's version is one Undo away.
-      history.value = commit(history.value, clone(doc.theme))
-      externalChange.value = { kind: 'updated', name: doc.name, id: ++externalId }
-    }
-  }
-
-  let saveTimer: ReturnType<typeof setTimeout> | undefined
-  function saveWorkspace() {
-    clearTimeout(saveTimer)
-    saveTimer = undefined
-    const stored = deserializeWorkspace(readStorage(WORKSPACE_KEY))
-    if (stored) adoptWorkspace(mergeWorkspaces(workspace.value, stored))
-    writeStorage(WORKSPACE_KEY, JSON.stringify(workspace.value))
-  }
-  watch(workspace, () => {
-    clearTimeout(saveTimer)
-    saveTimer = setTimeout(saveWorkspace, 250)
-  }, { deep: true })
-  // Closing or hiding the tab within the debounce would otherwise lose the last edit.
-  if (import.meta.client) {
-    const flush = () => {
-      if (saveTimer !== undefined) saveWorkspace()
-    }
-    window.addEventListener('pagehide', flush)
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden') flush()
-    })
-    // Fired for saves made by other tabs only.
-    window.addEventListener('storage', (event) => {
-      if (event.key !== WORKSPACE_KEY) return
-      const remote = deserializeWorkspace(event.newValue)
-      if (remote) adoptWorkspace(mergeWorkspaces(workspace.value, remote))
-    })
-  }
-  watch(prefs, value => writeStorage(PREFS_KEY, JSON.stringify(value)), { deep: true })
-
   return {
-    workspace,
     prefs,
-    activeDoc,
-    theme,
-    basePreset,
-    basePresetError,
-    resolvers,
-    baseResolvers,
-    contrast,
-    contrastIssues,
-    modifiedSections,
-    pristine: computed(() => isPristine(theme.value)),
-    descriptors,
-    designTokens,
-    semanticOverrideCount,
-    componentOverrideCounts,
-    componentOverrideCount,
-    resetComponents,
+    sectionGroup,
+    setSemanticView,
+    stageComponent,
+    stageName,
+    stageLabel,
+    activeStage,
+    stagePick,
+    pickOnStage,
+    compareOverrides,
     revealRequest,
     revealed,
     revealComponent,
     reportRevealed,
+    showAllComponents,
     openComponent,
     openComponentList,
-    activeStage,
-    stageComponent,
-    stageSemanticGroup,
-    stageName,
-    stageLabel,
-    showAllComponents,
-    compareOverrides,
-    semanticGroupCounts,
-    sectionGroup,
-    setSemanticView,
-    stagePick,
-    pickOnStage,
-    recolorGroup,
-    setToken,
-    resetToken,
-    resetSemantic,
-    resetSection: resetDesignSection,
-    exportInfo,
-    canUndo: computed(() => canUndo(history.value)),
-    canRedo: computed(() => canRedo(history.value)),
-    update,
-    undo: undoChange,
-    redo: redoChange,
-    resolvedScale,
-    switchTheme,
-    createTheme,
-    renameTheme,
-    deleteTheme,
-    resetTheme,
-    externalChange,
   }
 })
