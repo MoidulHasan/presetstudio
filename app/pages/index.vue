@@ -5,8 +5,9 @@ import { EXAMPLE_THEMES, SPECIMEN_COMPONENTS, landingTheme, type LandingChoices,
 import { generatePresetCode } from '~/utils/theme/export'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { encodeShareToken, shareUrl, startPath } from '~/utils/theme/share'
-import { specimenVars } from '~/utils/theme/specimen'
-import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type TokenTree } from '~/utils/theme/types'
+import { referenceChain, specimenVars, themeResolver, type ChainStep } from '~/utils/theme/specimen'
+import type { TokenResolver } from '~/utils/theme/tokens'
+import { BASE_PRESETS, BASE_PRESET_LABELS, SHADES, type BasePresetName, type TokenTree } from '~/utils/theme/types'
 
 useSeoMeta({
   title: 'Preset Studio: theme PrimeVue around your brand',
@@ -25,15 +26,30 @@ async function ensurePreset(name: BasePresetName) {
   presets.value = { ...presets.value, [name]: preset }
 }
 
-function varsFor(choices: LandingChoices): Record<string, string> | null {
+interface Drawn {
+  resolver: TokenResolver
+  vars: Record<string, string>
+  /** The primary scale, 50 to 950, as the theme resolves it. */
+  shades: Array<{ shade: string, value: string }>
+}
+
+/** A theme drawn from landing choices, or null until its base preset has loaded. */
+function draw(choices: LandingChoices): Drawn | null {
   const base = presets.value[choices.base]
-  return base ? specimenVars(landingTheme(choices), base, SPECIMEN_COMPONENTS) : null
+  if (!base) return null
+  const resolver = themeResolver(landingTheme(choices), base)
+  return {
+    resolver,
+    vars: specimenVars(resolver, SPECIMEN_COMPONENTS),
+    shades: SHADES.map(shade => ({ shade, value: resolver.resolve(`primary-${shade}`)?.value ?? 'transparent' })),
+  }
 }
 
 // --- The try-it hero ---------------------------------------------------------------------
 const choices = ref<LandingChoices>({ base: 'aura', brand: '#0d9488', corners: 'base' })
 const theme = computed(() => landingTheme(choices.value))
-const heroVars = computed(() => varsFor(choices.value) ?? {})
+// The hero's base preset is always loaded: a base is only chosen once it is.
+const hero = computed(() => draw(choices.value)!)
 
 async function chooseBase(name: BasePresetName) {
   await ensurePreset(name)
@@ -61,7 +77,25 @@ async function continueInEditor() {
   }
 }
 
-// What the choices above export to: a real excerpt, not a mock.
+// --- One color, all the way down -------------------------------------------------------------
+// Real reference chains from the hero's theme: switching the base style shows its own wiring.
+const CASCADE = [
+  { token: 'button-primary-background', label: 'Button background' },
+  { token: 'toggleswitch-checked-background', label: 'Switch, on' },
+  { token: 'tag-primary-background', label: 'Tag background' },
+  { token: 'inputtext-focus-border-color', label: 'Input border, focused' },
+] as const
+
+const cascade = computed(() => CASCADE.map((row) => {
+  const chain = referenceChain(hero.value.resolver, row.token) ?? []
+  const pick = (layer: ChainStep['layer']) => chain.filter(step => step.layer === layer)
+  const palette = pick('palette')
+  // The primary shade it starts at, marked on a small copy of the hero's bands.
+  const shade = palette[0]?.reference.match(/^primary\.(\d+)$/)?.[1] ?? null
+  return { ...row, palette, shade, semantic: pick('semantic'), component: pick('component') }
+}))
+
+// What the choices export to: the real file, not a mock.
 const code = computed(() => {
   const base = presets.value[choices.value.base]
   return base ? generatePresetCode(theme.value, base, { name: 'MyPreset' }) : ''
@@ -72,8 +106,7 @@ onMounted(() => {
   for (const name of BASE_PRESETS) void ensurePreset(name)
 })
 
-// Null until the example's base preset has loaded (they're drawn after hydration).
-const exampleVars = computed(() => EXAMPLE_THEMES.map(example => varsFor(example.choices)))
+const examples = computed(() => EXAMPLE_THEMES.map(example => ({ ...example, drawn: draw(example.choices) })))
 
 async function openExample(name: string, choicesOf: LandingChoices) {
   opening.value = name
@@ -99,20 +132,21 @@ const capabilities = [
 
 <template>
   <div class="text-surface-900">
-    <!-- Hero: the visitor's own choices restyle a piece of a real app. -->
-    <section class="mx-auto grid max-w-6xl gap-10 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-14 lg:pt-16">
-      <div class="flex min-w-0 flex-col gap-8">
+    <!-- Hero: the controls on the left; on the right, the palette they generate, edge to edge,
+         under a piece of a real app drawn in it. -->
+    <section class="@container grid border-b border-surface-200 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+      <div class="flex min-w-0 flex-col justify-center gap-8 px-4 py-12 sm:px-6 lg:py-16 lg:pl-[max(1.5rem,calc((100cqw_-_72rem)/2_+_1.5rem))] lg:pr-14">
         <div class="flex flex-col gap-5">
           <h1 class="max-w-[15ch] text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[3.4rem]">
             Theme PrimeVue around your brand
           </h1>
           <p class="max-w-[46ch] text-lg leading-relaxed text-surface-600">
-            Choose a base style and your brand color, and the components on the right take them on.
-            Preset Studio turns the same choices into a complete preset for PrimeVue&nbsp;4, free and in your browser.
+            Give it one color. Preset Studio builds the full scale, wires it into every component
+            the way your base style intends, and hands you the preset for PrimeVue&nbsp;4.
           </p>
         </div>
 
-        <div class="flex flex-col gap-6">
+        <div class="flex max-w-xl flex-col gap-6">
           <fieldset class="flex flex-col gap-2">
             <legend class="mb-2 text-sm font-medium">
               Brand color
@@ -175,85 +209,204 @@ const capabilities = [
         </div>
       </div>
 
-      <!-- The canvas: like the editor's preview, the only place the theme applies. -->
-      <div class="flex min-w-0 items-center justify-center rounded-3xl bg-surface-100 p-5 sm:p-10">
+      <div class="relative flex min-h-[34rem] min-w-0 items-center justify-center overflow-hidden px-5 py-14 sm:px-12 lg:min-h-[42rem]">
+        <ol
+          class="absolute inset-0 flex"
+          aria-label="Your primary scale"
+        >
+          <li
+            v-for="(band, index) in hero.shades"
+            :key="band.shade"
+            class="flex flex-1 items-end justify-center pb-3 text-[0.6875rem] font-medium tabular-nums transition-colors duration-500 ease-out motion-reduce:transition-none"
+            :class="index < 5 ? 'text-black/55' : 'text-white/80'"
+            :style="{ backgroundColor: band.value, transitionDelay: `${index * 30}ms` }"
+            :title="`${band.shade}: ${band.value}`"
+          >
+            {{ band.shade }}
+          </li>
+        </ol>
         <LandingSpecimen
-          :vars="heroVars"
-          class="w-full max-w-md"
+          :vars="hero.vars"
+          elevated
+          class="relative w-full max-w-md"
         />
       </div>
     </section>
 
-    <!-- How it works: a real sequence, so it's numbered. -->
+    <!-- The three layers of a preset, live for the hero's theme. -->
     <section
-      class="border-t border-surface-200"
-      aria-labelledby="how"
+      class="border-b border-surface-200"
+      aria-labelledby="layers"
     >
       <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <h2
-          id="how"
-          class="mb-12 text-3xl font-semibold tracking-[-0.025em]"
+        <div class="mb-12 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+          <h2
+            id="layers"
+            class="text-3xl font-semibold tracking-[-0.025em]"
+          >
+            One color, all the way down
+          </h2>
+          <p class="max-w-[60ch] leading-relaxed text-surface-600">
+            A PrimeVue preset has three layers: a palette, semantic tokens that give shades a meaning,
+            and component tokens. Preset Studio replaces the palette and keeps every reference, so your
+            color lands where each base style wants it. Below is how {{ BASE_PRESET_LABELS[choices.base] }}
+            wires it; switch the base style above and the shades move.
+          </p>
+        </div>
+
+        <div
+          class="ps-cascade"
+          :style="hero.vars"
         >
-          From a color to a preset
-        </h2>
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
-          <ol class="flex flex-col gap-10">
-            <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3">
+          <div
+            class="hidden gap-6 pb-3 text-sm font-medium text-surface-500 lg:grid lg:grid-cols-[minmax(0,2.4fr)_1rem_minmax(0,3fr)_1rem_minmax(0,3fr)_1rem_minmax(0,2fr)]"
+            aria-hidden="true"
+          >
+            <span>Palette</span>
+            <span />
+            <span>Semantic</span>
+            <span />
+            <span>Component</span>
+            <span />
+            <span>On screen</span>
+          </div>
+          <ul class="border-t border-surface-200">
+            <li
+              v-for="row in cascade"
+              :key="row.token"
+              class="grid grid-cols-1 items-center gap-3 border-b border-surface-200 py-5 lg:grid-cols-[minmax(0,2.4fr)_1rem_minmax(0,3fr)_1rem_minmax(0,3fr)_1rem_minmax(0,2fr)] lg:gap-6"
+              :aria-label="row.label"
+            >
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-24 text-sm text-surface-500 lg:hidden">Palette</span>
+                <span
+                  v-if="row.shade"
+                  class="flex w-full max-w-56 flex-col gap-1.5"
+                  :title="`--p-primary-${row.shade}`"
+                >
+                  <span
+                    class="flex h-5 items-stretch"
+                    aria-hidden="true"
+                  >
+                    <span
+                      v-for="band in hero.shades"
+                      :key="band.shade"
+                      class="flex-1 transition-[background-color,transform] duration-500 motion-reduce:transition-none"
+                      :class="band.shade === row.shade ? 'relative z-10 scale-y-[1.5] rounded-[3px] ring-2 ring-surface-900 ring-offset-1' : ''"
+                      :style="{ backgroundColor: band.value }"
+                    />
+                  </span>
+                  <span class="font-mono text-[0.78rem] text-surface-800">primary.{{ row.shade }}</span>
+                </span>
+                <template v-else>
+                  <LandingTokenChip
+                    v-for="step in row.palette"
+                    :key="step.name"
+                    :step="step"
+                  />
+                </template>
+              </div>
               <span
-                class="text-lg font-semibold tabular-nums text-surface-400"
+                class="hidden text-surface-400 lg:block"
                 aria-hidden="true"
-              >1</span>
-              <div>
-                <h3 class="text-lg font-semibold">
-                  Start from your brand
-                </h3>
-                <p class="mt-1 text-surface-600">
-                  A short setup asks for a base style, your brand color, corners and grays. Everything else follows from them.
-                </p>
+              ><i class="pi pi-arrow-right text-xs" /></span>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-24 text-sm text-surface-500 lg:hidden">Semantic</span>
+                <template
+                  v-for="(step, index) in row.semantic"
+                  :key="step.name"
+                >
+                  <i
+                    v-if="index > 0"
+                    class="pi pi-arrow-right text-xs text-surface-400"
+                    aria-label="then"
+                  />
+                  <LandingTokenChip :step="step" />
+                </template>
+                <span
+                  v-if="!row.semantic.length"
+                  class="text-sm text-surface-500"
+                >Uses the shade directly</span>
+              </div>
+              <span
+                class="hidden text-surface-400 lg:block"
+                aria-hidden="true"
+              ><i class="pi pi-arrow-right text-xs" /></span>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-24 text-sm text-surface-500 lg:hidden">Component</span>
+                <LandingTokenChip
+                  v-for="step in row.component"
+                  :key="step.name"
+                  :step="step"
+                />
+              </div>
+              <span
+                class="hidden text-surface-400 lg:block"
+                aria-hidden="true"
+              ><i class="pi pi-arrow-right text-xs" /></span>
+              <div class="flex items-center gap-2">
+                <span class="w-24 text-sm text-surface-500 lg:hidden">On screen</span>
+                <Button
+                  v-if="row.token === 'button-primary-background'"
+                  label="Send invite"
+                  tabindex="-1"
+                />
+                <ToggleSwitch
+                  v-else-if="row.token === 'toggleswitch-checked-background'"
+                  :model-value="true"
+                  aria-label="Example switch, on"
+                  :tabindex="-1"
+                />
+                <Tag
+                  v-else-if="row.token === 'tag-primary-background'"
+                  value="Admin"
+                />
+                <InputText
+                  v-else
+                  model-value="maya@northwind.io"
+                  aria-label="Example input, focused"
+                  class="w-full min-w-0"
+                  tabindex="-1"
+                  readonly
+                  :pt="{ root: { style: { borderColor: 'var(--p-inputtext-focus-border-color)' } } }"
+                />
               </div>
             </li>
-            <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3">
-              <span
-                class="text-lg font-semibold tabular-nums text-surface-400"
-                aria-hidden="true"
-              >2</span>
-              <div>
-                <h3 class="text-lg font-semibold">
-                  Adjust what you need
-                </h3>
-                <p class="mt-1 text-surface-600">
-                  Colors, density and focus rings for everything at once, or one component at a time. Light and dark side by side, on sample pages or every state of a component.
-                </p>
-              </div>
-            </li>
-            <li class="grid grid-cols-[2rem_minmax(0,1fr)] gap-x-3">
-              <span
-                class="text-lg font-semibold tabular-nums text-surface-400"
-                aria-hidden="true"
-              >3</span>
-              <div>
-                <h3 class="text-lg font-semibold">
-                  Take it to your app
-                </h3>
-                <p class="mt-1 text-surface-600">
-                  Export a <code class="font-mono text-[0.9em]">definePreset</code> file with setup steps for Nuxt or Vue, or send the theme to a teammate as a link.
-                </p>
-              </div>
-            </li>
-          </ol>
-          <figure class="flex min-w-0 flex-col gap-2">
-            <pre class="max-h-[26rem] overflow-auto rounded-2xl border border-surface-200 bg-surface-50 p-5 font-mono text-[0.8125rem] leading-relaxed text-surface-800"><code>{{ code }}</code></pre>
-            <figcaption class="text-sm text-surface-500">
-              The export for the choices at the top of this page.
-            </figcaption>
-          </figure>
+          </ul>
         </div>
       </div>
     </section>
 
-    <!-- Example themes: live, and each opens in the editor as a new theme. -->
+    <!-- What leaves the browser: the preset file for these choices. -->
     <section
-      class="border-t border-surface-200"
+      class="border-b border-surface-200"
+      aria-labelledby="export"
+    >
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+        <div class="flex flex-col gap-4">
+          <h2
+            id="export"
+            class="text-3xl font-semibold tracking-[-0.025em]"
+          >
+            What you take home
+          </h2>
+          <p class="max-w-[46ch] leading-relaxed text-surface-600">
+            One <code class="font-mono text-[0.9em]">definePreset</code> file with only what you changed,
+            and the setup steps for Nuxt or Vue. Or send the theme to a teammate as a link.
+          </p>
+        </div>
+        <figure class="flex min-w-0 flex-col gap-2">
+          <pre class="max-h-[26rem] overflow-auto rounded-2xl border border-surface-200 bg-surface-50 p-5 font-mono text-[0.8125rem] leading-relaxed text-surface-800"><code>{{ code }}</code></pre>
+          <figcaption class="text-sm text-surface-500">
+            The export for the choices at the top of this page.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- Example themes, each on its own palette; each opens in the editor as a new theme. -->
+    <section
+      class="border-b border-surface-200"
       aria-labelledby="examples"
     >
       <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
@@ -270,17 +423,30 @@ const capabilities = [
         </div>
         <ul class="grid gap-x-8 gap-y-12 md:grid-cols-2">
           <li
-            v-for="(example, index) in EXAMPLE_THEMES"
+            v-for="example in examples"
             :key="example.name"
             class="flex min-w-0 flex-col gap-4"
           >
-            <div class="flex min-h-[20rem] items-center justify-center rounded-2xl bg-surface-100 p-5 sm:p-8">
-              <LandingSpecimen
-                v-if="exampleVars[index]"
-                :vars="exampleVars[index]!"
-                compact
-                class="w-full max-w-sm"
-              />
+            <div class="relative flex min-h-[21rem] items-center justify-center overflow-hidden rounded-2xl bg-surface-100 p-6 sm:p-10">
+              <template v-if="example.drawn">
+                <div
+                  class="absolute inset-0 flex"
+                  aria-hidden="true"
+                >
+                  <span
+                    v-for="band in example.drawn.shades"
+                    :key="band.shade"
+                    class="flex-1"
+                    :style="{ backgroundColor: band.value }"
+                  />
+                </div>
+                <LandingSpecimen
+                  :vars="example.drawn.vars"
+                  compact
+                  elevated
+                  class="relative w-full max-w-sm"
+                />
+              </template>
             </div>
             <div class="flex items-start justify-between gap-3">
               <div class="min-w-0">
@@ -308,10 +474,7 @@ const capabilities = [
     </section>
 
     <!-- What's inside: a plain list, not a card grid. -->
-    <section
-      class="border-t border-surface-200"
-      aria-labelledby="inside"
-    >
+    <section aria-labelledby="inside">
       <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
         <h2
           id="inside"

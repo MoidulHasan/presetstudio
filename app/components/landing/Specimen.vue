@@ -1,8 +1,8 @@
 <script setup lang="ts">
 // A small piece of a real app (inviting people to a workspace) built from PrimeVue components,
 // drawn in the theme given as CSS variables (`specimenVars` with `SPECIMEN_COMPONENTS`).
-// `compact` keeps the form only.
-defineProps<{ vars: Record<string, string>, compact?: boolean }>()
+// `compact` keeps the form only; `elevated` lifts the card off a colored background.
+defineProps<{ vars: Record<string, string>, compact?: boolean, elevated?: boolean }>()
 
 const email = ref('maya@northwind.io')
 const role = ref('Editor')
@@ -14,7 +14,7 @@ const welcome = ref(true)
     class="ps-specimen"
     :style="vars"
   >
-    <Card :pt="{ body: { class: compact ? '!p-4 !gap-3' : '' } }">
+    <Card :pt="{ root: { class: elevated ? 'shadow-2xl' : '' }, body: { class: compact ? '!p-4 !gap-3' : '' } }">
       <template #title>
         <span :class="compact ? 'text-base' : ''">Invite people to Northwind</span>
       </template>
