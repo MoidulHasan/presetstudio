@@ -143,13 +143,13 @@ onBeforeUnmount(() => {
       <!-- Two panes: destination rail and one panel on the left, the preview takes the rest. -->
       <template v-if="editor.prefs.layout === 'panels'">
         <aside
-          class="hidden w-[5.75rem] shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
+          class="ps-pane-scroll hidden w-[5.75rem] shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
           aria-label="Destinations"
         >
           <EditorDestinationNav />
         </aside>
         <aside
-          class="w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[24rem] lg:border-r xl:w-[26rem] dark:border-surface-800"
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[24rem] lg:border-r xl:w-[26rem] dark:border-surface-800"
           :class="pane === 'edit' ? 'block' : 'hidden'"
           aria-label="Inspector"
         >
@@ -176,7 +176,7 @@ onBeforeUnmount(() => {
       <!-- Classic: section nav · preview · inspector. -->
       <template v-else>
         <aside
-          class="hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
+          class="ps-pane-scroll hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
           aria-label="Sections"
         >
           <EditorSectionNav />
@@ -192,7 +192,7 @@ onBeforeUnmount(() => {
         </section>
 
         <aside
-          class="w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
           :class="pane === 'edit' ? 'block' : 'hidden'"
           aria-label="Inspector"
         >

@@ -11,6 +11,27 @@ body {
   font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
+/*
+ * Editor panes (rail, panel, classic sidebars): their edges sit mid-screen, where a full
+ * scrollbar looks like a stray divider. A thin one shows only while the pane is hovered or
+ * has keyboard focus; the gutter is reserved so content doesn't shift when it appears.
+ */
+.ps-pane-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  scrollbar-gutter: stable;
+}
+
+.ps-pane-scroll:hover,
+.ps-pane-scroll:focus-within {
+  scrollbar-color: var(--p-surface-300) transparent;
+}
+
+.ps-dark .ps-pane-scroll:hover,
+.ps-dark .ps-pane-scroll:focus-within {
+  scrollbar-color: var(--p-surface-600) transparent;
+}
+
 /* Side-by-side preview: the panes scroll together, so only one shows a scrollbar. */
 html.ps-no-scrollbar {
   scrollbar-width: none;
