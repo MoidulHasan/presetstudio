@@ -3,7 +3,7 @@ import { useEditorStore } from '~/stores/editor'
 import { parseColor, rgbToOklch } from '~/utils/theme/color'
 import { normalizeHex } from '~/utils/theme/palette'
 import { semanticCell, semanticStudio, semanticUsedBy } from '~/utils/theme/semantic-studio'
-import { BASE_PRESET_LABELS, PRIMITIVE_COLORS, type PaletteAlgorithm, type PrimaryDesign, type Shade } from '~/utils/theme/types'
+import { BASE_PRESET_LABELS, PRIMITIVE_COLORS, type PaletteAlgorithm, type PrimaryDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
 
@@ -11,13 +11,9 @@ const usedBy = computed(() => semanticUsedBy(store.descriptors, 'primary'))
 
 // Clicks on the Primary stage select the matching state cell.
 const grid = ref<{ focus: (row: string, column?: string) => Promise<void> } | null>(null)
-watch(() => store.stagePick, async (pick) => {
-  if (!pick) return
-  store.stagePick = null
-  const [kind, row, column] = pick.target.split(':')
-  await nextTick()
+useStagePick(async ([kind, row, column]) => {
   if (kind === 'cell' && row) await grid.value?.focus(row, column)
-}, { immediate: true })
+})
 
 const stateGrid = computed(() => {
   const config = semanticStudio('primary')
@@ -83,30 +79,13 @@ const lightnessWarning = computed(() => {
 })
 
 // --- Per-shade tweaks ------------------------------------------------------------------
-const selectedShade = ref<Shade | null>(null)
-const editedShades = computed(() => Object.keys(custom.value?.shades ?? {}) as Shade[])
 const palette = computed(() => store.resolvedScale('primary', 'light'))
-
-const shadeColor = computed({
-  get: () => (selectedShade.value && palette.value ? palette.value[selectedShade.value].replace('#', '') : '000000'),
-  set: (value: string) => {
-    const c = custom.value
-    const shade = selectedShade.value
-    const hex = normalizeHex(value)
-    if (!c || !shade || !hex) return
-    setPrimary({ ...c, shades: { ...c.shades, [shade]: hex } }, `primary.shade.${shade}`)
-  },
-})
-
-function resetShade(shade: Shade) {
-  const c = custom.value
-  if (!c) return
-  const shades = Object.fromEntries(Object.entries(c.shades).filter(([key]) => key !== shade))
-  setPrimary({ ...c, shades })
-}
-
-watch(() => primary.value.kind, () => {
-  selectedShade.value = null
+const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
+  custom,
+  palette,
+  set: setPrimary,
+  key: () => 'primary.shade',
+  resetOn: () => primary.value.kind,
 })
 
 // Which shade each scheme uses as "the" primary color, e.g. {primary.500} / {primary.400}.

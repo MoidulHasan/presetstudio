@@ -2,7 +2,7 @@
 import { useEditorStore } from '~/stores/editor'
 import { primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette, generateSurfacePalette, normalizeHex } from '~/utils/theme/palette'
-import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type Shade, type SurfaceDesign } from '~/utils/theme/types'
+import { BASE_PRESET_LABELS, NEUTRAL_COLORS, type ColorScheme, type SurfaceDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
@@ -48,28 +48,14 @@ function setCustomColor(value: string | undefined) {
 
 const customPreview = computed(() => generateSurfacePalette(custom.value?.color ?? CUSTOM_SEED))
 
-const selectedShade = ref<Shade | null>(null)
-watch([() => current.value.kind, scheme], () => {
-  selectedShade.value = null
-})
 const palette = computed(() => store.resolvedScale('surface', scheme.value))
-const editedShades = computed(() => Object.keys(custom.value?.shades ?? {}) as Shade[])
-
-const shadeColor = computed({
-  get: () => (selectedShade.value && palette.value ? palette.value[selectedShade.value].replace('#', '') : '000000'),
-  set: (value: string) => {
-    const shade = selectedShade.value
-    const hex = normalizeHex(value)
-    if (!custom.value || !shade || !hex) return
-    setSurface({ ...custom.value, shades: { ...custom.value.shades, [shade]: hex } }, `surface.${scheme.value}.shade.${shade}`)
-  },
+const { selectedShade, editedShades, shadeColor, resetShade } = useShadeTweaks({
+  custom,
+  palette,
+  set: setSurface,
+  key: () => `surface.${scheme.value}.shade`,
+  resetOn: () => `${scheme.value}:${current.value.kind}`,
 })
-
-function resetShade(shade: Shade) {
-  if (!custom.value) return
-  const shades = Object.fromEntries(Object.entries(custom.value.shades).filter(([key]) => key !== shade))
-  setSurface({ ...custom.value, shades })
-}
 
 function setTintedBackgrounds(value: boolean) {
   store.update((d) => {

@@ -13,7 +13,7 @@ const props = defineProps<{
 }>()
 
 const selected = ref<{ row: string, column: string } | null>(null)
-const highlight = ref<string | null>(null)
+const { current: highlight, flash } = useFlash<string>()
 const root = ref<HTMLElement | null>(null)
 
 const isSelected = (row: string, column: string) => selected.value?.row === row && selected.value.column === column
@@ -41,12 +41,9 @@ async function focus(row: string, column?: string) {
   const col = column && r.cells[column] ? column : Object.keys(r.cells)[0]
   if (!col) return
   selected.value = { row, column: col }
-  highlight.value = col
+  flash(col)
   await nextTick()
   root.value?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  setTimeout(() => {
-    if (highlight.value === col) highlight.value = null
-  }, 1600)
 }
 
 defineExpose({ focus })

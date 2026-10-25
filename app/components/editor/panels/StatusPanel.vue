@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { statusComponents } from '~/utils/theme/design'
-import { contrastRatio, parseColor } from '~/utils/theme/color'
+import { tokenContrast, worseThanBase } from '~/utils/theme/contrast'
 import { normalizeHex } from '~/utils/theme/palette'
-import { createResolver } from '~/utils/theme/tokens'
+import type { TokenResolver } from '~/utils/theme/tokens'
 import {
   BASE_PRESET_LABELS,
   NEUTRAL_COLORS,
@@ -18,19 +18,12 @@ const store = useEditorStore()
 
 // Clicks on the Status stage bring that severity into view.
 const sections = ref<Record<string, HTMLElement | null>>({})
-const highlighted = ref<string | null>(null)
-watch(() => store.stagePick, async (pick) => {
-  if (!pick) return
-  store.stagePick = null
-  const [kind, severity] = pick.target.split(':')
+const { current: highlighted, flash } = useFlash<string>()
+useStagePick(([kind, severity]) => {
   if (kind !== 'status' || !severity) return
-  await nextTick()
   sections.value[severity]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  highlighted.value = severity
-  setTimeout(() => {
-    if (highlighted.value === severity) highlighted.value = null
-  }, 1600)
-}, { immediate: true })
+  flash(severity)
+})
 const usedBy = computed(() => (store.basePreset ? statusComponents(store.basePreset) : []))
 const baseLabel = computed(() => BASE_PRESET_LABELS[store.theme.basePreset])
 
@@ -50,9 +43,8 @@ const choiceOf = (s: StatusDesign): Choice => (s.kind === 'palette' ? s.name : s
 const swatch = (name: string, shade = '500') => store.resolvers?.light.resolve(`${name}-${shade}`)?.value ?? 'transparent'
 
 /** The primitive a preset uses for a severity's buttons, e.g. 'sky' for info in Aura. */
-const baseResolver = computed(() => (store.basePreset ? createResolver(store.basePreset, 'light') : null))
 function baseColor(kind: StatusKind): string {
-  const last = baseResolver.value?.resolve(`button-${kind}-background`)?.chain.at(-1) ?? ''
+  const last = store.baseResolvers?.light.resolve(`button-${kind}-background`)?.chain.at(-1) ?? ''
   return last.replace(/-\d+$/, '')
 }
 
@@ -89,26 +81,22 @@ function setCustom(kind: StatusKind, value: string | undefined) {
 }
 
 // What the severity looks like right now (light mode), for the inline previews.
-function buttonContrast(r: ReturnType<typeof createResolver> | null | undefined, kind: StatusKind): number | null {
-  const fg = parseColor(r?.resolve(`button-${kind}-color`)?.value ?? '')
-  const bg = parseColor(r?.resolve(`button-${kind}-background`)?.value ?? '')
-  return fg && bg ? contrastRatio(fg, bg) : null
-}
+const buttonContrast = (r: TokenResolver | null | undefined, kind: StatusKind) =>
+  tokenContrast(r, `button-${kind}-color`, `button-${kind}-background`)
 
 const preview = computed(() => {
   const r = store.resolvers?.light
   const v = (name: string) => r?.resolve(name)?.value ?? 'transparent'
   return Object.fromEntries(STATUS_KINDS.map((kind) => {
     const ratio = buttonContrast(r, kind)
-    const baseRatio = buttonContrast(baseResolver.value, kind)
+    const baseRatio = buttonContrast(store.baseResolvers?.light, kind)
     return [kind, {
       button: v(`button-${kind}-background`),
       text: v(`button-${kind}-color`),
       tagBackground: v(`tag-${kind}-background`),
       tagColor: v(`tag-${kind}-color`),
       ratio,
-      // Only flag what this theme makes worse; the presets' own severities often miss 4.5:1.
-      worse: store.theme.design.status[kind].kind !== 'base' && ratio !== null && ratio < 4.5 && (baseRatio === null || ratio < baseRatio - 0.05),
+      worse: store.theme.design.status[kind].kind !== 'base' && worseThanBase(ratio, baseRatio),
     }]
   })) as Record<StatusKind, { button: string, text: string, tagBackground: string, tagColor: string, ratio: number | null, worse: boolean }>
 })

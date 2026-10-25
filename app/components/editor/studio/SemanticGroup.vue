@@ -59,11 +59,7 @@ const sections = ref<Record<string, HTMLElement | null>>({})
 const gridRef = ref<{ focus: (row: string, column?: string) => Promise<void> } | null>(null)
 const colorsSection = ref<HTMLElement | null>(null)
 
-watch(() => store.stagePick, async (pick) => {
-  if (!pick) return
-  store.stagePick = null
-  const [kind, first, second] = pick.target.split(':')
-  await nextTick()
+useStagePick(async ([kind, first, second]) => {
   if (kind === 'cell' && first) {
     await gridRef.value?.focus(first, second)
   }
@@ -71,7 +67,7 @@ watch(() => store.stagePick, async (pick) => {
     if (second && (['normal', 'sm', 'lg'] as string[]).includes(second)) setSize(first, second as StudioSize)
     sections.value[first]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
-}, { immediate: true })
+})
 </script>
 
 <template>

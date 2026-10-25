@@ -48,18 +48,14 @@ function controlsOf(section: (typeof config.value.sections)[number]) {
 const sections = ref<Record<string, HTMLElement | null>>({})
 const colors = ref<{ focus: (key: string, style: string, state: StudioState) => Promise<void> } | null>(null)
 
-watch(() => store.stagePick, async (pick) => {
-  if (!pick) return
-  store.stagePick = null
-  const [first, second, third] = pick.target.split(':')
-  await nextTick()
+useStagePick(async ([first, second, third]) => {
   if (first === 'section' && second) {
     if (third && (['normal', 'sm', 'lg', 'xl'] as string[]).includes(third)) setSize(second, third as StudioSize)
     sections.value[second]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
     return
   }
   if (first && second) await colors.value?.focus(second, first, (third as StudioState) ?? 'default')
-}, { immediate: true })
+})
 </script>
 
 <template>

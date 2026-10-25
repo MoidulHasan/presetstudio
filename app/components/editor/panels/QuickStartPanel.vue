@@ -2,7 +2,6 @@
 import { useEditorStore } from '~/stores/editor'
 import { RADIUS_VALUES, primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette } from '~/utils/theme/palette'
-import { createResolver } from '~/utils/theme/tokens'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
 const store = useEditorStore()
@@ -74,7 +73,7 @@ const tintedPreview = computed(() =>
   store.basePreset ? generateNeutralPalette(primaryHue(design.value.primary, store.basePreset), 0.014) : null)
 
 // "Preset" shows the base preset's own neutrals, not whatever surface is set now.
-const baseResolver = computed(() => (store.basePreset ? createResolver(store.basePreset, 'light') : null))
+const baseResolver = computed(() => store.baseResolvers?.light ?? null)
 
 function neutralSwatch(option: (typeof neutrals)[number], shade: string): string {
   const r = option.id === 'base' ? baseResolver.value : store.resolvers?.light

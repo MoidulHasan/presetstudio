@@ -35,6 +35,24 @@ export interface ContrastResult {
   pass: boolean | null
 }
 
+/** How much lower than the base preset's a ratio may be and still count as the preset's own. */
+export const CONTRAST_TOLERANCE = 0.05
+
+/** Contrast of two tokens (names) in a resolver, or null when either isn't a parseable color. */
+export function tokenContrast(resolver: TokenResolver | null | undefined, foreground: string, background: string): number | null {
+  const fg = parseColor(resolver?.resolve(foreground)?.value ?? '')
+  const bg = parseColor(resolver?.resolve(background)?.value ?? '')
+  return fg && bg ? contrastRatio(fg, bg) : null
+}
+
+/**
+ * Below `minimum` and noticeably worse than the base preset: a problem this theme made (the
+ * presets' own severities often miss 4.5:1, which isn't flagged).
+ */
+export function worseThanBase(ratio: number | null, baseRatio: number | null, minimum = 4.5): boolean {
+  return ratio !== null && ratio < minimum && (baseRatio === null || ratio < baseRatio - CONTRAST_TOLERANCE)
+}
+
 export function checkContrast(resolver: TokenResolver, pairs: readonly ContrastPair[] = CONTRAST_PAIRS): ContrastResult[] {
   const backdropValue = resolver.resolve('content-background')?.value
   const backdrop = (backdropValue && parseColor(backdropValue)) || undefined
@@ -70,7 +88,7 @@ export function classifyContrast(current: ContrastResult[], baseline: ContrastRe
     if (result.pass === null) status = 'unknown'
     else if (result.pass) status = 'pass'
     else if (result.pair.advisory) status = 'advisory'
-    else if (base?.pass === false && baselineRatio !== null && result.ratio! >= baselineRatio - 0.05) status = 'inherited'
+    else if (base?.pass === false && baselineRatio !== null && result.ratio! >= baselineRatio - CONTRAST_TOLERANCE) status = 'inherited'
     else status = 'introduced'
     return { ...result, status, baselineRatio }
   })

@@ -26,7 +26,7 @@ const sizePath = (key: string) => (size.value === 'normal' ? `root.${key}` : `ro
 function familyToken(component: string, path: string): TokenDescriptor | undefined {
   return store.descriptors.find(t => t.component === component && t.scheme === null && componentPath(t).join('.') === path)
 }
-const familyHighlight = ref<string | null>(null)
+const { current: familyHighlight, flash: flashFamily } = useFlash<string>()
 
 // SplitButton's own radius only shapes its wrapper (the outline of the raised shadow); its
 // halves are Buttons. It follows Button's corner radius, so the shadow fits the buttons.
@@ -41,26 +41,14 @@ const familyChanged = (component: string) => (store.componentOverrideCounts[comp
 const sections = ref<Record<string, HTMLElement | null>>({})
 const colors = ref<{ focus: (key: string, style: string, state: StudioState) => Promise<void> } | null>(null)
 
-watch(() => store.stagePick, async (pick) => {
-  if (!pick) return
-  // Handled once (the panel may mount right after the pick, e.g. when opening SplitButton).
-  store.stagePick = null
-  const [style, key, state] = pick.target.split(':')
+useStagePick(async ([style, key, state]) => {
   if (style === 'size' || style === 'shape' || style === 'family') {
-    await nextTick()
     sections.value[style]?.scrollIntoView({ block: 'start', behavior: 'smooth' })
-    if (style === 'family' && key) {
-      familyHighlight.value = key
-      setTimeout(() => {
-        if (familyHighlight.value === key) familyHighlight.value = null
-      }, 1600)
-    }
+    if (style === 'family' && key) flashFamily(key)
     return
   }
-  if (!key || !style) return
-  await nextTick()
-  await colors.value?.focus(key, style, (state as StudioState) ?? 'default')
-}, { immediate: true })
+  if (key && style) await colors.value?.focus(key, style, (state as StudioState) ?? 'default')
+})
 </script>
 
 <template>

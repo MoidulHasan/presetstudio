@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
-import { contrastRatio, parseColor } from '~/utils/theme/color'
+import { tokenContrast, worseThanBase } from '~/utils/theme/contrast'
 import { recolorChoice, type PaletteChoice } from '~/utils/theme/recolor'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 import { STATE_LABELS, matrixStates, stateMatrix, styleLabel as defaultStyleLabel, type StudioState, type VariantRow } from '~/utils/theme/studio'
-import { createResolver, type TokenResolver } from '~/utils/theme/tokens'
+import type { TokenResolver } from '~/utils/theme/tokens'
 
 // Colors of a component's variants (severities): one palette per variant recolors every style
 // and state in both modes; opening a variant shows a property × state grid of light|dark pairs,
@@ -23,7 +23,7 @@ const isCustom = (t: TokenDescriptor) => tokenSource(t, store.theme.overrides, s
 
 const openRow = ref<string | null>(null)
 const rowStyle = ref<Record<string, string>>({})
-const highlight = ref<{ row: string, state: StudioState } | null>(null)
+const { current: highlight, flash } = useFlash<{ row: string, state: StudioState }>()
 const rows = ref<Record<string, HTMLElement | null>>({})
 
 /** The color cell being edited; its editor shows under the grid (in the panel's flow). */
@@ -82,15 +82,10 @@ function swatches(row: VariantRow): [string, string] {
 
 const rowChanged = (row: VariantRow) => row.tokens.some(isCustom)
 
-const baseResolvers = computed(() => (store.basePreset ? { light: createResolver(store.basePreset, 'light'), dark: createResolver(store.basePreset, 'dark') } : null))
-
 function contrastOf(row: VariantRow, scheme: 'light' | 'dark', resolver: TokenResolver | null | undefined): number | null {
   const bgToken = mainToken(row, 'background', scheme)
   const fgToken = mainToken(row, 'color', scheme)
-  if (!bgToken || !fgToken || !resolver) return null
-  const bg = parseColor(resolver.resolve(bgToken.name)?.value ?? '')
-  const fg = parseColor(resolver.resolve(fgToken.name)?.value ?? '')
-  return bg && fg ? contrastRatio(fg, bg) : null
+  return bgToken && fgToken ? tokenContrast(resolver, fgToken.name, bgToken.name) : null
 }
 
 /**
@@ -101,8 +96,8 @@ function lowContrast(row: VariantRow): number | null {
   let worst: number | null = null
   for (const scheme of ['light', 'dark'] as const) {
     const now = contrastOf(row, scheme, store.resolvers?.[scheme])
-    const before = contrastOf(row, scheme, baseResolvers.value?.[scheme])
-    if (now !== null && now < 4.5 && (before === null || now < before - 0.05)) worst = Math.min(worst ?? 99, now)
+    const before = contrastOf(row, scheme, store.baseResolvers?.[scheme])
+    if (now !== null && worseThanBase(now, before)) worst = Math.min(worst ?? 99, now)
   }
   return worst
 }
@@ -120,16 +115,13 @@ async function focus(key: string, style: string, state: StudioState) {
   const matrix = matrixOf(row)
   // A state the style doesn't have (outlined messages have no hover) falls back to default.
   const target = matrixStates(matrix).includes(state) ? state : 'default'
-  highlight.value = { row: key, state: target }
+  flash({ row: key, state: target })
   // The first of background, border and text the style has in that state (outlined buttons
   // have no hover border, links only text).
   const property = ['background', 'borderColor', 'color'].find(p => matrix.find(m => m.property === p)?.cells[target])
   selected.value = property ? { row: key, style: styleOf(row), property, state: target } : null
   await nextTick()
   rows.value[key]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-  setTimeout(() => {
-    if (highlight.value?.row === key) highlight.value = null
-  }, 1600)
 }
 
 defineExpose({ focus })

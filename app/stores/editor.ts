@@ -232,10 +232,16 @@ export const useEditorStore = defineStore('editor', () => {
     return Object.fromEntries(SHADES.map(s => [s, resolver.resolve(`${group}-${s}`)?.value ?? 'transparent'])) as ColorPalette
   }
 
+  /** Resolvers of the untouched base preset, to compare the theme with the preset's own values. */
+  const baseResolvers = computed<Record<ColorScheme, TokenResolver> | null>(() => {
+    const base = basePreset.value
+    return base ? { light: createResolver(base, 'light'), dark: createResolver(base, 'dark') } : null
+  })
+
   // Contrast of the untouched base preset, to tell inherited problems from new ones.
   const baselineContrast = computed(() => {
-    const base = basePreset.value
-    return base ? { light: checkContrast(createResolver(base, 'light')), dark: checkContrast(createResolver(base, 'dark')) } : null
+    const r = baseResolvers.value
+    return r ? { light: checkContrast(r.light), dark: checkContrast(r.dark) } : null
   })
 
   const contrast = computed<Record<ColorScheme, ClassifiedContrast[]> | null>(() => {
@@ -581,6 +587,7 @@ export const useEditorStore = defineStore('editor', () => {
     basePreset,
     basePresetError,
     resolvers,
+    baseResolvers,
     contrast,
     contrastIssues,
     modifiedSections,
