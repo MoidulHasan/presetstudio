@@ -1,0 +1,72 @@
+<script setup lang="ts">
+import { useEditorStore } from '~/stores/editor'
+import { usePresetStore } from '~/stores/preset'
+import { EDITOR_DESTINATIONS, destinationOf, type Destination, type EditorSection } from '~/utils/editor-sections'
+
+// The editor's five places (Brand, Colors, Shape & spacing, Components, Review): a rail beside
+// the panel on wide screens, a bar above it on narrow ones. A destination reopens the section
+// last used in it.
+const props = withDefaults(defineProps<{ orientation?: 'vertical' | 'horizontal' }>(), { orientation: 'vertical' })
+
+const editor = useEditorStore()
+const preset = usePresetStore()
+const { isModified } = useSectionStatus()
+
+const current = computed(() => destinationOf(editor.prefs.section).key)
+
+// Remembered for the session, shared by both orientations.
+const lastSection = useState<Record<string, EditorSection>>('ps-destination-sections', () => ({}))
+watch(() => editor.prefs.section, (section) => {
+  lastSection.value = { ...lastSection.value, [destinationOf(section).key]: section }
+}, { immediate: true })
+
+function open(destination: Destination) {
+  editor.openSection(lastSection.value[destination.key] ?? destination.sections[0]!)
+}
+
+const items = computed(() => EDITOR_DESTINATIONS.map(d => ({
+  destination: d,
+  active: current.value === d.key,
+  modified: d.sections.some(isModified),
+  issues: d.key === 'review' ? preset.contrastIssues : 0,
+})))
+</script>
+
+<template>
+  <nav
+    aria-label="Editor"
+    :class="props.orientation === 'vertical' ? 'flex flex-col gap-1 p-2' : 'grid grid-cols-5 gap-1 px-2 py-1.5'"
+  >
+    <Button
+      v-for="item in items"
+      :key="item.destination.key"
+      severity="secondary"
+      text
+      class="!relative !flex-col !gap-1 !px-1 !py-2"
+      :class="[
+        item.active ? '!bg-surface-100 !text-surface-900 dark:!bg-surface-800 dark:!text-surface-0' : '!text-surface-500 dark:!text-surface-400',
+        props.orientation === 'vertical' ? '!w-full' : '',
+      ]"
+      :aria-current="item.active ? 'page' : undefined"
+      @click="open(item.destination)"
+    >
+      <i
+        :class="item.destination.icon"
+        class="text-base"
+        aria-hidden="true"
+      />
+      <span class="text-center text-[11px] font-medium leading-tight">{{ item.destination.label }}</span>
+      <span
+        v-if="item.issues"
+        class="absolute right-1.5 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
+        :aria-label="`${item.issues} contrast issues introduced by this theme`"
+      >{{ item.issues }}</span>
+      <span
+        v-else-if="item.modified"
+        class="absolute right-2 top-2 size-1.5 rounded-full bg-surface-900 dark:bg-surface-0"
+        role="img"
+        aria-label="Changed"
+      />
+    </Button>
+  </nav>
+</template>

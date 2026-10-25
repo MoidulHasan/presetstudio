@@ -140,29 +140,65 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="flex min-h-0 flex-1">
-      <aside
-        class="hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
-        aria-label="Sections"
-      >
-        <EditorSectionNav />
-      </aside>
+      <!-- Two panes: destination rail and one panel on the left, the preview takes the rest. -->
+      <template v-if="editor.prefs.layout === 'panels'">
+        <aside
+          class="hidden w-[5.75rem] shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
+          aria-label="Destinations"
+        >
+          <EditorDestinationNav />
+        </aside>
+        <aside
+          class="w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[24rem] lg:border-r xl:w-[26rem] dark:border-surface-800"
+          :class="pane === 'edit' ? 'block' : 'hidden'"
+          aria-label="Inspector"
+        >
+          <EditorDestinationNav
+            orientation="horizontal"
+            class="border-b border-surface-200 lg:!hidden dark:border-surface-800"
+          />
+          <EditorInspector>
+            <template #nav>
+              <EditorSectionTabs />
+            </template>
+          </EditorInspector>
+        </aside>
+        <section
+          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
+          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          aria-label="Preview"
+        >
+          <EditorPreviewToolbar />
+          <EditorPreviewStage />
+        </section>
+      </template>
 
-      <section
-        class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
-        :class="pane === 'preview' ? 'flex' : 'hidden'"
-        aria-label="Preview"
-      >
-        <EditorPreviewToolbar />
-        <EditorPreviewStage />
-      </section>
+      <!-- Classic: section nav · preview · inspector. -->
+      <template v-else>
+        <aside
+          class="hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
+          aria-label="Sections"
+        >
+          <EditorSectionNav />
+        </aside>
 
-      <aside
-        class="w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
-        :class="pane === 'edit' ? 'block' : 'hidden'"
-        aria-label="Inspector"
-      >
-        <EditorInspector />
-      </aside>
+        <section
+          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
+          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          aria-label="Preview"
+        >
+          <EditorPreviewToolbar />
+          <EditorPreviewStage />
+        </section>
+
+        <aside
+          class="w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
+          :class="pane === 'edit' ? 'block' : 'hidden'"
+          aria-label="Inspector"
+        >
+          <EditorInspector />
+        </aside>
+      </template>
 
       <EditorExportPanel
         v-model:visible="exportVisible"

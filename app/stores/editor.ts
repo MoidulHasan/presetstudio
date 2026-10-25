@@ -6,10 +6,12 @@ import { PATTERN_SECTIONS, semanticStageName, semanticStudio, withoutSemanticGro
 import { FOUNDATION_STAGES, type FoundationSection } from '~/utils/theme/stages'
 import { COLOR_SCHEMES, type ColorScheme, type TokenTree } from '~/utils/theme/types'
 import {
+  EDITOR_LAYOUTS,
   EDITOR_SECTIONS,
   PREVIEW_VIEWPORTS,
   SECTION_META,
   UI_THEMES,
+  type EditorLayout,
   type EditorSection,
   type PreviewViewport,
   type UiTheme,
@@ -51,10 +53,12 @@ interface EditorPrefs {
   semanticView: 'design' | 'tokens'
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
+  /** The editor's layout: two panes (default) or the classic three. */
+  layout: EditorLayout
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -75,6 +79,7 @@ function loadPrefs(): EditorPrefs {
       semanticView: raw?.semanticView === 'tokens' ? 'tokens' : fallback.semanticView,
       dismissedTips: Array.isArray(raw?.dismissedTips) ? raw.dismissedTips.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
+      layout: EDITOR_LAYOUTS.includes(raw?.layout as EditorLayout) ? raw!.layout! : fallback.layout,
     }
   }
   catch {

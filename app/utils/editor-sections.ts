@@ -10,6 +10,35 @@ export type PreviewViewport = (typeof PREVIEW_VIEWPORTS)[number]
 export const UI_THEMES = ['system', 'light', 'dark'] as const
 export type UiTheme = (typeof UI_THEMES)[number]
 
+/** 'panels': destination rail + one panel + preview. 'classic': section nav · preview · inspector. */
+export const EDITOR_LAYOUTS = ['panels', 'classic'] as const
+export type EditorLayout = (typeof EDITOR_LAYOUTS)[number]
+
+export interface Destination {
+  key: string
+  label: string
+  icon: string
+  /** Its sections, in tab order; the first is where the destination opens. */
+  sections: readonly EditorSection[]
+}
+
+/**
+ * The editor's top-level places, named by what people want to do (the 'panels' layout).
+ * Every section belongs to exactly one.
+ */
+export const EDITOR_DESTINATIONS: readonly Destination[] = [
+  { key: 'brand', label: 'Brand', icon: 'pi pi-bolt', sections: ['start'] },
+  { key: 'colors', label: 'Colors', icon: 'pi pi-palette', sections: ['primary', 'surface', 'status', 'text', 'selection'] },
+  { key: 'shape', label: 'Shape & spacing', icon: 'pi pi-stop', sections: ['shape', 'density', 'focus'] },
+  // Shared styles (form fields, lists, …) sit with the components that use them.
+  { key: 'components', label: 'Components', icon: 'pi pi-th-large', sections: ['components', 'formfield', 'list', 'menu', 'overlay', 'container'] },
+  { key: 'review', label: 'Review', icon: 'pi pi-check-circle', sections: ['accessibility', 'semantic'] },
+]
+
+export function destinationOf(section: EditorSection): Destination {
+  return EDITOR_DESTINATIONS.find(d => d.sections.includes(section)) ?? EDITOR_DESTINATIONS[0]!
+}
+
 export interface SectionMeta {
   label: string
   icon: string

@@ -93,8 +93,16 @@ watch([() => editor.prefs.section, () => editor.prefs.component], () => body.val
     class="flex flex-col"
   >
     <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
-      <!-- Below xl the section nav is hidden; pick sections here instead. -->
+      <!-- The two-pane layout puts its navigation (destination bar, section tabs) here. -->
+      <div
+        v-if="$slots.nav"
+        class="-mx-5 -mt-4 mb-3 border-b border-surface-200 empty:hidden dark:border-surface-800"
+      >
+        <slot name="nav" />
+      </div>
+      <!-- Classic layout: below xl the section nav is hidden; pick sections here instead. -->
       <Select
+        v-else
         v-model="sectionValue"
         :options="sectionOptions"
         option-label="label"
