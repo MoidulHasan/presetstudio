@@ -137,6 +137,13 @@ Done when production runs the current editor.
 
 ### P1. Fixes
 
+**Status (2026-10-25): all five done** on `fix/review-findings`, verified in a browser:
+P1.1 translucent colors show over the scheme's content background (`opaqueOver` in `color.ts`) with an opacity hint;
+P1.2 no overflow in any section at 1920 / 1100 / 390 (Status, Tag, Badge and Form fields stages scroll inside their cards on phones);
+P1.3 below xl a stage shows one scheme with a Light | Dark switch that starts at the editor's scheme (`Schemes.vue`, `PREVIEW_SCHEME`);
+P1.4 `.p-focus` on component roots is forced, options and menu items are not (`preview-css.ts`);
+P1.5 the hover box follows the pointer, also side by side and after scrolling (it re-targets what's under the pointer).
+
 **P1.1 Color picker shows black for mixed colors**
 - Where: `app/components/editor/TokenRow.vue` (`swatch`, `pickerColor`); helpers in `app/utils/theme/color.ts` (`parseColor`, `composite`, `toHex`).
 - Cause: values like `color-mix(in srgb, {primary.400}, transparent 96%)` resolve to colors with alpha (or don't parse), so the swatch is null and the picker falls back to `#000000`.
