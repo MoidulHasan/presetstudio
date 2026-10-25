@@ -58,7 +58,7 @@ const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
     ],
   },
   { label: 'Advanced', items: [{ ...sectionItem('semantic'), badge: preset.semanticOverrideCount || undefined }] },
-  { label: 'Review', items: [sectionItem('accessibility')] },
+  { label: 'Review', items: [sectionItem('changes'), sectionItem('accessibility')] },
 ])
 
 const model = computed<MenuItem[]>(() => groups.value.map(group => ({

@@ -184,13 +184,13 @@ export const useEditorStore = defineStore('editor', () => {
   }
 
   /**
-   * Opens a section with a fitting preview: Quick start shows the sample app (the brand color
-   * everywhere), the catalogs (all tokens, accessibility) the whole component gallery; other
-   * sections bring their own stage.
+   * Opens a section with a fitting preview: Quick start and What you changed show the sample app
+   * (the brand color everywhere), the catalogs (all tokens, accessibility) the whole component
+   * gallery; other sections bring their own stage.
    */
   function openSection(section: EditorSection) {
     prefs.value.section = section
-    if (section === 'start') prefs.value.template = 'dashboard'
+    if (section === 'start' || section === 'changes') prefs.value.template = 'dashboard'
     else if (section === 'semantic' || section === 'accessibility') showAllComponents()
   }
 

@@ -1,7 +1,7 @@
 /** Pattern sections: shared looks that many components use (each edits one semantic group). */
 export const PATTERN_SECTION_KEYS = ['formfield', 'list', 'menu', 'overlay', 'container', 'selection'] as const
 
-export const EDITOR_SECTIONS = ['start', 'primary', 'surface', 'status', 'text', 'shape', 'density', 'focus', ...PATTERN_SECTION_KEYS, 'components', 'semantic', 'accessibility'] as const
+export const EDITOR_SECTIONS = ['start', 'primary', 'surface', 'status', 'text', 'shape', 'density', 'focus', ...PATTERN_SECTION_KEYS, 'components', 'semantic', 'changes', 'accessibility'] as const
 export type EditorSection = (typeof EDITOR_SECTIONS)[number]
 
 export const PREVIEW_VIEWPORTS = ['full', 'tablet', 'mobile'] as const
@@ -32,7 +32,7 @@ export const EDITOR_DESTINATIONS: readonly Destination[] = [
   { key: 'shape', label: 'Shape & spacing', icon: 'pi pi-stop', sections: ['shape', 'density', 'focus'] },
   // Shared styles (form fields, lists, …) sit with the components that use them.
   { key: 'components', label: 'Components', icon: 'pi pi-th-large', sections: ['components', 'formfield', 'list', 'menu', 'overlay', 'container'] },
-  { key: 'review', label: 'Review', icon: 'pi pi-check-circle', sections: ['accessibility', 'semantic'] },
+  { key: 'review', label: 'Review', icon: 'pi pi-check-circle', sections: ['changes', 'accessibility', 'semantic'] },
 ]
 
 export function destinationOf(section: EditorSection): Destination {
@@ -125,6 +125,11 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     label: 'All components',
     icon: 'pi pi-th-large',
     description: 'Customize a single component. Components marked Visual have an editor with a live stage.',
+  },
+  changes: {
+    label: 'What you changed',
+    icon: 'pi pi-list-check',
+    description: 'Everything this theme changes from its base preset. Open a change where it\'s edited, or revert it.',
   },
   accessibility: {
     label: 'Accessibility',

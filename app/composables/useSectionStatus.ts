@@ -10,6 +10,7 @@ export function useSectionStatus() {
   function isModified(section: EditorSection): boolean {
     if (section === 'semantic') return preset.semanticOverrideCount > 0
     if (section === 'components') return preset.componentOverrideCount > 0
+    if (section === 'changes') return !preset.pristine
     const group = PATTERN_SECTIONS[section as PatternSection]
     if (group) return (preset.semanticGroupCounts[group] ?? 0) > 0
     return preset.modifiedSections.has(section as DesignSection)

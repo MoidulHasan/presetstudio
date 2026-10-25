@@ -49,8 +49,9 @@ function reset(section: DesignSection) {
 }
 
 // Sections with something to reset show the button even when there's nothing changed yet.
-const resettable = computed(() => ['semantic', 'components'].includes(editor.prefs.section) || !!designSection.value || !!openSemantic.value)
+const resettable = computed(() => ['semantic', 'components', 'changes'].includes(editor.prefs.section) || !!designSection.value || !!openSemantic.value)
 const resetHint = computed(() => {
+  if (editor.prefs.section === 'changes') return 'Revert every change (back to the base preset)'
   if (openSemantic.value) return `Clear the custom ${openSemantic.value.label.toLowerCase()} tokens`
   if (editor.prefs.section === 'semantic') return 'Clear every custom semantic token'
   if (editor.prefs.section === 'components') return openComponent.value ? `Clear the custom ${openComponent.value.label} tokens` : 'Clear the custom tokens of every component'
@@ -58,6 +59,7 @@ const resetHint = computed(() => {
 })
 
 const canReset = computed(() => {
+  if (editor.prefs.section === 'changes') return !preset.pristine
   if (openSemantic.value) return (preset.semanticGroupCounts[openSemantic.value.key] ?? 0) > 0
   if (editor.prefs.section === 'semantic') return preset.semanticOverrideCount > 0
   if (editor.prefs.section === 'components') {
@@ -67,7 +69,11 @@ const canReset = computed(() => {
 })
 
 function onReset() {
-  if (editor.prefs.section === 'components') {
+  if (editor.prefs.section === 'changes') {
+    preset.resetTheme()
+    toast.add({ severity: 'secondary', summary: 'Every change reverted', detail: `Back to the base preset. Press ${undoHint} to undo.`, life: 3000 })
+  }
+  else if (editor.prefs.section === 'components') {
     const label = openComponent.value?.label
     preset.resetComponents(editor.prefs.component)
     toast.add({ severity: 'secondary', summary: label ? `Custom ${label} tokens cleared` : 'Custom component tokens cleared', detail: `Press ${undoHint} to undo.`, life: 3000 })
@@ -160,6 +166,7 @@ watch([() => editor.prefs.section, () => editor.prefs.component], () => body.val
       <EditorPanelsPatternPanel v-else-if="editor.sectionGroup" />
       <EditorPanelsSemanticPanel v-else-if="editor.prefs.section === 'semantic'" />
       <EditorPanelsComponentsPanel v-else-if="editor.prefs.section === 'components'" />
+      <EditorPanelsChangesPanel v-else-if="editor.prefs.section === 'changes'" />
       <EditorPanelsAccessibilityPanel v-else-if="editor.prefs.section === 'accessibility'" />
     </div>
   </div>
