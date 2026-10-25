@@ -5,12 +5,14 @@ import {
   createWorkspace,
   deserializeThemeState,
   deserializeWorkspace,
+  MAX_TOMBSTONES,
+  mergeWorkspaces,
   parseThemeState,
   parseWorkspace,
   sanitizeThemeName,
   serializeThemeState,
 } from './serialize'
-import { createDefaultDesign, createDefaultThemeState, type ThemeState } from './types'
+import { createDefaultDesign, createDefaultThemeState, type ThemeDocument, type ThemeState, type Workspace } from './types'
 
 const custom: ThemeState = {
   ...createDefaultThemeState('nora'),
@@ -88,6 +90,18 @@ describe('workspace serialization', () => {
     expect(parseWorkspace({ version: 2, activeId: 'a', themes: [] })).toBeNull()
   })
 
+  it('reads tombstones from saved workspaces (older ones have none)', () => {
+    const ws = createWorkspace(custom)
+    const { deleted: _, ...old } = ws
+    expect(parseWorkspace(old)!.deleted).toEqual({})
+    const parsed = parseWorkspace({ ...ws, deleted: { a: 5, b: 'x', c: -1, d: Number.POSITIVE_INFINITY, ['e'.repeat(65)]: 1 } })!
+    expect(parsed.deleted).toEqual({ a: 5 })
+    const many = Object.fromEntries(Array.from({ length: MAX_TOMBSTONES + 10 }, (_, i) => [`t${i}`, i]))
+    const kept = parseWorkspace({ ...ws, deleted: many })!.deleted
+    expect(Object.keys(kept)).toHaveLength(MAX_TOMBSTONES)
+    expect(kept.t0).toBeUndefined()
+  })
+
   it('sanitizes theme names', () => {
     expect(sanitizeThemeName('  Brand\u0000 theme  ')).toBe('Brand theme')
     expect(sanitizeThemeName('')).toBe('Untitled theme')
@@ -106,6 +120,51 @@ describe('palette helpers', () => {
     const p = generateClassicPalette('#10b981')
     expect(Object.keys(p)).toHaveLength(11)
     expect(p['500']).toBe('#10b981')
+  })
+})
+
+describe('merging workspaces from two tabs', () => {
+  const doc = (id: string, updatedAt: number, name = id): ThemeDocument =>
+    ({ id, name, createdAt: 0, updatedAt, theme: createDefaultThemeState() })
+  const ws = (themes: ThemeDocument[], deleted: Record<string, number> = {}, activeId = themes[0]!.id): Workspace =>
+    ({ version: 2, activeId, themes, deleted })
+
+  it('keeps the most recently updated copy of each theme', () => {
+    const merged = mergeWorkspaces(ws([doc('a', 10, 'mine'), doc('b', 30, 'mine')]), ws([doc('a', 20, 'theirs'), doc('b', 20, 'theirs')]))
+    expect(merged.themes.map(d => d.name)).toEqual(['theirs', 'mine'])
+  })
+
+  it('adds themes created in the other tab, after this tab\'s own', () => {
+    const merged = mergeWorkspaces(ws([doc('a', 1)]), ws([doc('c', 1), doc('a', 1)]))
+    expect(merged.themes.map(d => d.id)).toEqual(['a', 'c'])
+  })
+
+  it('keeps deleted themes deleted, unless edited after the delete', () => {
+    const local = ws([doc('a', 1), doc('b', 5), doc('c', 50)])
+    const remote = ws([doc('a', 1)], { b: 10, c: 10 })
+    const merged = mergeWorkspaces(local, remote)
+    expect(merged.themes.map(d => d.id)).toEqual(['a', 'c'])
+    expect(merged.deleted).toEqual({ b: 10, c: 10 })
+    // The other direction: the tab that deleted doesn't get it back.
+    expect(mergeWorkspaces(remote, local).themes.map(d => d.id)).toEqual(['a', 'c'])
+  })
+
+  it('keeps this tab\'s active theme, or falls back to the first one', () => {
+    expect(mergeWorkspaces(ws([doc('a', 1), doc('b', 1)], {}, 'b'), ws([doc('a', 1), doc('b', 1)], {}, 'a')).activeId).toBe('b')
+    expect(mergeWorkspaces(ws([doc('a', 1), doc('b', 1)], {}, 'b'), ws([doc('a', 1)], { b: 2 })).activeId).toBe('a')
+  })
+
+  it('never ends up with no themes', () => {
+    const merged = mergeWorkspaces(ws([doc('a', 1)], { b: 3 }), ws([doc('b', 2)], { a: 4 }))
+    expect(merged.themes.map(d => d.id)).toEqual(['b'])
+    expect(merged.deleted).toEqual({ a: 4 })
+  })
+
+  it('is stable: merging the result again changes nothing', () => {
+    const local = ws([doc('a', 10), doc('b', 30)], { x: 1 })
+    const remote = ws([doc('a', 20), doc('c', 5)], { y: 2 })
+    const merged = mergeWorkspaces(local, remote)
+    expect(mergeWorkspaces(merged, remote)).toEqual(merged)
   })
 })
 

@@ -114,6 +114,8 @@ export interface Workspace {
   version: typeof WORKSPACE_VERSION
   activeId: string
   themes: ThemeDocument[]
+  /** Deleted theme id → when (tombstones), so another tab's copy doesn't bring it back. */
+  deleted: Record<string, number>
 }
 
 /** Starting point for a custom radius scale (Aura's values). */

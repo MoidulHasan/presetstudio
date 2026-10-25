@@ -12,6 +12,15 @@ function reload() {
   window.location.reload()
 }
 
+// Themes are shared between tabs; say when another tab changed the open one.
+const toast = useToast()
+watch(() => store.externalChange, (change) => {
+  if (!change) return
+  toast.add(change.kind === 'updated'
+    ? { severity: 'info', summary: 'Changed in another tab', detail: `"${change.name}" was edited in another tab. Undo to go back to the version you had.`, life: 6000 }
+    : { severity: 'warn', summary: 'Deleted in another tab', detail: `"${change.name}" was deleted in another tab.`, life: 6000 })
+})
+
 // Below lg there's room for one pane at a time.
 type Pane = 'edit' | 'preview'
 const pane = computed<Pane>({

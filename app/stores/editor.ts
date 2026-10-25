@@ -20,6 +20,7 @@ import {
   createWorkspace,
   deserializeThemeState,
   deserializeWorkspace,
+  mergeWorkspaces,
   sanitizeThemeName,
 } from '~/utils/theme/serialize'
 import { FOUNDATION_STAGES, type FoundationSection } from '~/utils/theme/stages'
@@ -494,7 +495,9 @@ export const useEditorStore = defineStore('editor', () => {
 
   function renameTheme(id: string, name: string) {
     const doc = workspace.value.themes.find(t => t.id === id)
-    if (doc) doc.name = sanitizeThemeName(name, doc.name)
+    if (!doc) return
+    doc.name = sanitizeThemeName(name, doc.name)
+    doc.updatedAt = Date.now()
   }
 
   function deleteTheme(id: string) {
@@ -503,6 +506,8 @@ export const useEditorStore = defineStore('editor', () => {
     const index = themes.findIndex(t => t.id === id)
     if (index < 0) return
     themes.splice(index, 1)
+    // Remembered so other tabs' copies don't bring it back.
+    workspace.value.deleted[id] = Date.now()
     if (workspace.value.activeId === id) {
       workspace.value.activeId = ''
       switchTheme(themes[Math.max(0, index - 1)]!.id)
@@ -515,10 +520,35 @@ export const useEditorStore = defineStore('editor', () => {
 
   // --- Persistence -------------------------------------------------------------------
 
+  // Several tabs share one saved workspace: each save and each change another tab saves are
+  // merged per theme (newest wins, deletes stick), so no tab overwrites another's work.
+
+  /** Latest change another tab made to the open theme (shown as a toast); the id makes repeats observable. */
+  const externalChange = shallowRef<{ kind: 'updated' | 'deleted', name: string, id: number } | null>(null)
+  let externalId = 0
+
+  function adoptWorkspace(merged: Workspace) {
+    if (JSON.stringify(merged) === JSON.stringify(workspace.value)) return
+    const previous = { id: activeDoc.value.id, name: activeDoc.value.name }
+    workspace.value = merged
+    const doc = activeDoc.value
+    if (doc.id !== previous.id) {
+      history.value = createHistory(clone(doc.theme))
+      externalChange.value = { kind: 'deleted', name: previous.name, id: ++externalId }
+    }
+    else if (JSON.stringify(doc.theme) !== JSON.stringify(history.value.present)) {
+      // One undo step, so this tab's version is one Undo away.
+      history.value = commit(history.value, clone(doc.theme))
+      externalChange.value = { kind: 'updated', name: doc.name, id: ++externalId }
+    }
+  }
+
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   function saveWorkspace() {
     clearTimeout(saveTimer)
     saveTimer = undefined
+    const stored = deserializeWorkspace(readStorage(WORKSPACE_KEY))
+    if (stored) adoptWorkspace(mergeWorkspaces(workspace.value, stored))
     writeStorage(WORKSPACE_KEY, JSON.stringify(workspace.value))
   }
   watch(workspace, () => {
@@ -533,6 +563,12 @@ export const useEditorStore = defineStore('editor', () => {
     window.addEventListener('pagehide', flush)
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') flush()
+    })
+    // Fired for saves made by other tabs only.
+    window.addEventListener('storage', (event) => {
+      if (event.key !== WORKSPACE_KEY) return
+      const remote = deserializeWorkspace(event.newValue)
+      if (remote) adoptWorkspace(mergeWorkspaces(workspace.value, remote))
     })
   }
   watch(prefs, value => writeStorage(PREFS_KEY, JSON.stringify(value)), { deep: true })
@@ -590,5 +626,6 @@ export const useEditorStore = defineStore('editor', () => {
     renameTheme,
     deleteTheme,
     resetTheme,
+    externalChange,
   }
 })

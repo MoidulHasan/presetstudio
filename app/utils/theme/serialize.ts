@@ -160,7 +160,7 @@ export function createThemeDocument(name: string, theme: ThemeState = createDefa
 
 export function createWorkspace(theme?: ThemeState): Workspace {
   const doc = createThemeDocument('My theme', theme)
-  return { version: WORKSPACE_VERSION, activeId: doc.id, themes: [doc] }
+  return { version: WORKSPACE_VERSION, activeId: doc.id, themes: [doc], deleted: {} }
 }
 
 const MAX_NAME_LENGTH = 60
@@ -198,7 +198,50 @@ export function parseWorkspace(input: unknown): Workspace | null {
   })
   if (!themes.length) return null
   const activeId = typeof input.activeId === 'string' && seen.has(input.activeId) ? input.activeId : themes[0]!.id
-  return { version: WORKSPACE_VERSION, activeId, themes }
+  return { version: WORKSPACE_VERSION, activeId, themes, deleted: parseTombstones(input.deleted) }
+}
+
+/** At most this many deleted ids are remembered (newest first). */
+export const MAX_TOMBSTONES = 100
+
+function parseTombstones(input: unknown): Record<string, number> {
+  if (!isTokenTree(input)) return {}
+  const entries = Object.entries(input)
+    .filter((entry): entry is [string, number] => entry[0].length <= 64 && typeof entry[1] === 'number' && Number.isFinite(entry[1]) && entry[1] >= 0)
+  return pruneTombstones(Object.fromEntries(entries))
+}
+
+function pruneTombstones(deleted: Record<string, number>): Record<string, number> {
+  return Object.fromEntries(Object.entries(deleted).sort((a, b) => b[1] - a[1]).slice(0, MAX_TOMBSTONES))
+}
+
+/**
+ * Combines this tab's workspace with another tab's (or the stored one), per theme: the most
+ * recently updated copy of each theme wins, and a theme deleted after its last update stays
+ * deleted. This tab's theme order and active theme are kept.
+ */
+export function mergeWorkspaces(local: Workspace, remote: Workspace): Workspace {
+  let deleted: Record<string, number> = { ...local.deleted }
+  for (const [id, at] of Object.entries(remote.deleted)) deleted[id] = Math.max(deleted[id] ?? 0, at)
+
+  const remoteById = new Map(remote.themes.map(doc => [doc.id, doc]))
+  const localIds = new Set(local.themes.map(doc => doc.id))
+  const candidates = [
+    ...local.themes.map((doc) => {
+      const other = remoteById.get(doc.id)
+      return other && other.updatedAt > doc.updatedAt ? other : doc
+    }),
+    ...remote.themes.filter(doc => !localIds.has(doc.id)),
+  ]
+  let themes = candidates.filter(doc => !(doc.id in deleted && deleted[doc.id]! >= doc.updatedAt))
+  // Two tabs deleting different themes could leave none: keep the most recently updated one.
+  if (!themes.length) {
+    const newest = candidates.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a))
+    themes = [newest]
+    deleted = Object.fromEntries(Object.entries(deleted).filter(([id]) => id !== newest.id))
+  }
+  const activeId = themes.some(doc => doc.id === local.activeId) ? local.activeId : themes[0]!.id
+  return { version: WORKSPACE_VERSION, activeId, themes, deleted: pruneTombstones(deleted) }
 }
 
 export function deserializeWorkspace(raw: string | null | undefined): Workspace | null {
