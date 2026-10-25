@@ -1,5 +1,5 @@
 import { designToTokens } from './design'
-import { mergeOverrides, pruneEmpty } from './merge'
+import { mergeOverrides, overlayTree, pruneEmpty } from './merge'
 import type { ThemeState, TokenTree } from './types'
 
 /**
@@ -10,7 +10,10 @@ export function buildPresetOverrides(state: Pick<ThemeState, 'design' | 'overrid
   return pruneEmpty(mergeOverrides(designToTokens(state.design, base), state.overrides))
 }
 
-/** Base preset with overrides applied, as plain token data (for resolving and inspecting). */
+/**
+ * Base preset with overrides applied, as plain token data (for resolving and inspecting).
+ * Shares the base preset's untouched subtrees (read-only), so resolvers rebuild fast.
+ */
 export function buildEffectivePreset(state: Pick<ThemeState, 'design' | 'overrides'>, base: TokenTree): TokenTree {
-  return mergeOverrides(base, buildPresetOverrides(state, base))
+  return overlayTree(base, buildPresetOverrides(state, base))
 }

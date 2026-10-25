@@ -7,16 +7,36 @@ const STRUCTURAL_KEYS = new Set(['primitive', 'semantic', 'components', 'directi
 const SKIPPED_KEYS = new Set(['css'])
 const REF_RE = /\{([^{}]+)\}/g
 
+// Preset keys repeat thousands of times ('background', 'color', …), and names are built on
+// every edit (flattening ~3k tokens per scheme), so conversions are memoized.
+const kebabCache = new Map<string, string>()
+
 export function toKebab(key: string): string {
-  return key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+  let kebab = kebabCache.get(key)
+  if (kebab === undefined) {
+    kebab = key.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+    if (kebabCache.size < 10_000) kebabCache.set(key, kebab)
+  }
+  return kebab
+}
+
+/** Keys that don't appear in token names (structural layers and color-scheme wrappers). */
+function isNameless(key: string): boolean {
+  return STRUCTURAL_KEYS.has(key) || key === 'colorScheme' || key === 'light' || key === 'dark'
 }
 
 /** Token name for a preset path, e.g. ['semantic','formField','paddingX'] → 'form-field-padding-x'. */
 export function tokenName(path: readonly string[]): string {
   return path
-    .filter(k => !STRUCTURAL_KEYS.has(k) && k !== 'colorScheme' && k !== 'light' && k !== 'dark')
+    .filter(k => !isNameless(k))
     .map(toKebab)
     .join('-')
+}
+
+/** The name prefix below `key`, built from its parent's (same result as `tokenName` of the path). */
+function childName(prefix: string, key: string): string {
+  if (isNameless(key)) return prefix
+  return prefix ? `${prefix}-${toKebab(key)}` : toKebab(key)
 }
 
 /** Token name for a reference, e.g. '{form.field.padding.x}' → 'form-field-padding-x'. */
@@ -36,31 +56,51 @@ export interface TokenEntry {
   path: string[]
 }
 
+// Entries a subtree flattens to (in order), per scheme and position. Edits rebuild the
+// effective preset sharing the base preset's untouched subtrees (`overlayTree`), so after the
+// first time only the changed branches are walked again. Trees must not be mutated.
+const subtreeEntries = new WeakMap<TokenTree, Map<string, TokenEntry[]>>()
+
 /**
  * Flattens a preset into name → entry for one color scheme.
  * Scheme-specific values win over shared ones, like in the engine.
  */
 export function flattenPreset(preset: TokenTree, scheme: ColorScheme): Map<string, TokenEntry> {
-  const out = new Map<string, TokenEntry>()
+  // `name` is the token name of `path` so far, extended key by key instead of rebuilt per leaf.
+  const collect = (node: TokenTree, path: string[], name: string): TokenEntry[] => {
+    const at = `${scheme}|${path.join('.')}`
+    let cache = subtreeEntries.get(node)
+    const cached = cache?.get(at)
+    if (cached) return cached
 
-  const walk = (node: TokenTree, path: string[]) => {
-    const deferred: Array<[TokenTree, string[]]> = []
+    const entries: TokenEntry[] = []
+    const add = (list: TokenEntry[]) => {
+      for (const entry of list) entries.push(entry)
+    }
+    const deferred: Array<[TokenTree, string[], string]> = []
     for (const [key, value] of Object.entries(node)) {
       if (SKIPPED_KEYS.has(key)) continue
       if (key === 'colorScheme') {
-        if (isTokenTree(value) && isTokenTree(value[scheme])) deferred.push([value[scheme] as TokenTree, [...path, key, scheme]])
+        // 'colorScheme' and the scheme key add nothing to names.
+        if (isTokenTree(value) && isTokenTree(value[scheme])) deferred.push([value[scheme] as TokenTree, [...path, key, scheme], name])
         continue
       }
-      if (isTokenTree(value)) walk(value, [...path, key])
+      if (isTokenTree(value)) add(collect(value, [...path, key], childName(name, key)))
       else if (typeof value === 'string' || typeof value === 'number') {
-        const p = [...path, key]
-        out.set(tokenName(p), { name: tokenName(p), raw: value, path: p })
+        const tokenName = childName(name, key)
+        entries.push({ name: tokenName, raw: value, path: [...path, key] })
       }
     }
-    for (const [tree, p] of deferred) walk(tree, p)
+    // Scheme-specific values come last, so they win.
+    for (const [tree, p, n] of deferred) add(collect(tree, p, n))
+
+    if (!cache) subtreeEntries.set(node, (cache = new Map()))
+    cache.set(at, entries)
+    return entries
   }
 
-  walk(preset, [])
+  const out = new Map<string, TokenEntry>()
+  for (const entry of collect(preset, [], '')) out.set(entry.name, entry)
   return out
 }
 

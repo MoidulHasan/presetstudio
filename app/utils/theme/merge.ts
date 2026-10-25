@@ -36,6 +36,22 @@ export function mergeOverrides(...trees: Array<TokenTree | undefined>): TokenTre
   return result
 }
 
+/**
+ * `base` with `overrides` merged in, like `mergeOverrides(base, overrides)`, but copying only the
+ * branches `overrides` touches: every other subtree of `base` is shared, not copied, so derived
+ * data can be cached per subtree (see `flattenPreset`). For trees built by the app (the base
+ * preset and built overrides); untrusted input goes through `mergeOverrides`, which cleans it.
+ */
+export function overlayTree(base: TokenTree, overrides: TokenTree): TokenTree {
+  const out: TokenTree = { ...base }
+  for (const [key, value] of Object.entries(overrides)) {
+    if (UNSAFE_KEYS.has(key)) continue
+    const current = out[key]
+    out[key] = isTokenTree(value) && isTokenTree(current) ? overlayTree(current, value) : value
+  }
+  return out
+}
+
 /** Removes empty branches (`{}`) recursively. Returns a new tree. */
 export function pruneEmpty(tree: TokenTree): TokenTree {
   const result: TokenTree = {}
