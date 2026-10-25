@@ -101,11 +101,18 @@ export function usePreviewInspector(onPick: (component: string) => void) {
 
   // --- Inspect mode ----------------------------------------------------------------------
   let hovered: HTMLElement | null = null
+  // Last pointer position: scrolling moves the page under a still pointer.
+  let pointer: { x: number, y: number } | null = null
 
-  function onMove(event: PointerEvent) {
-    const hit = componentAt(event.target as Element)
+  function hover(target: Element | null) {
+    const hit = componentAt(target)
     hovered = hit?.element ?? null
     highlight(hovered, hit?.name)
+  }
+
+  function onMove(event: PointerEvent) {
+    pointer = { x: event.clientX, y: event.clientY }
+    hover(event.target as Element)
   }
 
   // Swallow interaction so clicking a button or opening a dropdown doesn't happen while picking.
@@ -120,8 +127,10 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     if (hit) onPick(hit.name)
   }
 
+  // After a scroll, highlight what's under the pointer now (the box ignores pointer events).
   function onScrollOrResize() {
-    if (hovered) highlight(hovered, componentAt(hovered)?.name)
+    if (pointer) hover(document.elementFromPoint(pointer.x, pointer.y))
+    else if (hovered) highlight(hovered, componentAt(hovered)?.name)
   }
 
   const BLOCKED = ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'dblclick', 'contextmenu'] as const
@@ -137,6 +146,7 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     for (const type of BLOCKED) window[method](type, block, true)
     if (!on) {
       hovered = null
+      pointer = null
       highlight(null)
     }
   }
