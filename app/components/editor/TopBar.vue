@@ -23,6 +23,9 @@ const UI_THEME_META: Record<UiTheme, { icon: string, label: string }> = {
 }
 
 const uiTheme = computed(() => UI_THEME_META[editor.prefs.uiTheme] ?? UI_THEME_META.system)
+// Read through a computed: the theme object is new after every edit, its base preset rarely
+// changes, so the bar doesn't re-render while dragging a color.
+const basePreset = computed(() => workspace.theme.basePreset)
 
 function resetTheme() {
   preset.resetTheme()
@@ -91,7 +94,7 @@ function setBase(value: BasePresetName) {
         class="hidden text-sm text-surface-500 md:inline"
       >Base</label>
       <Select
-        :model-value="workspace.theme.basePreset"
+        :model-value="basePreset"
         :options="presetOptions"
         option-label="label"
         option-value="value"

@@ -61,6 +61,7 @@ function setStyle(key: string, style: string) {
 }
 
 const choiceOf = (row: VariantRow): PaletteChoice | null => recolorChoice(workspace.theme.overrides, row.tokens, props.component, row.key)
+const choiceValue = (choice: PaletteChoice | null): string => (choice?.kind === 'palette' ? choice.name : choice?.kind === 'custom' ? choice.color : '')
 
 function recolor(row: VariantRow, choice: PaletteChoice | null) {
   preset.recolorGroup(props.component, row.key, row.tokens, choice)
@@ -141,48 +142,17 @@ defineExpose({ focus })
         :ref="el => (rows[row.key] = el as HTMLElement | null)"
         class="flex flex-col"
       >
-        <div class="flex items-center gap-2 px-2 py-1.5">
-          <Button
-            severity="secondary"
-            text
-            class="!min-w-0 !flex-1 !justify-start !gap-2 !px-1 !py-1"
-            :aria-expanded="openRow === row.key"
-            :aria-label="`${row.label} colors`"
-            @click="toggleRow(row.key)"
-          >
-            <i
-              class="pi text-xs text-surface-400"
-              :class="openRow === row.key ? 'pi-chevron-down' : 'pi-chevron-right'"
-              aria-hidden="true"
-            />
-            <span
-              class="flex h-5 w-8 shrink-0 overflow-hidden rounded border border-surface-300 dark:border-surface-600"
-              aria-hidden="true"
-            >
-              <span
-                class="flex-1"
-                :style="{ background: swatches(row)[0] }"
-              />
-              <span
-                class="flex-1"
-                :style="{ background: swatches(row)[1] }"
-              />
-            </span>
-            <span class="truncate text-sm text-surface-900 dark:text-surface-0">{{ row.label }}</span>
-            <span
-              v-if="rowChanged(row)"
-              v-tooltip.top="'Changed'"
-              class="size-1.5 shrink-0 rounded-full bg-surface-900 dark:bg-surface-0"
-              aria-hidden="true"
-            />
-          </Button>
-          <EditorStudioPalettePicker
-            class="w-36 shrink-0"
-            :model-value="choiceOf(row)"
-            :label="row.label"
-            @update:model-value="choice => recolor(row, choice)"
-          />
-        </div>
+        <EditorStudioVariantHeader
+          :label="row.label"
+          :open="openRow === row.key"
+          :light="swatches(row)[0]"
+          :dark="swatches(row)[1]"
+          :changed="rowChanged(row)"
+          :choice-kind="choiceOf(row)?.kind ?? 'base'"
+          :choice-value="choiceValue(choiceOf(row))"
+          @toggle="toggleRow(row.key)"
+          @recolor="choice => recolor(row, choice)"
+        />
 
         <div
           v-if="openRow === row.key"

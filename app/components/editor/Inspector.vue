@@ -10,6 +10,8 @@ import { semanticStudio } from '~/utils/theme/semantic-studio'
 const editor = useEditorStore()
 const preset = usePresetStore()
 const toast = useToast()
+// A boolean, so the inspector doesn't re-render whenever the resolvers are rebuilt (every edit).
+const loading = computed(() => !preset.resolvers)
 const undoHint = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘Z' : 'Ctrl+Z'
 const openComponent = computed(() =>
   editor.prefs.section === 'components' && editor.prefs.component ? COMPONENT_META[editor.prefs.component] ?? null : null)
@@ -130,7 +132,7 @@ watch([() => editor.prefs.section, () => editor.prefs.component], () => body.val
     </header>
 
     <div
-      v-if="!preset.resolvers"
+      v-if="loading"
       class="grid place-items-center p-10"
     >
       <ProgressSpinner

@@ -32,11 +32,15 @@ const stateGrid = computed(() => {
 const primary = computed(() => workspace.theme.design.primary)
 const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
+// Constants, not inline literals: this panel re-renders on every color change, and a new
+// options or pt object would re-render these controls too.
 const modeOptions = [
   { value: 'base', label: 'Preset' },
   { value: 'palette', label: 'Built-in' },
   { value: 'custom', label: 'Custom' },
-] as const
+]
+const algorithmOptions = [{ value: 'oklch', label: 'Perceptual' }, { value: 'classic', label: 'Classic' }]
+const fullWidthPt = { pcToggleButton: { root: { class: 'flex-1' } } }
 
 function setPrimary(value: PrimaryDesign, key: string | null = null) {
   workspace.update((d) => {
@@ -107,13 +111,13 @@ const usage = computed(() => {
     <EditorInspectorGroup title="Source">
       <SelectButton
         :model-value="primary.kind"
-        :options="[...modeOptions]"
+        :options="modeOptions"
         option-label="label"
         option-value="value"
         :allow-empty="false"
         aria-label="Primary color source"
         class="w-full"
-        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+        :pt="fullWidthPt"
         @update:model-value="setMode"
       />
       <p
@@ -179,13 +183,13 @@ const usage = computed(() => {
       >
         <SelectButton
           :model-value="custom.algorithm"
-          :options="[{ value: 'oklch', label: 'Perceptual' }, { value: 'classic', label: 'Classic' }]"
+          :options="algorithmOptions"
           option-label="label"
           option-value="value"
           :allow-empty="false"
           aria-label="Palette generation algorithm"
           class="w-full"
-          :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+          :pt="fullWidthPt"
           @update:model-value="setAlgorithm"
         />
       </EditorInspectorGroup>
