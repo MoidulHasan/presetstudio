@@ -21,6 +21,7 @@ import {
   type ColorScheme,
   type TokenTree,
 } from '~/utils/theme/types'
+import { stableComputed } from '~/composables/stableComputed'
 import { useWorkspaceStore } from './workspace'
 
 /** A token that follows another one's edit (set to `value`, usually a reference). */
@@ -124,14 +125,17 @@ export const usePresetStore = defineStore('preset', () => {
   const semanticOverrideCount = computed(() => countSemanticOverrides(theme.value.overrides))
 
   /** Custom value count per semantic group. */
-  const semanticGroupCounts = computed(() =>
+  const semanticGroupCounts = stableComputed(() =>
     Object.fromEntries(SEMANTIC_STUDIO_KEYS.map(key => [key, countSemanticGroup(theme.value.overrides, key)])) as Record<string, number>)
 
   /** Custom token count per component. */
-  const componentOverrideCounts = computed(() => countComponentOverrides(theme.value.overrides))
+  const componentOverrideCounts = stableComputed(() => countComponentOverrides(theme.value.overrides))
   const componentOverrideCount = computed(() => Object.values(componentOverrideCounts.value).reduce((n, c) => n + c, 0))
 
-  const modifiedSections = computed(() => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))))
+  const modifiedSections = stableComputed(
+    () => new Set(DESIGN_SECTIONS.filter(s => isSectionModified(theme.value, s))),
+    sections => [...sections].join(),
+  )
   const pristine = computed(() => isPristine(theme.value))
 
   // --- Token edits -------------------------------------------------------------------

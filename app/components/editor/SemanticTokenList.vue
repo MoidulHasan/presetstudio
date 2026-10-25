@@ -45,10 +45,16 @@ function labelOf(token: TokenDescriptor, groupKey: string): string {
 
 const filtering = computed(() => query.value.trim() !== '' || show.value === 'custom')
 
-const groups = computed(() => {
-  const resolver = preset.resolvers?.[scheme.value]
-  return groupSemanticTokens(preset.descriptors, scheme.value)
-    .filter(g => !props.groups || props.groups.includes(g.key))
+// The grouping only depends on the base preset and the scheme, not on edits.
+const allGroups = computed(() => groupSemanticTokens(preset.descriptors, scheme.value)
+  .filter(g => !props.groups || props.groups.includes(g.key)))
+
+// Kept while the same tokens show with the same counts, so editing a value re-renders its row,
+// not the whole list (rows read their values from the stores themselves).
+const visibleGroups = stableComputed(() => {
+  // Values are only needed to search by value ("#10b981").
+  const resolver = query.value.trim() ? preset.resolvers?.[scheme.value] : null
+  return allGroups.value
     .map(g => ({
       ...g,
       customCount: g.tokens.filter(isCustom).length,
@@ -57,15 +63,13 @@ const groups = computed(() => {
         && (show.value === 'all' || isCustom(t))),
     }))
     .filter(g => g.tokens.length)
-})
+}, groups => `${workspace.theme.basePreset}|${groups.map(g => `${g.key}:${g.customCount}:${g.tokens.map(keyOf).join(',')}`).join('|')}`)
 
-const total = computed(() => groups.value.reduce((n, g) => n + g.tokens.length, 0))
-const customTotal = computed(() => groupSemanticTokens(preset.descriptors, scheme.value)
-  .filter(g => !props.groups || props.groups.includes(g.key))
-  .reduce((n, g) => n + g.tokens.filter(isCustom).length, 0))
+const total = computed(() => visibleGroups.value.reduce((n, g) => n + g.tokens.length, 0))
+const customTotal = computed(() => allGroups.value.reduce((n, g) => n + g.tokens.filter(isCustom).length, 0))
 
 const accordionValue = computed({
-  get: () => (filtering.value || props.groups ? groups.value.map(g => g.key) : openGroups.value),
+  get: () => (filtering.value || props.groups ? visibleGroups.value.map(g => g.key) : openGroups.value),
   set: (value: string[] | string | null | undefined) => {
     if (!filtering.value && !props.groups) openGroups.value = Array.isArray(value) ? value : value ? [value] : []
   },
@@ -119,7 +123,7 @@ function toggle(token: TokenDescriptor) {
     </Teleport>
 
     <p
-      v-if="!groups.length"
+      v-if="!visibleGroups.length"
       class="py-8 text-center text-sm text-surface-500"
     >
       {{ show === 'custom' && !query ? 'No custom tokens yet. Expand a token to change it.' : 'No tokens match your search.' }}
@@ -131,7 +135,7 @@ function toggle(token: TokenDescriptor) {
       multiple
     >
       <AccordionPanel
-        v-for="g in groups"
+        v-for="g in visibleGroups"
         :key="g.key"
         :value="g.key"
       >

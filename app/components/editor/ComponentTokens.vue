@@ -41,8 +41,11 @@ const openGroups = ref<string[]>([])
 
 const allGroups = computed(() => groupComponentTokens(preset.descriptors, props.component, scheme.value))
 
-const groups = computed(() => {
-  const resolver = preset.resolvers?.[scheme.value]
+// Kept while the same tokens show with the same counts, so editing a value re-renders its row,
+// not the whole list (rows read their values from the stores themselves).
+const groups = stableComputed(() => {
+  // Values are only needed to search by value ("#10b981").
+  const resolver = query.value.trim() ? preset.resolvers?.[scheme.value] : null
   return allGroups.value
     .map(group => ({
       ...group,
@@ -52,7 +55,7 @@ const groups = computed(() => {
         && (show.value === 'all' || isCustom(t))),
     }))
     .filter(group => group.tokens.length)
-})
+}, list => `${workspace.theme.basePreset}|${list.map(g => `${g.key}:${g.customCount}:${g.tokens.map(keyOf).join(',')}`).join('|')}`)
 
 const filtering = computed(() => query.value.trim() !== '' || show.value === 'custom')
 const visibleCount = computed(() => groups.value.reduce((n, g) => n + g.tokens.length, 0))
