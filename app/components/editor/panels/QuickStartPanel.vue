@@ -6,6 +6,9 @@ import { RADIUS_VALUES, primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette, normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
+// Also the body of the first-run setup, which has its own way forward instead of next steps.
+const props = withDefaults(defineProps<{ showNextSteps?: boolean }>(), { showNextSteps: true })
+
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
@@ -110,9 +113,14 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
           :selected="workspace.theme.basePreset === name"
           :label="BASE_PRESET_LABELS[name]"
           :hint="presetHints[name]"
+          layout="stacked"
           class="h-full"
           @select="setBase(name)"
-        />
+        >
+          <template #visual>
+            <EditorLookThumb :name="name" />
+          </template>
+        </EditorOptionCard>
       </div>
     </EditorInspectorGroup>
 
@@ -195,7 +203,10 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
       </p>
     </EditorInspectorGroup>
 
-    <div class="flex flex-col gap-1 rounded-lg border border-surface-200 p-3 text-sm dark:border-surface-700">
+    <div
+      v-if="props.showNextSteps"
+      class="flex flex-col gap-1 rounded-lg border border-surface-200 p-3 text-sm dark:border-surface-700"
+    >
       <p class="px-3 pt-1 font-medium">
         Next steps
       </p>
