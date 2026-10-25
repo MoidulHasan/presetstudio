@@ -11,6 +11,11 @@ const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const exportVisible = ref(false)
+const exportTab = ref('preset')
+function openExport(tab: 'preset' | 'share') {
+  exportTab.value = tab
+  exportVisible.value = true
+}
 
 function reload() {
   window.location.reload()
@@ -93,7 +98,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
-    <EditorTopBar @export="exportVisible = true" />
+    <EditorTopBar @export="openExport" />
 
     <Message
       v-if="preset.basePresetError"
@@ -159,7 +164,10 @@ onBeforeUnmount(() => {
         <EditorInspector />
       </aside>
 
-      <EditorExportPanel v-model:visible="exportVisible" />
+      <EditorExportPanel
+        v-model:visible="exportVisible"
+        v-model:tab="exportTab"
+      />
       <EditorSharedThemeDialog />
       <Toast position="bottom-right" />
     </div>

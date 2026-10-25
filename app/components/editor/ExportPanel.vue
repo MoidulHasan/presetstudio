@@ -9,7 +9,7 @@ const visible = defineModel<boolean>('visible', { required: true })
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const toast = useToast()
-const tab = ref('preset')
+const tab = defineModel<string>('tab', { default: 'preset' })
 
 interface Snippet {
   title: string
