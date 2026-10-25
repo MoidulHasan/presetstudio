@@ -31,6 +31,33 @@ describe('forcedFocusSelector', () => {
   })
 })
 
+describe('focus marked by class (Select and co.)', () => {
+  it('forces .p-focus on component roots', () => {
+    expect(forcedFocusSelector('.p-select:not(.p-disabled).p-focus', '.s')).toBe('.s .p-select:not(.p-disabled)')
+    expect(forcedFocusSelector('.p-select.p-variant-filled:not(.p-disabled).p-focus', '.s')).toBe('.s .p-select.p-variant-filled:not(.p-disabled)')
+    expect(forcedFocusSelector('.p-autocomplete.p-focus .p-autocomplete-input-multiple:not(.p-disabled)', '.s')).toBe('.s .p-autocomplete .p-autocomplete-input-multiple:not(.p-disabled)')
+    expect(forcedFocusSelector('.p-inputchips:not(.p-disabled).p-focus .p-inputchips-input', '.s')).toBe('.s .p-inputchips:not(.p-disabled) .p-inputchips-input')
+  })
+
+  it('leaves options and menu items alone', () => {
+    expect(forcedFocusSelector('.p-select-option:not(.p-select-option-selected):not(.p-disabled).p-focus', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-listbox:not(.p-disabled) .p-listbox-option.p-listbox-option-selected.p-focus', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-menubar-item.p-focus > .p-menubar-item-content', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-dock-item.p-focus', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-rating-option.p-focus-visible', '.s')).toBeNull()
+    // Only the root selector of a list is forced.
+    expect(forcedFocusSelector('.p-select.p-focus, .p-select-option.p-focus', '.s')).toBe('.s .p-select')
+  })
+
+  it('handles input wrappers, negation and selectors without focus classes', () => {
+    expect(forcedFocusSelector('.p-floatlabel:has(.p-inputwrapper-focus) label', '.s')).toBe('.s .p-floatlabel:has(.p-inputwrapper) label')
+    expect(forcedFocusSelector('.p-inputgroup .p-component.p-focus ~ label', '.s')).toBe('.s .p-inputgroup .p-component ~ label')
+    expect(forcedFocusSelector('.p-select:not(.p-focus)', '.s')).toBeNull()
+    expect(forcedFocusSelector('.p-select', '.s')).toBeNull()
+    expect(forcedFocusSelector('.a>.b:focus-visible', '.s')).toBe('.s .a>.b')
+  })
+})
+
 describe('forcedFocusCss', () => {
   it('copies declarations verbatim and recurses into group rules', () => {
     const css = forcedFocusCss(`

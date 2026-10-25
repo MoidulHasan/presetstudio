@@ -35,18 +35,87 @@ export function splitSelectorList(selector: string): string[] {
   return out.filter(Boolean)
 }
 
+/** Splits one selector into compounds and the combinators between them (outside parentheses). */
+function compoundsOf(selector: string): string[] {
+  const parts: string[] = []
+  let depth = 0
+  let current = ''
+  // The combinator of the current gap: ' ' (descendant) unless a '>', '+' or '~' shows up.
+  let combinator = ''
+  for (const c of selector) {
+    if (depth === 0 && /[\s>+~]/.test(c)) {
+      if (current) parts.push(current)
+      current = ''
+      if (c.trim()) combinator = c
+      else combinator ||= ' '
+      continue
+    }
+    if (c === '(' || c === '[') depth++
+    else if (c === ')' || c === ']') depth--
+    if (combinator && parts.length) parts.push(combinator)
+    combinator = ''
+    current += c
+  }
+  if (current) parts.push(current)
+  return parts
+}
+
+// Selects, MultiSelect, AutoComplete, … mark focus with a class set by script (`.p-focus`, and
+// `.p-inputwrapper-focus` on input wrappers) instead of `:focus`. On a component root (a
+// one-word class like `.p-select` or `.p-component`) it's forced like `:focus`; on an option
+// or menu item (`.p-select-option.p-focus`) it's left alone, or every option would look focused.
+const FOCUS_CLASS = /\.p-focus(?![-\w])/
+const WRAPPER_FOCUS = /\.p-inputwrapper-focus(?![-\w])/
+const FOCUS_CLASS_RE = new RegExp(FOCUS_CLASS.source, 'g')
+const WRAPPER_FOCUS_RE = new RegExp(WRAPPER_FOCUS.source, 'g')
+const ROOT_CLASS_RE = /\.p-[a-z]+(?![-\w])/
+
+/** 'root' when a selector's focus classes are all on component roots, 'item' when one isn't, null without any. */
+function focusClassKind(selector: string): 'root' | 'item' | null {
+  if (/:not\([^)]*\.p-(?:focus|inputwrapper-focus)(?![-\w])/.test(selector)) return null
+  let kind: 'root' | 'item' | null = null
+  for (const compound of compoundsOf(selector)) {
+    if (WRAPPER_FOCUS.test(compound)) kind ??= 'root'
+    if (!FOCUS_CLASS.test(compound)) continue
+    // Classes inside :not(…) don't name the element.
+    const named = compound.replace(/\([^()]*\)/g, '').replace(FOCUS_CLASS_RE, '')
+    if (!ROOT_CLASS_RE.test(named)) return 'item'
+    kind = 'root'
+  }
+  return kind
+}
+
+/** The selector without its focus classes (`.p-inputwrapper-focus` becomes `.p-inputwrapper`). */
+function withoutFocusClasses(selector: string): string {
+  if (!FOCUS_CLASS.test(selector) && !WRAPPER_FOCUS.test(selector)) return selector
+  return compoundsOf(selector)
+    .map((part) => {
+      if (/^[\s>+~]$/.test(part)) return part === ' ' ? ' ' : ` ${part} `
+      // A compound that was only the focus class matches any element.
+      return part.replace(FOCUS_CLASS_RE, '').replace(WRAPPER_FOCUS_RE, '.p-inputwrapper') || '*'
+    })
+    .join('')
+}
+
 /**
  * Rewrites a selector list so its `state` styles apply without the interaction, inside `scope`.
  * Returns null when no selector in the list depends on the state.
- * `.p-button:not(:disabled):hover` → `.scope .p-button:not(:disabled)`.
+ * `.p-button:not(:disabled):hover` → `.scope .p-button:not(:disabled)`; for focus also
+ * `.p-select:not(.p-disabled).p-focus` → `.scope .p-select:not(.p-disabled)`.
  */
 export function forcedStateSelector(selector: string, scope: string, state: ForcedState): string | null {
   const re = STATE_RE[state]
   const all = new RegExp(re.source, 'g')
   const negated = new RegExp(`:not\\([^)]*${re.source.slice(0, re.source.indexOf('('))}`)
   const rewritten = splitSelectorList(selector)
-    // Negated states (`:not(:focus)`) can't be forced meaningfully.
-    .filter(s => re.test(s) && !negated.test(s))
+    .filter((s) => {
+      const byClass = state === 'focus' ? focusClassKind(s) : null
+      // Options and menu items marked focused by class stay as they are.
+      if (byClass === 'item') return false
+      // Negated states (`:not(:focus)`) can't be forced meaningfully.
+      return (re.test(s) && !negated.test(s)) || byClass === 'root'
+    })
+    .map(s => (state === 'focus' ? withoutFocusClasses(s) : s))
     .map((s) => {
       // A bare `:focus-visible` (no compound before it) means "any element".
       const forced = s.replace(all, (_, offset: number) => (offset === 0 || /[\s>+~(]/.test(s[offset - 1]!) ? '*' : ''))
