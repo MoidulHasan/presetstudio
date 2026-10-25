@@ -1,25 +1,11 @@
 <script setup lang="ts">
+import { BRAND_SUGGESTIONS as SUGGESTIONS } from '~/utils/theme/brand-suggestions'
 import { normalizeHex } from '~/utils/theme/palette'
 
-// Brand color input: suggested colors, an inline picker and a hex field.
+// Brand color input: suggested colors (mid-dark, so white button text passes contrast out of
+// the box), an inline picker and a hex field.
 const props = defineProps<{ modelValue: string | null, showPicker?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
-
-// Mid-dark suggestions so white button text passes contrast out of the box.
-const SUGGESTIONS = [
-  { name: 'Indigo', value: '#4f46e5' },
-  { name: 'Blue', value: '#2563eb' },
-  { name: 'Sky', value: '#0284c7' },
-  { name: 'Teal', value: '#0d9488' },
-  { name: 'Emerald', value: '#059669' },
-  { name: 'Green', value: '#16a34a' },
-  { name: 'Amber', value: '#d97706' },
-  { name: 'Orange', value: '#ea580c' },
-  { name: 'Red', value: '#dc2626' },
-  { name: 'Rose', value: '#e11d48' },
-  { name: 'Pink', value: '#db2777' },
-  { name: 'Violet', value: '#7c3aed' },
-]
 
 const hexInput = ref(props.modelValue ?? '')
 watch(() => props.modelValue, (value) => {
