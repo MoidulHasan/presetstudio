@@ -29,6 +29,7 @@ import {
   COLOR_SCHEMES,
   SHADES,
   createDefaultThemeState,
+  type BasePresetName,
   type ColorPalette,
   type ColorScheme,
   type ThemeState,
@@ -188,17 +189,32 @@ export const useEditorStore = defineStore('editor', () => {
 
   // --- Base preset + derived data ------------------------------------------------
 
-  const basePreset = shallowRef<TokenTree | null>(null)
+  const loadedPreset = shallowRef<{ name: BasePresetName, preset: TokenTree } | null>(null)
+  /** Base preset that failed to load (e.g. a stale chunk after a deploy); a reload fixes it. */
+  const basePresetError = ref<BasePresetName | null>(null)
   let loadToken = 0
   watch(
     () => theme.value.basePreset,
     async (name) => {
       const token = ++loadToken
-      const preset = (await loadBasePreset(name)) as unknown as TokenTree
-      if (token === loadToken) basePreset.value = preset
+      try {
+        const preset = (await loadBasePreset(name)) as unknown as TokenTree
+        if (token !== loadToken) return
+        loadedPreset.value = { name, preset }
+        basePresetError.value = null
+      }
+      catch (error) {
+        if (token !== loadToken) return
+        console.error(`Couldn't load the ${name} preset`, error)
+        basePresetError.value = name
+      }
     },
     { immediate: true },
   )
+
+  // Only the theme's own base preset: while another one loads, derived data waits instead of
+  // mixing the previous base with the new theme.
+  const basePreset = computed(() => (loadedPreset.value?.name === theme.value.basePreset ? loadedPreset.value.preset : null))
 
   const effectivePreset = computed(() => (basePreset.value ? buildEffectivePreset(theme.value, basePreset.value) : null))
 
@@ -247,7 +263,6 @@ export const useEditorStore = defineStore('editor', () => {
 
   const semanticOverrideCount = computed(() => countSemanticOverrides(theme.value.overrides))
 
-  /** Sets a raw token override. Returns false if the value isn't a safe token value. */
   /**
    * Sets a raw token override. Returns false if the value isn't a safe token value.
    * `linked` tokens follow along in the same undo step, unless they already have their own
@@ -415,12 +430,22 @@ export const useEditorStore = defineStore('editor', () => {
     return overrides
   }
 
-  /** Latest click on the stage ('root:danger:hover'); the id makes repeats observable. */
-  const stagePick = shallowRef<{ target: string, id: number } | null>(null)
+  /**
+   * Latest click on the stage ('root:danger:hover'), handled by the Design view of the stage's
+   * editor; the id makes repeats observable.
+   */
+  const stagePick = shallowRef<{ target: string, id: number, stage: string | null } | null>(null)
   let pickId = 0
   function pickOnStage(target: string) {
-    stagePick.value = { target, id: ++pickId }
+    // The token list doesn't handle picks: bring up the Design view, which has the clicked control.
+    if (stageComponent.value) prefs.value.componentView = 'design'
+    else if (sectionGroup.value) prefs.value.semanticView = 'design'
+    stagePick.value = { target, id: ++pickId, stage: stageName.value }
   }
+  // A pick nobody handled belongs to its stage; drop it rather than replay it in another editor.
+  watch(stageName, (name) => {
+    if (stagePick.value && stagePick.value.stage !== name) stagePick.value = null
+  })
 
   /** Recolors a group of a component's tokens (e.g. Button 'info') with a palette, or resets it (null). */
   function recolorGroup(component: string, group: string, tokens: TokenDescriptor[], choice: PaletteChoice | null) {
@@ -491,10 +516,25 @@ export const useEditorStore = defineStore('editor', () => {
   // --- Persistence -------------------------------------------------------------------
 
   let saveTimer: ReturnType<typeof setTimeout> | undefined
-  watch(workspace, (value) => {
+  function saveWorkspace() {
     clearTimeout(saveTimer)
-    saveTimer = setTimeout(() => writeStorage(WORKSPACE_KEY, JSON.stringify(value)), 250)
+    saveTimer = undefined
+    writeStorage(WORKSPACE_KEY, JSON.stringify(workspace.value))
+  }
+  watch(workspace, () => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(saveWorkspace, 250)
   }, { deep: true })
+  // Closing or hiding the tab within the debounce would otherwise lose the last edit.
+  if (import.meta.client) {
+    const flush = () => {
+      if (saveTimer !== undefined) saveWorkspace()
+    }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') flush()
+    })
+  }
   watch(prefs, value => writeStorage(PREFS_KEY, JSON.stringify(value)), { deep: true })
 
   return {
@@ -503,6 +543,7 @@ export const useEditorStore = defineStore('editor', () => {
     activeDoc,
     theme,
     basePreset,
+    basePresetError,
     resolvers,
     contrast,
     contrastIssues,

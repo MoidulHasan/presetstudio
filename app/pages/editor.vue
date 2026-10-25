@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { BASE_PRESET_LABELS } from '~/utils/theme/types'
 
 definePageMeta({ layout: 'editor' })
 useSeoMeta({ title: 'Editor · Preset Studio', robots: 'noindex' })
 
 const store = useEditorStore()
 const exportVisible = ref(false)
+
+function reload() {
+  window.location.reload()
+}
 
 // Below lg there's room for one pane at a time.
 type Pane = 'edit' | 'preview'
@@ -76,6 +81,23 @@ onBeforeUnmount(() => {
 <template>
   <div class="flex min-h-0 flex-1 flex-col">
     <EditorTopBar @export="exportVisible = true" />
+
+    <Message
+      v-if="store.basePresetError"
+      severity="error"
+      class="m-3"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span>The {{ BASE_PRESET_LABELS[store.basePresetError] }} preset couldn't be loaded. Your work is saved; reloading usually fixes this.</span>
+        <Button
+          label="Reload"
+          icon="pi pi-refresh"
+          size="small"
+          severity="danger"
+          @click="reload"
+        />
+      </div>
+    </Message>
 
     <div class="border-b border-surface-200 px-3 py-2 lg:hidden dark:border-surface-800">
       <SelectButton

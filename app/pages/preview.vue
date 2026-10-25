@@ -31,7 +31,15 @@ const themed = ref(false)
 let applyId = 0
 async function applyTheme(state: ThemeState, colorScheme: ColorScheme) {
   const id = ++applyId
-  const base = await loadBasePreset(state.basePreset)
+  let base: Preset
+  try {
+    base = await loadBasePreset(state.basePreset)
+  }
+  catch (error) {
+    // Keep showing the last theme; the editor reports the failure and offers a reload.
+    console.error(`Couldn't load the ${state.basePreset} preset`, error)
+    return
+  }
   // A newer state arrived while the base preset was loading.
   if (id !== applyId) return
   // usePreset (not updatePreset) so switching base presets or removing overrides
