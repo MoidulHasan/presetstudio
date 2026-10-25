@@ -130,6 +130,11 @@ describe('messages', () => {
     expect(parseEditorMessage({ origin, data: { ...msg, hideScrollbar: 'yes' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: msg }, origin)).toBeNull()
   })
+
+  it('strips override keys that could inject CSS from applied states', () => {
+    const msg = createApplyMessage({ ...createDefaultThemeState(), overrides: { semantic: { 'x;}body{background:red': '#fff', 'list': { gap: '4px' } }, components: { button: { css: 'x' } } } }, 'light')
+    expect((parseEditorMessage({ origin, data: msg }, origin) as { state: { overrides: object } }).state.overrides).toEqual({ semantic: { list: { gap: '4px' } } })
+  })
 })
 
 describe('override sanitization', () => {

@@ -31,10 +31,20 @@ export function sanitizeTokenValue(input: unknown): string | null {
   return value
 }
 
-/** Drops every leaf that isn't a safe token value (for untrusted override trees). */
+// Keys become CSS variable names (`--p-<path>`) unescaped, so they're limited to what preset
+// keys use (camelCase words and shade numbers). `css` holds raw stylesheet text in the engine.
+const SAFE_KEY = /^[A-Za-z0-9]{1,64}$/
+const RAW_CSS_KEY = 'css'
+
+export function isSafeTokenKey(key: string): boolean {
+  return SAFE_KEY.test(key) && key !== RAW_CSS_KEY
+}
+
+/** Drops every unsafe key and every leaf that isn't a safe token value (for untrusted override trees). */
 export function sanitizeTokenTree(tree: TokenTree): TokenTree {
   const out: TokenTree = {}
   for (const [key, value] of Object.entries(tree)) {
+    if (!isSafeTokenKey(key)) continue
     if (isTokenTree(value)) {
       const child = sanitizeTokenTree(value)
       if (Object.keys(child).length) out[key] = child

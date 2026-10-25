@@ -7,7 +7,7 @@ import { describePreset } from './schema'
 import { countSemanticOverrides, groupSemanticTokens, matchesQuery, semanticPath, tokenSource } from './semantic'
 import { deletePath, getPath, setPath } from './tree'
 import type { TokenTree } from './types'
-import { referenceFor, sanitizeTokenTree, sanitizeTokenValue } from './values'
+import { isSafeTokenKey, referenceFor, sanitizeTokenTree, sanitizeTokenValue } from './values'
 
 describe('sanitizeTokenValue', () => {
   it('accepts every token value of the four base presets', () => {
@@ -51,6 +51,34 @@ describe('sanitizeTokenValue', () => {
 
   it('drops unsafe leaves from override trees', () => {
     expect(sanitizeTokenTree({ a: '#fff', b: 'red;}', c: { d: 'url(x)', e: '1px' }, f: { g: '}' } })).toEqual({ a: '#fff', c: { e: '1px' } })
+  })
+
+  it('drops keys that could break out of a CSS variable name', () => {
+    const tree = {
+      semantic: {
+        'primary': { 500: '#000' },
+        'x;}body{background:red': '#fff',
+        'a b': '1px',
+        'a-b': '1px',
+        '': '1px',
+        'é': '1px',
+        ['k'.repeat(65)]: '1px',
+        'list': { 'gap': '2px', 'gap}': '3px' },
+      },
+      components: { button: { css: '.p-button{color:red}', root: { borderRadius: '4px' } } },
+    }
+    expect(sanitizeTokenTree(tree as TokenTree)).toEqual({
+      semantic: { primary: { 500: '#000' }, list: { gap: '2px' } },
+      components: { button: { root: { borderRadius: '4px' } } },
+    })
+  })
+
+  it('keeps every key of the four base presets', () => {
+    for (const preset of [Aura, Lara, Nora, Material]) {
+      const tree = preset as unknown as TokenTree
+      const unsafe = describePreset(tree).filter(t => !t.path.every(isSafeTokenKey)).map(t => t.path.join('.'))
+      expect(unsafe).toEqual([])
+    }
   })
 
   it('builds references from token names', () => {
