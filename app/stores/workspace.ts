@@ -1,15 +1,16 @@
 import { defineStore } from 'pinia'
-import { canRedo, canUndo, commit, createHistory, redo, undo, type History } from '~/utils/theme/history'
+import { canRedo, canUndo, commit, createHistory, redo, restoreHistory, serializeHistory, undo, type History } from '~/utils/theme/history'
 import {
   createThemeDocument,
   createWorkspace,
   deserializeThemeState,
   deserializeWorkspace,
   mergeWorkspaces,
+  parseThemeState,
   sanitizeThemeName,
 } from '~/utils/theme/serialize'
-import { createDefaultThemeState, type ThemeState, type Workspace } from '~/utils/theme/types'
-import { LEGACY_THEME_KEY, WORKSPACE_KEY, readStorage, writeStorage } from '~/utils/storage'
+import { createDefaultThemeState, type ThemeDocument, type ThemeState, type Workspace } from '~/utils/theme/types'
+import { LEGACY_THEME_KEY, WORKSPACE_KEY, historyKey, readStorage, removeStorage, writeStorage } from '~/utils/storage'
 
 // The saved themes (a workspace in localStorage, shared by every tab), the open one and its
 // undo history. Every change to a theme goes through `update`.
@@ -42,8 +43,31 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   const activeDoc = computed(() => state.value.themes.find(t => t.id === state.value.activeId) ?? state.value.themes[0]!)
 
-  // Undo history for the active theme; reset when switching themes.
-  const history = shallowRef<History<ThemeState>>(createHistory(snapshot(activeDoc.value.theme)))
+  // Undo history of the active theme. Kept per theme in this tab's sessionStorage, so a reload
+  // (or an accidental "Reset theme" before one) can still be undone.
+  const parseStep = (value: unknown) => {
+    const parsed = parseThemeState(value)
+    return parsed ? snapshot(parsed) : null
+  }
+  const sameState = (a: ThemeState, b: ThemeState) => JSON.stringify(a) === JSON.stringify(b)
+
+  function historyFor(doc: ThemeDocument): History<ThemeState> {
+    const present = snapshot(doc.theme)
+    return restoreHistory(readStorage(historyKey(doc.id), 'session'), present, parseStep, sameState) ?? createHistory(present)
+  }
+
+  const history = shallowRef<History<ThemeState>>(historyFor(activeDoc.value))
+
+  let historyTimer: ReturnType<typeof setTimeout> | undefined
+  function saveHistory() {
+    clearTimeout(historyTimer)
+    historyTimer = undefined
+    writeStorage(historyKey(activeDoc.value.id), serializeHistory(history.value), 'session')
+  }
+  watch(history, () => {
+    clearTimeout(historyTimer)
+    historyTimer = setTimeout(saveHistory, 300)
+  })
   /** The open theme. Read-only: change it with `update`. */
   const theme = computed(() => history.value.present)
 
@@ -79,8 +103,10 @@ export const useWorkspaceStore = defineStore('workspace', () => {
 
   function switchTheme(id: string) {
     if (!state.value.themes.some(t => t.id === id) || id === state.value.activeId) return
+    // The history being left is saved under its own theme first.
+    if (historyTimer !== undefined && state.value.themes.some(t => t.id === state.value.activeId)) saveHistory()
     state.value.activeId = id
-    history.value = createHistory(snapshot(activeDoc.value.theme))
+    history.value = historyFor(activeDoc.value)
   }
 
   function createTheme(name: string, from: 'blank' | 'duplicate' = 'blank') {
@@ -105,6 +131,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     themes.splice(index, 1)
     // Remembered so other tabs' copies don't bring it back.
     state.value.deleted[id] = Date.now()
+    removeStorage(historyKey(id), 'session')
     if (state.value.activeId === id) {
       state.value.activeId = ''
       switchTheme(themes[Math.max(0, index - 1)]!.id)
@@ -125,7 +152,8 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     state.value = merged
     const doc = activeDoc.value
     if (doc.id !== previous.id) {
-      history.value = createHistory(snapshot(doc.theme))
+      removeStorage(historyKey(previous.id), 'session')
+      history.value = historyFor(doc)
       externalChange.value = { kind: 'deleted', name: previous.name, id: ++externalId }
     }
     else if (JSON.stringify(doc.theme) !== JSON.stringify(history.value.present)) {
@@ -152,6 +180,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     // Closing or hiding the tab within the debounce would otherwise lose the last edit.
     const flush = () => {
       if (saveTimer !== undefined) save()
+      if (historyTimer !== undefined) saveHistory()
     }
     window.addEventListener('pagehide', flush)
     document.addEventListener('visibilitychange', () => {

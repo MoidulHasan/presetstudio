@@ -47,3 +47,65 @@ export function redo<T>(h: History<T>): History<T> {
 
 export const canUndo = <T>(h: History<T>) => h.past.length > 0
 export const canRedo = <T>(h: History<T>) => h.future.length > 0
+
+// --- Keeping history across reloads ---------------------------------------------------
+
+export interface StoredHistoryOptions {
+  /** Undo (and redo) steps kept. */
+  limit?: number
+  /** Upper bound for the serialized size (characters); the oldest steps go first. */
+  maxLength?: number
+}
+
+const STORED_DEFAULTS: Required<StoredHistoryOptions> = { limit: 30, maxLength: 1_000_000 }
+
+/** The history as JSON, trimmed to the most recent steps (coalescing state isn't kept). */
+export function serializeHistory<T>(h: History<T>, options: StoredHistoryOptions = {}): string {
+  const { limit, maxLength } = { ...STORED_DEFAULTS, ...options }
+  let past = h.past.slice(-limit)
+  let future = h.future.slice(0, limit)
+  let json = JSON.stringify({ past, present: h.present, future })
+  // Drop the oldest undo steps (then the farthest redo steps) until it fits.
+  while (json.length > maxLength && (past.length || future.length)) {
+    if (past.length) past = past.slice(Math.ceil(past.length / 4) || 1)
+    else future = future.slice(0, Math.floor(future.length * 3 / 4))
+    json = JSON.stringify({ past, present: h.present, future })
+  }
+  return json
+}
+
+/**
+ * Restores a stored history for the state `current` (untrusted input: every step goes through
+ * `parse`, and invalid steps are dropped). When the stored history doesn't end at `current`
+ * (the state changed elsewhere, e.g. in another tab), its last state becomes one more undo
+ * step and the redo steps are dropped. Null when there's nothing to restore.
+ */
+export function restoreHistory<T>(
+  raw: string | null | undefined,
+  current: T,
+  parse: (value: unknown) => T | null,
+  same: (a: T, b: T) => boolean,
+  options: StoredHistoryOptions = {},
+): History<T> | null {
+  if (!raw) return null
+  let data: unknown
+  try {
+    data = JSON.parse(raw)
+  }
+  catch {
+    return null
+  }
+  if (!data || typeof data !== 'object') return null
+  const { past, present, future } = data as { past?: unknown, present?: unknown, future?: unknown }
+  const { limit } = { ...STORED_DEFAULTS, ...options }
+  const steps = (list: unknown) => (Array.isArray(list) ? list.slice(0, 2 * limit).map(parse).filter((s): s is T => s !== null) : [])
+  const stored = parse(present)
+  if (!stored) return null
+  const pastSteps = steps(past).slice(-limit)
+  if (same(stored, current)) {
+    const futureSteps = steps(future).slice(0, limit)
+    if (!pastSteps.length && !futureSteps.length) return null
+    return { past: pastSteps, present: current, future: futureSteps, lastKey: null, lastAt: 0 }
+  }
+  return { past: [...pastSteps, stored].slice(-limit), present: current, future: [], lastKey: null, lastAt: 0 }
+}

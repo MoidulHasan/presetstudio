@@ -209,6 +209,7 @@ P1.5 the hover box follows the pointer, also side by side and after scrolling (i
 **P2.7 Undo across reloads**
 - History is in memory (`app/utils/theme/history.ts`, store), so a reload loses it (an accidental "Reset theme" became permanent once).
 - Approach: persist the last ~30 snapshots per theme in `sessionStorage` (or localStorage, size-capped); confirm before "Reset theme" or make reset clearly undoable after reload.
+- **Done (2026-10-25):** the last 30 undo/redo steps per theme live in the tab's sessionStorage (~1 MB cap, validated on load), so Undo works after a reload, Reset included.
 
 ### P3. Quality
 
