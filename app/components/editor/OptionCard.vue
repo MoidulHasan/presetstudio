@@ -9,8 +9,9 @@ const props = withDefaults(defineProps<{
   hint?: string
   /**
    * 'row': radio, visual and text side by side.
-   * 'stacked': visual on top and the label under it, for narrow grids. The radio sits in the
-   * corner so the label gets the card's full width.
+   * 'stacked': visual on top and the label under it, for narrow grids. The radio is visually
+   * hidden (still focusable and announced); a check in the corner marks the selected card, clear
+   * of the visual.
    */
   layout?: 'row' | 'stacked'
 }>(), { hint: undefined, layout: 'row' })
@@ -37,9 +38,16 @@ const id = useId()
       :value="props.value"
       :model-value="props.selected ? props.value : undefined"
       size="small"
-      :class="props.layout === 'stacked' ? '!absolute left-1 top-1 scale-75' : 'shrink-0'"
+      :class="props.layout === 'stacked' ? 'sr-only' : 'shrink-0'"
       @update:model-value="emit('select')"
     />
+    <span
+      v-if="props.layout === 'stacked' && props.selected"
+      class="absolute -right-1.5 -top-1.5 grid size-4 place-items-center rounded-full bg-surface-900 text-surface-0 dark:bg-surface-0 dark:text-surface-900"
+      aria-hidden="true"
+    >
+      <i class="pi pi-check text-[8px]" />
+    </span>
     <slot name="visual" />
     <span
       class="flex min-w-0 flex-col"

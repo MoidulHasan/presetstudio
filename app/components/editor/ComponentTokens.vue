@@ -136,7 +136,7 @@ function showInGallery() {
           aria-label="Component editor view"
           size="small"
           class="flex-1"
-          :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+          :pt="{ pcToggleButton: { root: { class: 'flex-1' }, label: { class: 'whitespace-nowrap' } } }"
           @update:model-value="v => (editor.prefs.componentView = v)"
         />
         <EditorCompareButton

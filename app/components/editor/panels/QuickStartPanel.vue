@@ -3,7 +3,7 @@ import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import { RADIUS_VALUES, primaryHue } from '~/utils/theme/design'
-import { generateNeutralPalette } from '~/utils/theme/palette'
+import { generateNeutralPalette, normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
 const editor = useEditorStore()
@@ -24,7 +24,11 @@ function setBase(value: BasePresetName) {
   })
 }
 
-const brandColor = computed(() => (design.value.primary.kind === 'custom' ? design.value.primary.color : null))
+// The custom brand color, or the color the theme uses now (the preset's or a built-in palette's
+// 500), so the field never shows a color the theme doesn't have.
+const brandColor = computed(() => (design.value.primary.kind === 'custom'
+  ? design.value.primary.color
+  : normalizeHex(preset.resolvedScale('primary', 'light')?.['500'] ?? '')))
 
 function setBrand(color: string) {
   const current = design.value.primary

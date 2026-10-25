@@ -29,7 +29,7 @@ const listGroups = computed(() => (group.value === 'overlay' ? ['overlay', 'mask
           :aria-label="`${studio.label} view`"
           size="small"
           class="flex-1"
-          :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+          :pt="{ pcToggleButton: { root: { class: 'flex-1' }, label: { class: 'whitespace-nowrap' } } }"
           @update:model-value="editor.setSemanticView"
         />
         <EditorCompareButton :subject="studio.label.toLowerCase()" />
