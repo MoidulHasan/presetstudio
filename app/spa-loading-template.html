@@ -1,0 +1,38 @@
+<!-- Shown while a client-only page (the editor) boots, instead of a blank screen. -->
+<style>
+  #ps-loading {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: #ffffff;
+    color: #475569;
+    font: 500 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    #ps-loading { background: #09090b; color: #a1a1aa; }
+  }
+  #ps-loading .ps-loading-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  #ps-loading .ps-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 36px; height: 36px; }
+  #ps-loading .ps-mark span { border-radius: 4px; animation: ps-pulse 1.2s ease-in-out infinite; }
+  #ps-loading .ps-mark span:nth-child(1) { background: #a78bfa; }
+  #ps-loading .ps-mark span:nth-child(2) { background: #38bdf8; animation-delay: .15s; }
+  #ps-loading .ps-mark span:nth-child(4) { background: #fbbf24; animation-delay: .3s; }
+  #ps-loading .ps-mark span:nth-child(3) { background: #34d399; animation-delay: .45s; }
+  @keyframes ps-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { #ps-loading .ps-mark span { animation: none; } }
+</style>
+<div
+  id="ps-loading"
+  role="status"
+>
+  <div class="ps-loading-inner">
+    <div
+      class="ps-mark"
+      aria-hidden="true"
+    >
+      <span></span><span></span><span></span><span></span>
+    </div>
+    <span>Loading Preset Studio…</span>
+  </div>
+</div>
