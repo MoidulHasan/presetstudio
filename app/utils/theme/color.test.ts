@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { contrastRatio, oklchToRgb, parseColor, rgbToOklch, toHex } from './color'
+import { composite, contrastRatio, oklchToRgb, opaqueOver, parseColor, rgbToOklch, toHex } from './color'
 import { generateNeutralPalette, generateOklchPalette } from './palette'
 import { SHADES } from './types'
 
@@ -15,6 +15,28 @@ describe('parseColor', () => {
     expect(mixed.a).toBeCloseTo(0.12)
     expect(toHex(parseColor('color-mix(in srgb, #000000 50%, #ffffff)')!)).toBe('#808080')
     expect(parseColor('{primary.500}')).toBeNull()
+  })
+})
+
+describe('opaqueOver', () => {
+  it('keeps opaque colors and shows translucent ones over the backdrop', () => {
+    expect(opaqueOver('#10B981')).toEqual({ hex: '#10b981', alpha: 1 })
+    expect(opaqueOver('rgb(16, 185, 129)', '#000')).toEqual({ hex: '#10b981', alpha: 1 })
+    // A 4% emerald hover tint is nearly the dark background it sits on, not black.
+    const tint = opaqueOver('color-mix(in srgb, #10b981, transparent 96%)', '#18181b')!
+    expect(tint.alpha).toBeCloseTo(0.04)
+    expect(tint.hex).toBe(toHex(composite(parseColor('rgba(16,185,129,0.04)')!, parseColor('#18181b')!)))
+    expect(tint.hex).not.toBe('#000000')
+    // Over the default (white) backdrop.
+    expect(opaqueOver('rgba(0,0,0,0.5)')!.hex).toBe('#808080')
+    // A translucent backdrop is shown over white first.
+    expect(opaqueOver('rgba(0,0,0,0.5)', 'rgba(0,0,0,0)')!.hex).toBe('#808080')
+    expect(opaqueOver('transparent', '#18181b')).toEqual({ hex: '#18181b', alpha: 0 })
+  })
+
+  it('is null for values that are not colors', () => {
+    expect(opaqueOver('unset')).toBeNull()
+    expect(opaqueOver('{primary.500}')).toBeNull()
   })
 })
 

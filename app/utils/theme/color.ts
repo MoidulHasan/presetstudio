@@ -70,6 +70,21 @@ export function composite(top: Rgba, bottom: Rgba): Rgba {
   }
 }
 
+/**
+ * A color value as it looks over `backdrop` (default white): an opaque hex plus the value's own
+ * opacity, e.g. a hover tint `color-mix(in srgb, #10b981, transparent 96%)` over the content
+ * background. Null when the value isn't a color.
+ */
+export function opaqueOver(value: string, backdrop?: string): { hex: string, alpha: number } | null {
+  const color = parseColor(value)
+  if (!color) return null
+  if (color.a >= 1) return { hex: toHex(color), alpha: 1 }
+  const base = (backdrop && parseColor(backdrop)) || { r: 255, g: 255, b: 255, a: 1 }
+  // A translucent backdrop is itself shown over white.
+  const opaqueBase = base.a < 1 ? composite(base, { r: 255, g: 255, b: 255, a: 1 }) : base
+  return { hex: toHex(composite(color, opaqueBase)), alpha: color.a }
+}
+
 export function toHex({ r, g, b }: Rgba): string {
   const h = (v: number) => Math.round(clamp(v, 0, 255)).toString(16).padStart(2, '0')
   return `#${h(r)}${h(g)}${h(b)}`

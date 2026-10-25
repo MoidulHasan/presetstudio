@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
-import { parseColor } from '~/utils/theme/color'
-import { normalizeHex } from '~/utils/theme/palette'
+import { opaqueOver } from '~/utils/theme/color'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 import { hasPath } from '~/utils/theme/tree'
@@ -22,7 +21,18 @@ const raw = computed(() => String(resolved.value?.raw ?? props.token.defaultValu
 const source = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens))
 const hasDesignValue = computed(() => hasPath(preset.designTokens, props.token.path))
 const isColor = computed(() => props.token.kind === 'color')
-const swatch = computed(() => (isColor.value && resolved.value && parseColor(resolved.value.value) ? resolved.value.value : null))
+// Translucent colors (hover tints like `color-mix(…, transparent 96%)`) are shown as they look
+// over the scheme's content background, in the swatch and the picker.
+const shown = computed(() => {
+  if (!isColor.value || !resolved.value) return null
+  return opaqueOver(resolved.value.value, resolver.value?.resolve('content-background')?.value)
+})
+const swatch = computed(() => shown.value?.hex ?? null)
+const translucency = computed(() => {
+  const alpha = shown.value?.alpha ?? 1
+  if (alpha >= 1) return null
+  return alpha === 0 ? 'Transparent' : `${Math.round(alpha * 100)}% opacity`
+})
 
 const SOURCE_LABEL = { base: 'Base preset', design: 'Design setting', custom: 'Custom' } as const
 
@@ -66,8 +76,9 @@ function complete(event: { query: string }) {
     .map(referenceFor)
 }
 
+// The token keeps its value (e.g. a color-mix) until a color is picked, which sets an opaque hex.
 const pickerColor = computed({
-  get: () => (swatch.value ? (normalizeHex(swatch.value) ?? '#000000').slice(1) : '000000'),
+  get: () => (swatch.value ?? '#000000').slice(1),
   set: (value: string) => {
     draft.value = `#${value}`
     preset.setToken(props.token.path, draft.value)
@@ -94,7 +105,7 @@ const inputId = useId()
         <span
           v-if="isColor"
           class="size-5 shrink-0 rounded border border-surface-300 dark:border-surface-600"
-          :style="{ background: swatch ?? 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,.15) 3px 6px)' }"
+          :style="{ background: swatch && shown?.alpha !== 0 ? swatch : 'repeating-linear-gradient(45deg, transparent 0 3px, rgba(0,0,0,.15) 3px 6px)' }"
           aria-hidden="true"
         />
         <span class="flex min-w-0 flex-1 flex-col">
@@ -179,6 +190,17 @@ const inputId = useId()
             @blur="apply"
           />
         </div>
+        <p
+          v-if="translucency"
+          class="text-[11px] text-surface-500"
+        >
+          <Tag
+            :value="translucency"
+            severity="secondary"
+            class="mr-1 !px-1.5 !py-0 !text-[10px]"
+          />
+          Shown over the {{ props.token.scheme ?? props.scheme }} background. Picking a color makes it opaque.
+        </p>
         <Message
           v-if="invalid"
           severity="error"
