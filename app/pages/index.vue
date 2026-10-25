@@ -2,6 +2,8 @@
 import Aura from '@primeuix/themes/aura'
 import { REPO_URL } from '~/utils/site'
 import { EXAMPLE_THEMES, SPECIMEN_COMPONENTS, landingTheme, type LandingChoices, type LandingCorners } from '~/utils/landing'
+import { listChanges } from '~/utils/theme/changes'
+import { CONTRAST_PAIRS, checkContrast } from '~/utils/theme/contrast'
 import { generatePresetCode } from '~/utils/theme/export'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { encodeShareToken, shareUrl, startPath } from '~/utils/theme/share'
@@ -46,7 +48,7 @@ function draw(choices: LandingChoices): Drawn | null {
 }
 
 // --- The try-it hero ---------------------------------------------------------------------
-const choices = ref<LandingChoices>({ base: 'aura', brand: '#0d9488', corners: 'base' })
+const choices = ref<LandingChoices>({ base: 'aura', brand: '#0f766e', corners: 'base' })
 const theme = computed(() => landingTheme(choices.value))
 // The hero's base preset is always loaded: a base is only chosen once it is.
 const hero = computed(() => draw(choices.value)!)
@@ -118,16 +120,30 @@ async function openExample(name: string, choicesOf: LandingChoices) {
   }
 }
 
-const capabilities = [
-  { title: 'Four base styles', text: 'Aura, Lara, Nora and Material, each with its own borders, focus and selection style.' },
-  { title: 'Palettes from one color', text: 'A full 50 to 950 scale in OKLCH, with hover, active and focus states derived from it.' },
-  { title: 'Shared styles', text: 'Form fields, lists, menus and overlays look alike across the components that use them. Change one and they all follow.' },
-  { title: 'Component editors', text: 'Button, Message, Toast, Tag and Badge show every variant and state at once, in light and dark.' },
-  { title: 'Every token, when you need it', text: 'Around 3,000 tokens per preset, searchable, for the details a visual control doesn’t cover.' },
-  { title: 'Contrast check', text: 'Text and controls are checked in both color schemes, with the pairs that fail listed.' },
-  { title: 'A change list you can undo', text: 'See everything you changed from the base preset and revert any single change.' },
-  { title: 'Nothing to sign up for', text: 'Themes are saved in your browser. Share one as a link or a file.' },
-]
+// --- What the editor does with it: three of its checks, run on the hero's theme ----------------
+const CONTRAST_SHOWN = ['primary', 'text', 'muted', 'highlight', 'primary-ui']
+const contrastRows = computed(() => {
+  const base = presets.value[choices.value.base]!
+  const pairs = CONTRAST_PAIRS.filter(pair => CONTRAST_SHOWN.includes(pair.id))
+  const light = checkContrast(hero.value.resolver, pairs)
+  const dark = checkContrast(themeResolver(theme.value, base, 'dark'), pairs)
+  return light.map((result, index) => ({ pair: result.pair, light: result, dark: dark[index]! }))
+})
+const ratio = (value: number | null) => (value === null ? 'n/a' : `${value.toFixed(1)}:1`)
+
+const changes = computed(() => listChanges(theme.value))
+
+const SEVERITIES = [
+  { label: 'Primary', severity: undefined },
+  { label: 'Secondary', severity: 'secondary' },
+  { label: 'Success', severity: 'success' },
+  { label: 'Danger', severity: 'danger' },
+] as const
+const VARIANTS = [
+  { label: 'Solid', outlined: false, text: false },
+  { label: 'Outlined', outlined: true, text: false },
+  { label: 'Text', outlined: false, text: true },
+] as const
 </script>
 
 <template>
@@ -473,29 +489,166 @@ const capabilities = [
       </div>
     </section>
 
-    <!-- What's inside: a plain list, not a card grid. -->
+    <!-- Three things the editor does, run on the theme picked at the top. -->
     <section aria-labelledby="inside">
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
-        <h2
-          id="inside"
-          class="text-3xl font-semibold tracking-[-0.025em]"
-        >
-          What’s in the editor
-        </h2>
-        <dl class="grid gap-x-10 sm:grid-cols-2">
-          <div
-            v-for="item in capabilities"
-            :key="item.title"
-            class="border-t border-surface-200 py-5"
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <div class="mb-12 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+          <h2
+            id="inside"
+            class="text-3xl font-semibold tracking-[-0.025em]"
           >
-            <dt class="font-semibold">
-              {{ item.title }}
-            </dt>
-            <dd class="mt-1 text-sm leading-relaxed text-surface-600">
-              {{ item.text }}
-            </dd>
+            What the editor does with it
+          </h2>
+          <p class="max-w-[60ch] leading-relaxed text-surface-600">
+            Three of the things it does, run on the theme you picked at the top. Change the color
+            there and they change with it.
+          </p>
+        </div>
+
+        <div class="grid gap-12 lg:grid-cols-3 lg:gap-10">
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div>
+              <h3 class="font-semibold">
+                Checks contrast in light and dark
+              </h3>
+              <p class="mt-1 text-sm text-surface-600">
+                Pick a pale yellow above and watch these fail.
+              </p>
+            </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-surface-500">
+                  <th class="pb-2 font-medium">
+                    Pair
+                  </th>
+                  <th class="pb-2 text-right font-medium">
+                    Light
+                  </th>
+                  <th class="pb-2 text-right font-medium">
+                    Dark
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in contrastRows"
+                  :key="row.pair.id"
+                  class="border-t border-surface-200"
+                >
+                  <td class="py-2 pr-2">
+                    {{ row.pair.label }}
+                  </td>
+                  <td
+                    v-for="result in [row.light, row.dark]"
+                    :key="result === row.light ? 'light' : 'dark'"
+                    class="whitespace-nowrap py-2 text-right tabular-nums"
+                    :class="result.pass === false ? 'font-semibold text-red-700' : ''"
+                  >
+                    {{ ratio(result.ratio) }}
+                    <i
+                      :class="result.pass === false ? 'pi pi-times' : 'pi pi-check text-surface-400'"
+                      class="ml-1 text-xs"
+                      :aria-label="result.pass === false ? 'fails' : 'passes'"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-        </dl>
+
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div>
+              <h3 class="font-semibold">
+                Keeps a list of what you changed
+              </h3>
+              <p class="mt-1 text-sm text-surface-600">
+                {{ changes.length }} {{ changes.length === 1 ? 'change' : 'changes' }} on top of {{ BASE_PRESET_LABELS[choices.base] }} so far. In the editor, each one can be undone on its own.
+              </p>
+            </div>
+            <ul class="text-sm">
+              <li
+                v-for="change in changes"
+                :key="change.id"
+                class="flex items-baseline justify-between gap-3 border-t border-surface-200 py-2"
+              >
+                <span>{{ change.label }}</span>
+                <span class="truncate text-surface-500">{{ change.detail }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div>
+              <h3 class="font-semibold">
+                Shows every variant at once
+              </h3>
+              <p class="mt-1 text-sm text-surface-600">
+                Each component editor lays out every style and state, so nothing is designed by accident.
+              </p>
+            </div>
+            <div
+              class="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] items-center gap-2 text-xs text-surface-500"
+              :style="hero.vars"
+              aria-hidden="true"
+            >
+              <span />
+              <span
+                v-for="variant in VARIANTS"
+                :key="variant.label"
+                class="text-center"
+              >{{ variant.label }}</span>
+              <template
+                v-for="row in SEVERITIES"
+                :key="row.label"
+              >
+                <span class="pr-1">{{ row.label }}</span>
+                <Button
+                  v-for="variant in VARIANTS"
+                  :key="variant.label"
+                  label="Save"
+                  size="small"
+                  :severity="row.severity"
+                  :outlined="variant.outlined"
+                  :text="variant.text"
+                  :tabindex="-1"
+                />
+              </template>
+            </div>
+          </div>
+        </div>
+
+        <p class="mt-12 max-w-[70ch] text-sm leading-relaxed text-surface-600">
+          Also in the editor: shared styles for form fields, lists, menus and overlays; all of the preset’s
+          tokens, searchable; light and dark side by side; and nothing to sign up for. Themes stay in
+          your browser and travel as a link or a file.
+        </p>
+      </div>
+    </section>
+
+    <!-- The way out: the page ends where the visitor goes next. -->
+    <section aria-label="Continue in the editor">
+      <ol
+        class="flex h-2"
+        aria-hidden="true"
+      >
+        <li
+          v-for="(band, index) in hero.shades"
+          :key="band.shade"
+          class="flex-1 transition-colors duration-500 motion-reduce:transition-none"
+          :style="{ backgroundColor: band.value, transitionDelay: `${index * 30}ms` }"
+        />
+      </ol>
+      <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-16 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <p class="max-w-[24ch] text-2xl font-semibold tracking-[-0.02em]">
+          Your choices come with you into the editor.
+        </p>
+        <Button
+          label="Continue in the editor"
+          size="large"
+          :loading="opening === 'hero'"
+          class="self-start sm:self-auto"
+          @click="continueInEditor"
+        />
       </div>
     </section>
   </div>
