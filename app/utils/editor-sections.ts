@@ -90,7 +90,7 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
   semantic: {
     label: 'All tokens',
     icon: 'pi pi-sitemap',
-    description: 'Every semantic token of the preset, for fine control. Foundations and patterns edit most of them visually.',
+    description: 'Every semantic token of the preset, for fine control. The sections above edit most of them visually.',
   },
   components: {
     label: 'All components',

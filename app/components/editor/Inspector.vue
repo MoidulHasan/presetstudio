@@ -37,9 +37,7 @@ const sectionValue = computed({
   set: (value: string) => {
     if (value.startsWith('component:')) return editor.openComponent(value.slice('component:'.length))
     if (value === 'components') return editor.openComponentList()
-    editor.prefs.section = value as EditorSection
-    // Overview sections look at everything.
-    if (['start', 'semantic', 'accessibility'].includes(value)) editor.showAllComponents()
+    editor.openSection(value as EditorSection)
   },
 })
 

@@ -11,7 +11,6 @@ const editor = useEditorStore()
 const preset = usePresetStore()
 
 const MAX_SIDEBAR_STUDIOS = 8
-const OVERVIEW_SECTIONS: EditorSection[] = ['start', 'semantic', 'accessibility']
 
 // Components with a visual editor are listed by name, so their stage is one click away.
 
@@ -21,11 +20,7 @@ const sectionItem = (section: EditorSection): NavItem => ({
   key: section,
   label: SECTION_META[section].label,
   icon: SECTION_META[section].icon,
-  open: () => {
-    editor.prefs.section = section
-    // Overview sections look at everything.
-    if (OVERVIEW_SECTIONS.includes(section)) editor.showAllComponents()
-  },
+  open: () => editor.openSection(section),
   active: editor.prefs.section === section,
   modified: section === 'semantic'
     ? preset.semanticOverrideCount > 0
@@ -39,8 +34,9 @@ const openStudio = computed(() =>
 
 const groups = computed<Array<{ label: string, items: NavItem[] }>>(() => [
   { label: 'Start', items: [sectionItem('start')] },
-  { label: 'Foundations', items: (['primary', 'surface', 'status', 'text', 'shape', 'density', 'focus'] as const).map(sectionItem) },
-  { label: 'Patterns', items: PATTERN_SECTION_KEYS.map(sectionItem) },
+  { label: 'Look & feel', items: (['primary', 'surface', 'status', 'text', 'shape', 'density', 'focus'] as const).map(sectionItem) },
+  // Looks that many components share (each edits one semantic group).
+  { label: 'Shared styles', items: PATTERN_SECTION_KEYS.map(sectionItem) },
   {
     label: 'Components',
     items: [

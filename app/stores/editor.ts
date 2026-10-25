@@ -54,7 +54,7 @@ interface EditorPrefs {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'components', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system' }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -172,10 +172,21 @@ export const useEditorStore = defineStore('editor', () => {
     revealed.value = { component, found, uses }
   }
 
-  /** Shows every component in the gallery (overview sections: Quick start, catalogs). */
+  /** Shows every component in the gallery (catalog sections). */
   function showAllComponents() {
     prefs.value.template = 'components'
     prefs.value.category = 'all'
+  }
+
+  /**
+   * Opens a section with a fitting preview: Quick start shows the sample app (the brand color
+   * everywhere), the catalogs (all tokens, accessibility) the whole component gallery; other
+   * sections bring their own stage.
+   */
+  function openSection(section: EditorSection) {
+    prefs.value.section = section
+    if (section === 'start') prefs.value.template = 'dashboard'
+    else if (section === 'semantic' || section === 'accessibility') showAllComponents()
   }
 
   /**
@@ -225,6 +236,7 @@ export const useEditorStore = defineStore('editor', () => {
     revealComponent,
     reportRevealed,
     showAllComponents,
+    openSection,
     openComponent,
     openComponentList,
   }
