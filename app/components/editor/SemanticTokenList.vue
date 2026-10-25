@@ -78,6 +78,16 @@ const accordionValue = computed({
 function toggle(token: TokenDescriptor) {
   expanded.value = expanded.value === keyOf(token) ? null : keyOf(token)
 }
+
+// A token found by search: show only it, expanded.
+useTokenRequest(
+  request => request.component === null && (!props.groups || props.groups.includes(request.group ?? '')),
+  (request) => {
+    query.value = request.name
+    show.value = 'all'
+    expanded.value = request.key
+  },
+)
 </script>
 
 <template>

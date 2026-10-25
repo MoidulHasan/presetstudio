@@ -78,6 +78,16 @@ function toggle(token: TokenDescriptor) {
   expanded.value = expanded.value === keyOf(token) ? null : keyOf(token)
 }
 
+// A token found by search: show only it, expanded.
+useTokenRequest(
+  request => request.component === props.component,
+  (request) => {
+    query.value = request.name
+    show.value = 'all'
+    expanded.value = request.key
+  },
+)
+
 /** Components with a visual editor default to it; the token list is always one click away. */
 const hasStudio = computed(() => STUDIO_COMPONENTS.includes(props.component))
 const designView = computed(() => hasStudio.value && editor.prefs.componentView === 'design')

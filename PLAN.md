@@ -190,6 +190,7 @@ P1.5 the hover box follows the pointer, also side by side and after scrolling (i
 **P2.3 Cmd+K search**
 - A command palette (PrimeVue Dialog + AutoComplete or Listbox) over: sections, components (88), semantic tokens and component tokens (`store.descriptors`), and actions (export, reset, new theme). Selecting a token opens its section/component with the token expanded.
 - Done when every section, component and token is reachable by typing.
+- **Done (2026-10-26):** a search box in the top bar (a dialog below md), ⌘K / Ctrl+K also from inside the preview. Ranking in `app/utils/search.ts` (+ tests); a token opens the list that holds it, filtered to it and expanded (`editor.openToken`, `useTokenRequest`). Primitive tokens aren't listed (no editor shows them).
 
 **P2.4 Import and share**
 - Theme file: export the `ThemeState` as JSON (`serializeThemeState`) and import it (validated by `parseThemeState`, which sanitizes values).

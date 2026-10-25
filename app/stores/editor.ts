@@ -4,6 +4,8 @@ import { COMPONENT_META, STUDIO_COMPONENTS, isComponentName, studioFor } from '~
 import { withoutComponent } from '~/utils/theme/recolor'
 import { PATTERN_SECTIONS, semanticStageName, semanticStudio, withoutSemanticGroup, type PatternSection } from '~/utils/theme/semantic-studio'
 import { FOUNDATION_STAGES, type FoundationSection } from '~/utils/theme/stages'
+import type { TokenDescriptor } from '~/utils/theme/schema'
+import { groupKeyOf } from '~/utils/theme/semantic'
 import { COLOR_SCHEMES, type ColorScheme, type TokenTree } from '~/utils/theme/types'
 import {
   EDITOR_LAYOUTS,
@@ -225,6 +227,36 @@ export const useEditorStore = defineStore('editor', () => {
     if (studio !== component) revealComponent(component)
   }
 
+  /**
+   * Latest request to show one token in a token list (from search): the list that holds it
+   * filters to it and expands it. The id makes repeats observable.
+   */
+  const tokenRequest = shallowRef<{ name: string, key: string, component: string | null, group: string | null, id: number } | null>(null)
+  let tokenRequestId = 0
+
+  /**
+   * Opens the token list that holds a token: a component's tokens, its shared style's token
+   * list, or All tokens (semantic groups without a section of their own).
+   */
+  function openToken(token: TokenDescriptor) {
+    const component = token.layer === 'component' ? token.component ?? null : null
+    const group = component ? null : groupKeyOf(token)
+    if (component) {
+      openComponent(component, { view: 'tokens' })
+    }
+    else {
+      const section = (Object.keys(PATTERN_SECTIONS) as PatternSection[]).find(key => PATTERN_SECTIONS[key] === group)
+      if (section) {
+        openSection(section)
+        prefs.value.semanticView = 'tokens'
+      }
+      else {
+        openSection('semantic')
+      }
+    }
+    tokenRequest.value = { name: token.name, key: token.path.join('.'), component, group, id: ++tokenRequestId }
+  }
+
   // --- First-run setup --------------------------------------------------------------------
   /** The setup (pick a look, brand color, corners, neutrals) replaces the editor's panels. */
   const setupOpen = ref(false)
@@ -267,6 +299,8 @@ export const useEditorStore = defineStore('editor', () => {
     openSection,
     openComponent,
     openComponentList,
+    tokenRequest,
+    openToken,
     setupOpen,
     openSetup,
     closeSetup,

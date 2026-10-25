@@ -4,10 +4,10 @@ import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import type { EditorLayout, UiTheme } from '~/utils/editor-sections'
 
-// The theme (switch, rename, import, reset…), undo/redo, and the two ways out: Share and
-// Export. The base preset is chosen in Quick start, resets live in the theme menu and panels;
+// The theme (switch, rename, import, reset…), search (⌘K), undo/redo, and the two ways out:
+// Share and Export. The base preset is chosen in Quick start, resets live in the theme menu and panels;
 // the editor's own appearance and layout are in the settings menu.
-defineEmits<{ export: [tab: 'app' | 'share'] }>()
+const emit = defineEmits<{ export: [tab: 'app' | 'share'] }>()
 
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
@@ -23,6 +23,31 @@ const LAYOUTS: Array<{ value: EditorLayout, label: string, icon: string }> = [
   { value: 'panels', label: 'Two panes', icon: 'pi pi-window-maximize' },
   { value: 'classic', label: 'Classic (three panes)', icon: 'pi pi-objects-column' },
 ]
+
+// Search: a box from md up, a button opening it in a dialog below. ⌘K / Ctrl+K opens whichever shows.
+const search = ref<{ focus: () => void } | null>(null)
+const searchBox = ref<HTMLElement | null>(null)
+const searchDialog = ref(false)
+const dialogSearch = ref<{ focus: () => void } | null>(null)
+
+function openSearch() {
+  if (searchBox.value?.offsetParent) search.value?.focus()
+  else searchDialog.value = true
+}
+
+function onKeydown(event: KeyboardEvent) {
+  if ((event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey && event.key.toLowerCase() === 'k') {
+    event.preventDefault()
+    openSearch()
+  }
+}
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
+
+function exportFrom(tab: 'app' | 'share') {
+  searchDialog.value = false
+  emit('export', tab)
+}
 
 const settingsMenu = ref<{ toggle: (event: Event) => void } | null>(null)
 const settingsItems = computed<MenuItem[]>(() => [
@@ -53,7 +78,45 @@ const settingsItems = computed<MenuItem[]>(() => [
     />
     <EditorThemeSwitcher class="min-w-0" />
 
+    <div
+      ref="searchBox"
+      class="hidden w-full max-w-72 min-w-0 md:block"
+    >
+      <EditorSearch
+        ref="search"
+        @export="exportFrom"
+      />
+    </div>
+
     <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+      <Button
+        v-tooltip.bottom="`Search (${mod}K)`"
+        icon="pi pi-search"
+        severity="secondary"
+        size="small"
+        text
+        rounded
+        aria-label="Search"
+        class="md:!hidden"
+        @click="searchDialog = true"
+      />
+      <Dialog
+        v-model:visible="searchDialog"
+        header="Search"
+        modal
+        dismissable-mask
+        position="top"
+        :style="{ width: '28rem' }"
+        :breakpoints="{ '640px': 'calc(100vw - 2rem)' }"
+        @show="dialogSearch?.focus()"
+      >
+        <EditorSearch
+          ref="dialogSearch"
+          inline
+          @export="exportFrom"
+          @done="searchDialog = false"
+        />
+      </Dialog>
       <div class="flex items-center">
         <Button
           v-tooltip.bottom="`Undo (${mod}Z)`"
