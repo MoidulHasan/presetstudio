@@ -7,7 +7,7 @@ import { generateNeutralPalette, normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
 // Also the body of the first-run setup, which has its own way forward instead of next steps.
-const props = withDefaults(defineProps<{ showNextSteps?: boolean }>(), { showNextSteps: true })
+withDefaults(defineProps<{ showNextSteps?: boolean }>(), { showNextSteps: true })
 
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
@@ -204,7 +204,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
     </EditorInspectorGroup>
 
     <div
-      v-if="props.showNextSteps"
+      v-if="showNextSteps"
       class="flex flex-col gap-1 rounded-lg border border-surface-200 p-3 text-sm dark:border-surface-700"
     >
       <p class="px-3 pt-1 font-medium">
