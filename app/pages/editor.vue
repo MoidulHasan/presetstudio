@@ -73,7 +73,13 @@ function isTyping(target: EventTarget | null): boolean {
 }
 
 // Undo: Cmd/Ctrl+Z. Redo: Shift+Cmd/Ctrl+Z or Ctrl+Y. Text fields keep their native undo.
+// Search (Cmd/Ctrl+K) is the top bar's.
 function onKeydown(event: KeyboardEvent) {
+  // Escape stops Pick (also pressed in the preview, which passes it on).
+  if (event.key === 'Escape' && editor.prefs.inspect) {
+    editor.prefs.inspect = false
+    return
+  }
   if (!(event.metaKey || event.ctrlKey) || isTyping(event.target)) return
   const key = event.key.toLowerCase()
   if (key === 'z' && !event.shiftKey) {

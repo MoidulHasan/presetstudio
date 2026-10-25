@@ -20,6 +20,17 @@ function componentAt(start: Element | null): { element: HTMLElement, name: strin
   return null
 }
 
+/** With Alt held, the component around the nearest one (a Button inside a DataTable → the DataTable). */
+function pickAt(start: Element | null, outer: boolean): { element: HTMLElement, name: string, around: string | null } | null {
+  const inner = componentAt(start)
+  if (!inner) return null
+  const parent = componentAt(inner.element.parentElement)
+  if (outer && parent) return { ...parent, around: null }
+  return { ...inner, around: parent?.name ?? null }
+}
+
+const ALT = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌥' : 'Alt'
+
 function firstVisible(selector: string): HTMLElement | null {
   for (const el of document.querySelectorAll<HTMLElement>(selector)) {
     const r = el.getBoundingClientRect()
@@ -83,7 +94,7 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     return box
   }
 
-  function highlight(element: HTMLElement | null, name = '') {
+  function highlight(element: HTMLElement | null, name = '', around: string | null = null) {
     const el = ensureBox()
     if (!element) {
       el.style.display = 'none'
@@ -92,7 +103,9 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     const r = element.getBoundingClientRect()
     Object.assign(el.style, { display: 'block', top: `${r.top}px`, left: `${r.left}px`, width: `${r.width}px`, height: `${r.height}px` })
     if (tag) {
-      tag.textContent = COMPONENT_META[name]?.label ?? name
+      const label = (key: string) => COMPONENT_META[key]?.label ?? key
+      // While picking, say how to reach the component around this one.
+      tag.textContent = around ? `${label(name)}  ·  ${ALT}-click: ${label(around)}` : label(name)
       // Keep the label on screen for components at the very top.
       tag.style.bottom = r.top < 20 ? 'auto' : '100%'
       tag.style.top = r.top < 20 ? '100%' : 'auto'
@@ -103,16 +116,26 @@ export function usePreviewInspector(onPick: (component: string) => void) {
   let hovered: HTMLElement | null = null
   // Last pointer position: scrolling moves the page under a still pointer.
   let pointer: { x: number, y: number } | null = null
+  let alt = false
 
   function hover(target: Element | null) {
-    const hit = componentAt(target)
+    const hit = pickAt(target, alt)
     hovered = hit?.element ?? null
-    highlight(hovered, hit?.name)
+    highlight(hovered, hit?.name, hit?.around)
   }
 
   function onMove(event: PointerEvent) {
     pointer = { x: event.clientX, y: event.clientY }
+    alt = event.altKey
     hover(event.target as Element)
+  }
+
+  // Pressing or releasing Alt switches between the component and the one around it.
+  function onAltKey(event: KeyboardEvent) {
+    if (event.key !== 'Alt' || alt === (event.type === 'keydown')) return
+    event.preventDefault()
+    alt = event.type === 'keydown'
+    if (pointer) hover(document.elementFromPoint(pointer.x, pointer.y))
   }
 
   // Swallow interaction so clicking a button or opening a dropdown doesn't happen while picking.
@@ -123,7 +146,7 @@ export function usePreviewInspector(onPick: (component: string) => void) {
 
   function onClick(event: MouseEvent) {
     block(event)
-    const hit = componentAt(event.target as Element)
+    const hit = pickAt(event.target as Element, event.altKey)
     if (hit) onPick(hit.name)
   }
 
@@ -143,10 +166,13 @@ export function usePreviewInspector(onPick: (component: string) => void) {
     window[method]('pointermove', onMove as EventListener, true)
     window[method]('click', onClick as EventListener, true)
     window[method]('scroll', onScrollOrResize, true)
+    window[method]('keydown', onAltKey as EventListener, true)
+    window[method]('keyup', onAltKey as EventListener, true)
     for (const type of BLOCKED) window[method](type, block, true)
     if (!on) {
       hovered = null
       pointer = null
+      alt = false
       highlight(null)
     }
   }

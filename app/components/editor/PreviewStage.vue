@@ -23,6 +23,8 @@ function setFrame(scheme: ColorScheme, handle: unknown) {
   frames[scheme] = (handle as FrameHandle | null) ?? null
 }
 
+const alt = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform) ? '⌥' : 'Alt'
+
 function onScroll(from: ColorScheme, position: ScrollPosition) {
   if (!split.value) return
   frames[from === 'light' ? 'dark' : 'light']?.scrollTo(position)
@@ -30,31 +32,55 @@ function onScroll(from: ColorScheme, position: ScrollPosition) {
 </script>
 
 <template>
-  <div
-    class="grid min-h-0 flex-1 gap-px bg-surface-200 dark:bg-surface-800"
-    :class="split ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'"
-  >
+  <div class="flex min-h-0 min-w-0 flex-1 flex-col">
+    <!-- While picking: what a click does, and the way out. -->
     <div
-      v-for="scheme in panes"
-      :key="scheme"
-      class="flex min-h-0 min-w-0 flex-col bg-surface-100 dark:bg-surface-950"
+      v-if="editor.prefs.inspect"
+      class="flex shrink-0 items-center gap-3 border-b border-primary-200 bg-primary-50 px-3 py-1.5 text-sm dark:border-primary-900 dark:bg-primary-950"
+      role="status"
+    >
+      <i
+        class="pi pi-bullseye text-primary-600 dark:text-primary-400"
+        aria-hidden="true"
+      />
+      <span class="min-w-0 flex-1">
+        Click a component to edit it.
+        <span class="text-surface-600 max-md:hidden dark:text-surface-400">{{ alt }}-click picks the one around it. Esc stops.</span>
+      </span>
+      <Button
+        label="Stop picking"
+        severity="secondary"
+        size="small"
+        text
+        @click="editor.prefs.inspect = false"
+      />
+    </div>
+    <div
+      class="grid min-h-0 flex-1 gap-px bg-surface-200 dark:bg-surface-800"
+      :class="split ? 'grid-cols-1 xl:grid-cols-2' : 'grid-cols-1'"
     >
       <div
-        class="flex min-h-0 flex-1 justify-center overflow-auto"
-        :class="width ? 'p-4' : ''"
+        v-for="scheme in panes"
+        :key="scheme"
+        class="flex min-h-0 min-w-0 flex-col bg-surface-100 dark:bg-surface-950"
       >
         <div
-          class="min-h-0 w-full transition-[max-width] duration-200"
-          :class="width ? 'overflow-hidden rounded-xl border border-surface-300 shadow-lg dark:border-surface-700' : ''"
-          :style="width ? { maxWidth: width } : undefined"
+          class="flex min-h-0 flex-1 justify-center overflow-auto"
+          :class="width ? 'p-4' : ''"
         >
-          <EditorPreviewFrame
-            :ref="handle => setFrame(scheme, handle)"
-            :color-scheme="scheme"
-            :label="`${scheme} mode preview`"
-            :hide-scrollbar="split && scheme === 'light'"
-            @scroll="position => onScroll(scheme, position)"
-          />
+          <div
+            class="min-h-0 w-full transition-[max-width] duration-200"
+            :class="width ? 'overflow-hidden rounded-xl border border-surface-300 shadow-lg dark:border-surface-700' : ''"
+            :style="width ? { maxWidth: width } : undefined"
+          >
+            <EditorPreviewFrame
+              :ref="handle => setFrame(scheme, handle)"
+              :color-scheme="scheme"
+              :label="`${scheme} mode preview`"
+              :hide-scrollbar="split && scheme === 'light'"
+              @scroll="position => onScroll(scheme, position)"
+            />
+          </div>
         </div>
       </div>
     </div>
