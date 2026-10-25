@@ -11,12 +11,6 @@ const studio = computed(() => semanticStudio(group.value)!)
 const designView = computed(() => store.prefs.semanticView === 'design')
 // Overlays also cover the backdrop (mask) behind dialogs.
 const listGroups = computed(() => (group.value === 'overlay' ? ['overlay', 'mask'] : [group.value]))
-
-// Compare: while held, the preview shows the pattern without this theme's edits to it.
-function compare(on: boolean) {
-  store.prefs.compare = on
-}
-onBeforeUnmount(() => compare(false))
 </script>
 
 <template>
@@ -38,20 +32,7 @@ onBeforeUnmount(() => compare(false))
           :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
           @update:model-value="store.setSemanticView"
         />
-        <Button
-          v-tooltip.bottom="`Hold to see the preset without your ${studio.label.toLowerCase()} changes`"
-          label="Compare"
-          icon="pi pi-clone"
-          severity="secondary"
-          size="small"
-          outlined
-          :class="store.prefs.compare ? '!bg-surface-200 dark:!bg-surface-700' : ''"
-          @pointerdown="compare(true)"
-          @pointerup="compare(false)"
-          @pointerleave="compare(false)"
-          @keydown.space.prevent="compare(true)"
-          @keyup.space="compare(false)"
-        />
+        <EditorCompareButton :subject="studio.label.toLowerCase()" />
       </div>
     </Teleport>
 

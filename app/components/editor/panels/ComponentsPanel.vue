@@ -130,10 +130,11 @@ const accordionValue = computed({
   },
 })
 
-// Each component opens with its first part expanded.
-watch(component, () => {
+// Each component opens with its first part expanded (also once the base preset has loaded,
+// after a reload or a base preset switch).
+watch([component, () => allGroups.value[0]?.key], ([, first]) => {
   expanded.value = null
-  openGroups.value = allGroups.value[0] ? [allGroups.value[0].key] : []
+  openGroups.value = first ? [first] : []
 }, { immediate: true })
 
 function back() {
@@ -148,12 +149,6 @@ function toggle(token: TokenDescriptor) {
 /** Components with a visual editor default to it; the token list is always one click away. */
 const hasStudio = computed(() => !!component.value && STUDIO_COMPONENTS.includes(component.value))
 const designView = computed(() => hasStudio.value && store.prefs.componentView === 'design')
-
-// Compare: while held, the preview shows the component without this theme's edits to it.
-function compare(on: boolean) {
-  store.prefs.compare = on
-}
-onBeforeUnmount(() => compare(false))
 
 const revealedHere = computed(() => (store.revealed?.component === component.value ? store.revealed : null))
 
@@ -392,20 +387,9 @@ function showInGallery() {
           :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
           @update:model-value="v => (store.prefs.componentView = v)"
         />
-        <Button
+        <EditorCompareButton
           v-if="designView"
-          v-tooltip.bottom="'Hold to see the preset without your Button changes'"
-          label="Compare"
-          icon="pi pi-clone"
-          severity="secondary"
-          size="small"
-          outlined
-          :class="store.prefs.compare ? '!bg-surface-200 dark:!bg-surface-700' : ''"
-          @pointerdown="compare(true)"
-          @pointerup="compare(false)"
-          @pointerleave="compare(false)"
-          @keydown.space.prevent="compare(true)"
-          @keyup.space="compare(false)"
+          :subject="meta.label"
         />
       </div>
       <SelectButton
