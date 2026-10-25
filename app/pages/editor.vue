@@ -43,6 +43,17 @@ const paneOptions: Array<{ value: Pane, label: string, icon: string }> = [
   { value: 'preview', label: 'Preview', icon: 'pi pi-eye' },
 ]
 
+// Below lg the panes stack: while editing, the preview stays visible as a strip above the
+// controls (unless hidden), so a change is seen as it's made; Preview shows it full screen.
+// From lg up these classes give way to the side-by-side layout.
+const previewClass = computed(() => {
+  if (pane.value === 'preview') return 'flex flex-1'
+  return editor.prefs.previewStrip ? 'flex h-[38vh] shrink-0 border-b border-surface-200 dark:border-surface-800' : 'hidden'
+})
+const editClass = computed(() => (pane.value === 'edit' ? 'block min-h-0 flex-1' : 'hidden'))
+/** The preview toolbar only in the full preview (the strip is for watching changes). */
+const toolbarClass = computed(() => (pane.value === 'edit' ? 'max-lg:hidden' : ''))
+
 // Focus rings only show on keyboard focus; while editing them, show every component focused.
 let autoFocusStates = false
 watch(() => editor.prefs.section, (section, previous) => {
@@ -119,7 +130,7 @@ onBeforeUnmount(() => {
       </div>
     </Message>
 
-    <div class="border-b border-surface-200 px-3 py-2 lg:hidden dark:border-surface-800">
+    <div class="flex items-center gap-2 border-b border-surface-200 px-3 py-2 lg:hidden dark:border-surface-800">
       <SelectButton
         v-model="pane"
         :options="paneOptions"
@@ -128,7 +139,7 @@ onBeforeUnmount(() => {
         :allow-empty="false"
         aria-label="Show editor or preview"
         size="small"
-        class="w-full"
+        class="flex-1"
         :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
       >
         <template #option="{ option }">
@@ -139,21 +150,33 @@ onBeforeUnmount(() => {
           <span>{{ option.label }}</span>
         </template>
       </SelectButton>
+      <Button
+        v-if="pane === 'edit'"
+        v-tooltip.bottom="editor.prefs.previewStrip ? 'Hide the preview above the controls' : 'Show the preview above the controls'"
+        :icon="editor.prefs.previewStrip ? 'pi pi-eye-slash' : 'pi pi-eye'"
+        severity="secondary"
+        size="small"
+        text
+        rounded
+        :aria-label="editor.prefs.previewStrip ? 'Hide preview strip' : 'Show preview strip'"
+        :aria-pressed="editor.prefs.previewStrip"
+        @click="editor.prefs.previewStrip = !editor.prefs.previewStrip"
+      />
     </div>
 
-    <div class="flex min-h-0 flex-1">
+    <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
       <!-- First-run setup (either layout): the setup panel, with the sample app beside it. -->
       <template v-if="editor.setupOpen">
         <aside
-          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[26rem] lg:border-r xl:w-[28rem] dark:border-surface-800"
-          :class="pane === 'edit' ? 'block' : 'hidden'"
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[26rem] lg:border-r xl:w-[28rem] dark:border-surface-800"
+          :class="editClass"
           aria-label="Set up your theme"
         >
           <EditorSetup />
         </aside>
         <section
-          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
-          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
+          :class="previewClass"
           aria-label="Preview"
         >
           <EditorPreviewStage />
@@ -169,8 +192,8 @@ onBeforeUnmount(() => {
           <EditorDestinationNav />
         </aside>
         <aside
-          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[24rem] lg:border-r xl:w-[26rem] dark:border-surface-800"
-          :class="pane === 'edit' ? 'block' : 'hidden'"
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[24rem] lg:border-r xl:w-[26rem] dark:border-surface-800"
+          :class="editClass"
           aria-label="Inspector"
         >
           <EditorDestinationNav
@@ -184,11 +207,11 @@ onBeforeUnmount(() => {
           </EditorInspector>
         </aside>
         <section
-          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
-          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
+          :class="previewClass"
           aria-label="Preview"
         >
-          <EditorPreviewToolbar />
+          <EditorPreviewToolbar :class="toolbarClass" />
           <EditorPreviewStage />
         </section>
       </template>
@@ -203,17 +226,17 @@ onBeforeUnmount(() => {
         </aside>
 
         <section
-          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
-          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
+          :class="previewClass"
           aria-label="Preview"
         >
-          <EditorPreviewToolbar />
+          <EditorPreviewToolbar :class="toolbarClass" />
           <EditorPreviewStage />
         </section>
 
         <aside
-          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
-          :class="pane === 'edit' ? 'block' : 'hidden'"
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
+          :class="editClass"
           aria-label="Inspector"
         >
           <EditorInspector />

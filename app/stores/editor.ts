@@ -57,10 +57,12 @@ interface EditorPrefs {
   layout: EditorLayout
   /** The first-run setup was finished or skipped (it then only opens for a new theme). */
   setupDone: boolean
+  /** Below lg, while editing: the preview shows as a strip above the controls. */
+  previewStrip: boolean
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -84,6 +86,7 @@ function loadPrefs(): EditorPrefs {
       layout: EDITOR_LAYOUTS.includes(raw?.layout as EditorLayout) ? raw!.layout! : fallback.layout,
       // Saved prefs from before the setup existed belong to people who know the editor.
       setupDone: raw ? raw.setupDone !== false : fallback.setupDone,
+      previewStrip: typeof raw?.previewStrip === 'boolean' ? raw.previewStrip : fallback.previewStrip,
     }
   }
   catch {
