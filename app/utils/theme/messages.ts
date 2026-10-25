@@ -59,7 +59,11 @@ export type InspectMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:i
 export type RevealedMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:revealed', component: string, found: boolean, uses: string[] }
 /** Something on the component stage was clicked, e.g. 'root:danger:hover' (style, variant, state). */
 export type StagePickMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:stage-pick', target: string }
-export type PreviewToEditorMessage = ReadyMessage | ScrollMessage | InspectMessage | RevealedMessage | StagePickMessage
+/** Editor shortcuts pressed while the preview has focus (its key events don't reach the editor). */
+export const PREVIEW_SHORTCUTS = ['search', 'undo', 'redo', 'stop-pick'] as const
+export type PreviewShortcut = (typeof PREVIEW_SHORTCUTS)[number]
+export type ShortcutMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:shortcut', shortcut: PreviewShortcut }
+export type PreviewToEditorMessage = ReadyMessage | ScrollMessage | InspectMessage | RevealedMessage | StagePickMessage | ShortcutMessage
 
 const STAGE_TARGET_RE = /^[a-z]+(?::[a-z]+){0,3}$/
 
@@ -140,6 +144,9 @@ export function parsePreviewMessage(event: MessageEventLike, expectedOrigin: str
   if (event.data.type === 'preview:stage-pick' && typeof event.data.target === 'string' && event.data.target.length <= 60 && STAGE_TARGET_RE.test(event.data.target)) {
     return { channel: MESSAGE_CHANNEL, type: 'preview:stage-pick', target: event.data.target }
   }
+  if (event.data.type === 'preview:shortcut' && PREVIEW_SHORTCUTS.includes(event.data.shortcut as PreviewShortcut)) {
+    return { channel: MESSAGE_CHANNEL, type: 'preview:shortcut', shortcut: event.data.shortcut as PreviewShortcut }
+  }
   return null
 }
 
@@ -181,4 +188,8 @@ export function createRevealedMessage(component: string, found: boolean, uses: s
 
 export function createStagePickMessage(target: string): StagePickMessage {
   return { channel: MESSAGE_CHANNEL, type: 'preview:stage-pick', target }
+}
+
+export function createShortcutMessage(shortcut: PreviewShortcut): ShortcutMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:shortcut', shortcut }
 }

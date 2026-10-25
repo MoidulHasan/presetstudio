@@ -7,9 +7,11 @@ import {
   createReadyMessage,
   createRevealedMessage,
   createScrollMessage,
+  createShortcutMessage,
   createStagePickMessage,
   parseEditorMessage,
   type PreviewCategory,
+  type PreviewShortcut,
   type PreviewTemplate,
   type ScrollPosition,
 } from '~/utils/theme/messages'
@@ -96,6 +98,30 @@ async function reveal(component: string) {
   window.parent.postMessage(createRevealedMessage(component, found, uses), window.location.origin)
 }
 
+// --- Editor shortcuts ---------------------------------------------------------------
+// Key presses in the iframe don't reach the editor: pass on search, undo/redo (outside text
+// fields, which keep their own undo) and Escape while picking.
+let inspecting = false
+
+function shortcutFor(event: KeyboardEvent): PreviewShortcut | null {
+  if (event.key === 'Escape') return inspecting ? 'stop-pick' : null
+  if (!(event.metaKey || event.ctrlKey) || event.altKey) return null
+  const key = event.key.toLowerCase()
+  if (key === 'k' && !event.shiftKey) return 'search'
+  const el = event.target as HTMLElement | null
+  if (el && (el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName))) return null
+  if (key === 'z') return event.shiftKey ? 'redo' : 'undo'
+  if (key === 'y') return 'redo'
+  return null
+}
+
+function onKeydown(event: KeyboardEvent) {
+  const shortcut = shortcutFor(event)
+  if (!shortcut) return
+  event.preventDefault()
+  window.parent.postMessage(createShortcutMessage(shortcut), window.location.origin)
+}
+
 function onMessage(event: MessageEvent) {
   if (event.source !== window.parent) return
   const message = parseEditorMessage(event, window.location.origin)
@@ -109,6 +135,7 @@ function onMessage(event: MessageEvent) {
   stage.value = message.stage
   forced.update({ focus: message.showFocus, stage: !!message.stage })
   inspector.setInspect(message.inspect)
+  inspecting = message.inspect
   void applyTheme(message.state, message.colorScheme)
 }
 
@@ -116,6 +143,7 @@ onMounted(() => {
   window.addEventListener('message', onMessage)
   if (embedded) {
     window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('keydown', onKeydown, true)
     window.parent.postMessage(createReadyMessage(), window.location.origin)
   }
   else {
@@ -125,6 +153,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
   window.removeEventListener('scroll', onScroll)
+  window.removeEventListener('keydown', onKeydown, true)
   cancelAnimationFrame(scrollFrame)
   forced.dispose()
   inspector.dispose()

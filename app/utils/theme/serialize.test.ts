@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, createStagePickMessage, parseEditorMessage, parsePreviewMessage } from './messages'
+import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, createShortcutMessage, createStagePickMessage, parseEditorMessage, parsePreviewMessage } from './messages'
 import { generateClassicPalette, normalizeHex } from './palette'
 import {
   createWorkspace,
@@ -219,6 +219,9 @@ describe('component inspect messages', () => {
     expect(parseEditorMessage({ origin, data: createApplyMessage(createDefaultThemeState(), 'light', { stage: 'nope' }) }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:danger:hover') }, origin)).toEqual(createStagePickMessage('root:danger:hover'))
     expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:<b>') }, origin)).toBeNull()
+    expect(parsePreviewMessage({ origin, data: createShortcutMessage('search') }, origin)).toEqual(createShortcutMessage('search'))
+    expect(parsePreviewMessage({ origin, data: { ...createShortcutMessage('undo'), shortcut: 'delete-all' } }, origin)).toBeNull()
+    expect(parsePreviewMessage({ origin: 'https://evil.example', data: createShortcutMessage('undo') }, origin)).toBeNull()
   })
 })
 

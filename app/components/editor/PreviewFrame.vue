@@ -75,6 +75,13 @@ function onMessage(event: MessageEvent) {
     // On narrow screens the picked component's tokens are in the other pane.
     editor.prefs.pane = 'edit'
   }
+  else if (message?.type === 'preview:shortcut') {
+    if (message.shortcut === 'undo') workspace.undo()
+    else if (message.shortcut === 'redo') workspace.redo()
+    else if (message.shortcut === 'stop-pick') editor.prefs.inspect = false
+    // The top bar opens search on ⌘K / Ctrl+K.
+    else window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+  }
   else if (message?.type === 'preview:stage-pick') {
     editor.pickOnStage(message.target)
     editor.prefs.pane = 'edit'
