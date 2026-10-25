@@ -12,24 +12,49 @@ const workspace = useWorkspaceStore()
 const frame = ref<HTMLIFrameElement | null>(null)
 const ready = ref(false)
 
+// Applying a theme restyles the whole preview (every CSS variable changes), so during a drag
+// it's updated at most ~30 times a second: the first change goes out on the next frame, later
+// ones are coalesced, and the last one always arrives.
+const MIN_INTERVAL = 33
 let pending = 0
-function sendState() {
+let timer: ReturnType<typeof setTimeout> | undefined
+let lastSent = -Infinity
+let scheduled = false
+
+function postState() {
+  scheduled = false
   const target = frame.value?.contentWindow
   if (!ready.value || !target) return
-  // Coalesce rapid changes (e.g. dragging the color picker) into one message per frame.
+  lastSent = performance.now()
+  // While Compare is held, the open editor's own edits are left out.
+  const state = editor.prefs.compare ? { ...workspace.theme, overrides: editor.compareOverrides() } : workspace.theme
+  target.postMessage(createApplyMessage(state, props.colorScheme, {
+    template: editor.prefs.template,
+    category: editor.prefs.category,
+    hideScrollbar: props.hideScrollbar,
+    showFocus: editor.prefs.showFocus,
+    inspect: editor.prefs.inspect,
+    stage: editor.activeStage,
+  }), window.location.origin)
+}
+
+function sendState() {
+  if (!ready.value) return
   cancelAnimationFrame(pending)
-  pending = requestAnimationFrame(() => {
-    // While Compare is held, the open editor's own edits are left out.
-    const state = editor.prefs.compare ? { ...workspace.theme, overrides: editor.compareOverrides() } : workspace.theme
-    target.postMessage(createApplyMessage(state, props.colorScheme, {
-      template: editor.prefs.template,
-      category: editor.prefs.category,
-      hideScrollbar: props.hideScrollbar,
-      showFocus: editor.prefs.showFocus,
-      inspect: editor.prefs.inspect,
-      stage: editor.activeStage,
-    }), window.location.origin)
-  })
+  clearTimeout(timer)
+  scheduled = true
+  const wait = lastSent + MIN_INTERVAL - performance.now()
+  const schedule = () => (pending = requestAnimationFrame(postState))
+  if (wait > 0) timer = setTimeout(schedule, wait)
+  else schedule()
+}
+
+/** Sends a scheduled state now (messages that depend on it, like a reveal, must come after). */
+function flushState() {
+  if (!scheduled) return
+  cancelAnimationFrame(pending)
+  clearTimeout(timer)
+  postState()
 }
 
 function onMessage(event: MessageEvent) {
@@ -63,7 +88,10 @@ function onMessage(event: MessageEvent) {
 watch(() => editor.revealRequest, (request) => {
   const target = frame.value?.contentWindow
   if (!request || !ready.value || !target) return
-  requestAnimationFrame(() => requestAnimationFrame(() => target.postMessage(createRevealMessage(request.component), window.location.origin)))
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    flushState()
+    target.postMessage(createRevealMessage(request.component), window.location.origin)
+  }))
 })
 
 /** Scrolls the preview without it reporting the scroll back (used to sync panes). */
@@ -77,6 +105,7 @@ onMounted(() => window.addEventListener('message', onMessage))
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
   cancelAnimationFrame(pending)
+  clearTimeout(timer)
 })
 
 watch([() => workspace.theme, () => props.colorScheme, () => editor.prefs.template, () => editor.prefs.category, () => props.hideScrollbar, () => editor.prefs.showFocus, () => editor.prefs.inspect, () => editor.activeStage, () => editor.prefs.compare], sendState)
