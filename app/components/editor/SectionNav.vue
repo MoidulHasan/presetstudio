@@ -3,12 +3,11 @@ import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
 import { PATTERN_SECTION_KEYS, SECTION_META, type EditorSection } from '~/utils/editor-sections'
-import { PATTERN_SECTIONS, type PatternSection } from '~/utils/theme/semantic-studio'
 import { COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS } from '~/utils/theme/components'
-import type { DesignSection } from '~/utils/theme/sections'
 
 const editor = useEditorStore()
 const preset = usePresetStore()
+const { isModified } = useSectionStatus()
 
 const MAX_SIDEBAR_STUDIOS = 8
 
@@ -22,11 +21,7 @@ const sectionItem = (section: EditorSection): NavItem => ({
   icon: SECTION_META[section].icon,
   open: () => editor.openSection(section),
   active: editor.prefs.section === section,
-  modified: section === 'semantic'
-    ? preset.semanticOverrideCount > 0
-    : PATTERN_SECTIONS[section as PatternSection]
-      ? (preset.semanticGroupCounts[PATTERN_SECTIONS[section as PatternSection]] ?? 0) > 0
-      : preset.modifiedSections.has(section as DesignSection),
+  modified: isModified(section),
 })
 
 const openStudio = computed(() =>
