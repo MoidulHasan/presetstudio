@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { FileUploadUploaderEvent } from 'primevue/fileupload'
 import type { MenuItem } from 'primevue/menuitem'
+import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import { MAX_THEME_SIZE, parseThemeFile } from '~/utils/theme/share'
 
+const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const toast = useToast()
@@ -29,8 +31,11 @@ function submitDialog() {
   if (!name || !dialog.value) return
   if (dialog.value === 'rename') workspace.renameTheme(workspace.activeDoc.id, name)
   else {
-    workspace.createTheme(name, dialog.value === 'duplicate' ? 'duplicate' : 'blank')
+    const blank = dialog.value === 'create'
+    workspace.createTheme(name, blank ? 'blank' : 'duplicate')
     toast.add({ severity: 'success', summary: `Created “${workspace.activeDoc.name}”`, life: 2500 })
+    // A new theme starts with the guided setup (look, brand color, corners, neutrals).
+    if (blank) editor.openSetup()
   }
   dialog.value = null
 }
@@ -65,6 +70,8 @@ async function importFile(event: FileUploadUploaderEvent) {
     return
   }
   const doc = workspace.importTheme(shared.name, shared.theme)
+  // An imported theme is already designed.
+  if (editor.setupOpen) editor.closeSetup()
   importVisible.value = false
   toast.add({ severity: 'success', summary: `Imported “${doc.name}”`, detail: 'Added as a new theme.', life: 3000 })
 }

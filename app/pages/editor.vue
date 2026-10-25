@@ -83,6 +83,8 @@ const uiDark = computed(() => editor.prefs.uiTheme === 'dark' || (editor.prefs.u
 watch(uiDark, dark => document.documentElement.classList.toggle('ps-dark', dark))
 
 onMounted(() => {
+  // First visit: a guided setup instead of the full editor.
+  if (!editor.prefs.setupDone && preset.pristine && workspace.state.themes.length === 1) editor.openSetup()
   window.addEventListener('keydown', onKeydown)
   media = window.matchMedia('(prefers-color-scheme: dark)')
   systemDark.value = media.matches
@@ -140,8 +142,26 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="flex min-h-0 flex-1">
+      <!-- First-run setup (either layout): the setup panel, with the sample app beside it. -->
+      <template v-if="editor.setupOpen">
+        <aside
+          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:w-[26rem] lg:border-r xl:w-[28rem] dark:border-surface-800"
+          :class="pane === 'edit' ? 'block' : 'hidden'"
+          aria-label="Set up your theme"
+        >
+          <EditorSetup />
+        </aside>
+        <section
+          class="min-w-0 flex-1 flex-col bg-surface-50 lg:flex dark:bg-surface-950"
+          :class="pane === 'preview' ? 'flex' : 'hidden'"
+          aria-label="Preview"
+        >
+          <EditorPreviewStage />
+        </section>
+      </template>
+
       <!-- Two panes: destination rail and one panel on the left, the preview takes the rest. -->
-      <template v-if="editor.prefs.layout === 'panels'">
+      <template v-else-if="editor.prefs.layout === 'panels'">
         <aside
           class="ps-pane-scroll hidden w-[5.75rem] shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
           aria-label="Destinations"

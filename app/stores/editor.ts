@@ -55,10 +55,12 @@ interface EditorPrefs {
   uiTheme: UiTheme
   /** The editor's layout: two panes (default) or the classic three. */
   layout: EditorLayout
+  /** The first-run setup was finished or skipped (it then only opens for a new theme). */
+  setupDone: boolean
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels' }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -80,6 +82,8 @@ function loadPrefs(): EditorPrefs {
       dismissedTips: Array.isArray(raw?.dismissedTips) ? raw.dismissedTips.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
       layout: EDITOR_LAYOUTS.includes(raw?.layout as EditorLayout) ? raw!.layout! : fallback.layout,
+      // Saved prefs from before the setup existed belong to people who know the editor.
+      setupDone: raw ? raw.setupDone !== false : fallback.setupDone,
     }
   }
   catch {
@@ -218,6 +222,22 @@ export const useEditorStore = defineStore('editor', () => {
     if (studio !== component) revealComponent(component)
   }
 
+  // --- First-run setup --------------------------------------------------------------------
+  /** The setup (pick a look, brand color, corners, neutrals) replaces the editor's panels. */
+  const setupOpen = ref(false)
+
+  function openSetup() {
+    openSection('start')
+    setupOpen.value = true
+  }
+
+  /** Finished or skipped: the editor opens on Brand, and the setup doesn't come back by itself. */
+  function closeSetup() {
+    setupOpen.value = false
+    prefs.value.setupDone = true
+    openSection('start')
+  }
+
   /** Opens the list of every component, with the whole component gallery in the preview. */
   function openComponentList() {
     prefs.value.section = 'components'
@@ -244,5 +264,8 @@ export const useEditorStore = defineStore('editor', () => {
     openSection,
     openComponent,
     openComponentList,
+    setupOpen,
+    openSetup,
+    closeSetup,
   }
 })

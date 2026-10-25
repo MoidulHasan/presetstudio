@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { decodeShareToken, shareTokenFromHash, type SharedTheme } from '~/utils/theme/share'
 import { BASE_PRESET_LABELS } from '~/utils/theme/types'
 
 // Opening a share link (/editor#theme=…) offers to add its theme as a new theme. The link is
 // decoded locally and validated; the hash is cleared either way, so a reload doesn't ask again.
+const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const toast = useToast()
 
@@ -27,6 +29,8 @@ function add() {
   if (!shared.value) return
   const doc = workspace.importTheme(shared.value.name, shared.value.theme)
   shared.value = null
+  // A shared theme is already designed: no first-run setup for it.
+  if (editor.setupOpen) editor.closeSetup()
   toast.add({ severity: 'success', summary: `Added “${doc.name}”`, detail: 'Your other themes are unchanged.', life: 3000 })
 }
 
