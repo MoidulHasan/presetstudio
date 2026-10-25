@@ -8,6 +8,8 @@ import {
   parseThemeFile,
   shareTokenFromHash,
   shareUrl,
+  startPath,
+  startTokenFromHash,
   themeFile,
 } from './share'
 import { createDefaultDesign, createDefaultThemeState, type ThemeState } from './types'
@@ -70,6 +72,15 @@ describe('share links', () => {
     expect(shareTokenFromHash(url.hash)).toBe(token)
     expect(shareTokenFromHash('')).toBeNull()
     expect(shareTokenFromHash('#other=1')).toBeNull()
+  })
+
+  it('keeps landing page choices apart from shared themes', async () => {
+    const token = await encodeShareToken('Brand', theme)
+    const url = new URL(startPath(token), 'https://presetstudio.example')
+    expect(url.pathname).toBe('/editor')
+    expect(startTokenFromHash(url.hash)).toBe(token)
+    expect(shareTokenFromHash(url.hash)).toBeNull()
+    expect(startTokenFromHash(new URL(shareUrl('https://presetstudio.example', token)).hash)).toBeNull()
   })
 
   it('rejects tampered, malformed and oversized tokens', async () => {

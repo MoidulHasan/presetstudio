@@ -117,6 +117,8 @@ export async function decodeShareToken(token: string): Promise<SharedTheme | nul
 }
 
 const SHARE_PARAM = 'theme'
+// Choices made on the landing page (look, brand color, corners): they continue in the setup.
+const START_PARAM = 'start'
 
 /** The editor URL that opens a shared theme (the token travels in the hash, never to a server). */
 export function shareUrl(origin: string, token: string): string {
@@ -126,5 +128,16 @@ export function shareUrl(origin: string, token: string): string {
 /** The share token in a location hash ('#theme=…'), if any. */
 export function shareTokenFromHash(hash: string): string | null {
   const value = new URLSearchParams(hash.replace(/^#/, '')).get(SHARE_PARAM)
+  return value || null
+}
+
+/** The editor path that starts a theme from the landing page's choices (same token format). */
+export function startPath(token: string): string {
+  return `/editor#${START_PARAM}=${token}`
+}
+
+/** The start token in a location hash ('#start=…'), if any. */
+export function startTokenFromHash(hash: string): string | null {
+  const value = new URLSearchParams(hash.replace(/^#/, '')).get(START_PARAM)
   return value || null
 }
