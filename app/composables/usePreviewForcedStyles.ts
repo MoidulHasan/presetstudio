@@ -1,4 +1,6 @@
+import type { InjectionKey, Ref } from 'vue'
 import { forcedStateCss, schemeScopeCss } from '~/utils/theme/preview-css'
+import type { ColorScheme } from '~/utils/theme/types'
 
 // One <style> in the preview with CSS derived from the theme's own stylesheets:
 // - `.ps-show-focus …`: focus styles without focus (focus-states toggle, stage focus cells);
@@ -10,6 +12,8 @@ export const FOCUS_CLASS = 'ps-show-focus'
 export const HOVER_CLASS = 'ps-force-hover'
 export const ACTIVE_CLASS = 'ps-force-active'
 export const SCHEME_CLASS = 'ps-scheme'
+/** The editor's color scheme, provided by /preview to stages (they show one scheme on narrow previews). */
+export const PREVIEW_SCHEME: InjectionKey<Readonly<Ref<ColorScheme>>> = Symbol('preview-scheme')
 const DARK_CLASS = 'ps-dark'
 
 export function usePreviewForcedStyles() {

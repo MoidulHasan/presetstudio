@@ -13,6 +13,7 @@ import {
   type PreviewTemplate,
   type ScrollPosition,
 } from '~/utils/theme/messages'
+import { PREVIEW_SCHEME } from '~/composables/usePreviewForcedStyles'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -25,6 +26,9 @@ const embedded = import.meta.client && window.parent !== window
 
 const template = ref<PreviewTemplate>('components')
 const category = ref<PreviewCategory>('form')
+// The editor's color scheme: stages show both, or this one when the preview is narrow.
+const colorScheme = ref<ColorScheme>('light')
+provide(PREVIEW_SCHEME, readonly(colorScheme))
 // Until the first theme arrives the app's default (editor) theme is active; don't show it.
 const themed = ref(false)
 
@@ -100,6 +104,7 @@ function onMessage(event: MessageEvent) {
   if (message?.type !== 'theme:apply') return
   template.value = message.template
   category.value = message.category
+  colorScheme.value = message.colorScheme
   document.documentElement.classList.toggle('ps-no-scrollbar', message.hideScrollbar)
   stage.value = message.stage
   forced.update({ focus: message.showFocus, stage: !!message.stage })
