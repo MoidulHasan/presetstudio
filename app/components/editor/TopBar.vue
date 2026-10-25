@@ -7,7 +7,7 @@ import type { EditorLayout, UiTheme } from '~/utils/editor-sections'
 // The theme (switch, rename, import, reset…), undo/redo, and the two ways out: Share and
 // Export. The base preset is chosen in Quick start, resets live in the theme menu and panels;
 // the editor's own appearance and layout are in the settings menu.
-defineEmits<{ export: [tab: 'preset' | 'share'] }>()
+defineEmits<{ export: [tab: 'app' | 'share'] }>()
 
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
@@ -131,7 +131,7 @@ const settingsItems = computed<MenuItem[]>(() => [
         size="small"
         aria-label="Export"
         :pt="{ label: { class: 'hidden sm:inline' } }"
-        @click="$emit('export', 'preset')"
+        @click="$emit('export', 'app')"
       />
     </div>
   </header>

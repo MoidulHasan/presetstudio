@@ -11,8 +11,8 @@ const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const exportVisible = ref(false)
-const exportTab = ref('preset')
-function openExport(tab: 'preset' | 'share') {
+const exportTab = ref('app')
+function openExport(tab: 'app' | 'share') {
   exportTab.value = tab
   exportVisible.value = true
 }

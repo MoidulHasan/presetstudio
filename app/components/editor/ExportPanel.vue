@@ -1,38 +1,78 @@
 <script setup lang="ts">
+import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
+import { listChanges } from '~/utils/theme/changes'
 import { generateNuxtSnippets, generateVueSnippet } from '~/utils/theme/export'
 import { encodeShareToken, shareUrl, themeFile } from '~/utils/theme/share'
+import { BASE_PRESET_LABELS } from '~/utils/theme/types'
+import { readStorage, writeStorage } from '~/utils/storage'
 
+// The finish line: what's in the theme, then numbered steps to add it to an app (Nuxt, Vue or
+// just the preset file), or a link / file to share it.
 const visible = defineModel<boolean>('visible', { required: true })
+/** 'app' (add to your app) or 'share'. */
+const tab = defineModel<string>('tab', { default: 'app' })
 
+const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const toast = useToast()
-const tab = defineModel<string>('tab', { default: 'preset' })
+
+// --- Summary ------------------------------------------------------------------------------
+const changeCount = computed(() => listChanges(workspace.theme).length)
+const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
+
+function reviewContrast() {
+  visible.value = false
+  editor.openSection('accessibility')
+}
+
+// --- Add to your app ------------------------------------------------------------------------
+type Setup = 'nuxt' | 'vue' | 'file'
+const SETUP_KEY = 'presetstudio:export-setup'
+const SETUPS: Array<{ value: Setup, label: string }> = [
+  { value: 'nuxt', label: 'Nuxt' },
+  { value: 'vue', label: 'Vue' },
+  { value: 'file', label: 'Preset file only' },
+]
+const stored = readStorage(SETUP_KEY)
+const setup = ref<Setup>(SETUPS.some(s => s.value === stored) ? stored as Setup : 'nuxt')
+watch(setup, value => writeStorage(SETUP_KEY, value))
 
 interface Snippet {
   title: string
+  /** What the step is for, in one line. */
+  hint: string
   fileName: string
   code: string
   download?: boolean
 }
 
-const snippets = computed<Record<string, Snippet[]>>(() => {
+const steps = computed<Snippet[]>(() => {
   const { identifier, fileBase, code } = preset.exportInfo
-  const nuxt = generateNuxtSnippets(identifier, fileBase)
-  return {
-    preset: [{ title: 'Preset', fileName: `${fileBase}.ts`, code, download: true }],
-    nuxt: [
-      { title: '1. Preset', fileName: `themes/${fileBase}.ts`, code, download: true },
-      { title: '2. Theme module', fileName: 'themes/theme.ts', code: nuxt.themeFile, download: true },
-      { title: '3. Nuxt config', fileName: 'nuxt.config.ts', code: nuxt.config },
-    ],
-    vue: [
-      { title: '1. Preset', fileName: `themes/${fileBase}.ts`, code, download: true },
-      { title: '2. Register', fileName: 'main.ts', code: generateVueSnippet(identifier, fileBase) },
-    ],
+  const presetStep = (fileName: string): Snippet => ({
+    title: 'Save the preset',
+    hint: `Your theme as a PrimeVue preset: only what you changed, on top of ${baseLabel.value}.`,
+    fileName,
+    code,
+    download: true,
+  })
+  if (setup.value === 'nuxt') {
+    const nuxt = generateNuxtSnippets(identifier, fileBase)
+    return [
+      presetStep(`themes/${fileBase}.ts`),
+      { title: 'Wrap it for the PrimeVue module', hint: 'The Nuxt module takes the preset together with its options (dark mode follows the system here).', fileName: 'themes/theme.ts', code: nuxt.themeFile, download: true },
+      { title: 'Point Nuxt at it', hint: 'Add these lines to your Nuxt config, next to your other settings.', fileName: 'nuxt.config.ts', code: nuxt.config },
+    ]
   }
+  if (setup.value === 'vue') {
+    return [
+      presetStep(`themes/${fileBase}.ts`),
+      { title: 'Register it with PrimeVue', hint: 'Where you create your app, usually main.ts.', fileName: 'main.ts', code: generateVueSnippet(identifier, fileBase) },
+    ]
+  }
+  return [{ ...presetStep(`${fileBase}.ts`), hint: 'Use it wherever you configure PrimeVue: theme: { preset }.' }]
 })
 
 async function copy(snippet: Snippet) {
@@ -94,77 +134,118 @@ function downloadThemeFile() {
     class="!w-full md:!w-[44rem]"
   >
     <template #header>
-      <div class="flex flex-col">
+      <div class="flex min-w-0 flex-col gap-1">
         <span class="text-lg font-semibold">Export “{{ workspace.activeDoc.name }}”</span>
-        <span class="text-xs text-surface-500 dark:text-surface-400">
-          {{ preset.exportInfo.tokenCount }} changed token{{ preset.exportInfo.tokenCount === 1 ? '' : 's' }}
-          on top of {{ workspace.theme.basePreset.charAt(0).toUpperCase() + workspace.theme.basePreset.slice(1) }}.
-          Only changes are exported; everything else comes from the base preset.
+        <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-surface-500 dark:text-surface-400">
+          <span>
+            {{ changeCount }} change{{ changeCount === 1 ? '' : 's' }} on top of {{ baseLabel }}
+            ({{ preset.exportInfo.tokenCount }} token{{ preset.exportInfo.tokenCount === 1 ? '' : 's' }}; everything else comes from {{ baseLabel }})
+          </span>
+          <span
+            v-if="!preset.contrastIssues"
+            class="flex items-center gap-1"
+          >
+            <i
+              class="pi pi-check-circle text-green-600 dark:text-green-400"
+              aria-hidden="true"
+            />
+            No new contrast issues
+          </span>
+          <Button
+            v-else
+            :label="`${preset.contrastIssues} contrast issue${preset.contrastIssues === 1 ? '' : 's'}: review`"
+            icon="pi pi-exclamation-triangle"
+            severity="danger"
+            size="small"
+            text
+            class="!p-0 !text-xs"
+            @click="reviewContrast"
+          />
         </span>
       </div>
     </template>
 
     <Tabs v-model:value="tab">
       <TabList>
-        <Tab value="preset">
-          Preset file
-        </Tab>
-        <Tab value="nuxt">
-          Nuxt
-        </Tab>
-        <Tab value="vue">
-          Vue
+        <Tab value="app">
+          Add to your app
         </Tab>
         <Tab value="share">
           Share
         </Tab>
       </TabList>
       <TabPanels class="!px-0">
-        <TabPanel
-          v-for="(list, key) in snippets"
-          :key="key"
-          :value="key"
-        >
+        <TabPanel value="app">
           <div class="flex flex-col gap-6">
-            <section
-              v-for="snippet in list"
-              :key="snippet.fileName"
-              class="flex flex-col gap-2"
-            >
-              <header class="flex items-center justify-between gap-2">
-                <div class="flex min-w-0 flex-col">
-                  <span
-                    v-if="list.length > 1"
-                    class="text-sm font-medium"
-                  >{{ snippet.title }}</span>
-                  <code class="truncate font-mono text-xs text-surface-500">{{ snippet.fileName }}</code>
-                </div>
-                <div class="flex shrink-0 gap-1">
-                  <Button
-                    v-if="snippet.download"
-                    v-tooltip.bottom="`Download ${snippet.fileName.split('/').pop()}`"
-                    icon="pi pi-download"
-                    severity="secondary"
-                    size="small"
-                    text
-                    :aria-label="`Download ${snippet.fileName}`"
-                    @click="download(snippet)"
-                  />
-                  <Button
-                    label="Copy"
-                    icon="pi pi-copy"
-                    size="small"
-                    :severity="list.length > 1 ? 'secondary' : undefined"
-                    @click="copy(snippet)"
-                  />
-                </div>
-              </header>
-              <pre
-                class="max-h-[60vh] overflow-auto rounded-lg bg-surface-100 p-4 font-mono text-xs leading-relaxed dark:bg-surface-800"
-                :aria-label="`${snippet.fileName} code`"
-                tabindex="0"
-              ><code>{{ snippet.code }}</code></pre>
-            </section>
+            <div class="flex flex-wrap items-center gap-3">
+              <span class="text-sm font-medium">Your setup</span>
+              <SelectButton
+                v-model="setup"
+                :options="SETUPS"
+                option-label="label"
+                option-value="value"
+                :allow-empty="false"
+                aria-label="Your setup"
+                size="small"
+              />
+            </div>
+
+            <ol class="flex flex-col gap-6">
+              <li
+                v-for="(step, index) in steps"
+                :key="`${setup}-${step.fileName}`"
+                class="flex gap-3"
+              >
+                <span
+                  class="grid size-6 shrink-0 place-items-center rounded-full bg-surface-900 text-xs font-semibold text-surface-0 dark:bg-surface-0 dark:text-surface-900"
+                  aria-hidden="true"
+                >{{ index + 1 }}</span>
+                <section
+                  class="flex min-w-0 flex-1 flex-col gap-2"
+                  :aria-label="`Step ${index + 1}: ${step.title}`"
+                >
+                  <header class="flex items-start justify-between gap-2">
+                    <div class="flex min-w-0 flex-col gap-0.5">
+                      <span class="text-sm font-semibold">{{ step.title }}</span>
+                      <span class="text-xs text-surface-500 dark:text-surface-400">{{ step.hint }}</span>
+                      <code class="truncate font-mono text-xs text-surface-500">{{ step.fileName }}</code>
+                    </div>
+                    <div class="flex shrink-0 gap-1">
+                      <Button
+                        v-if="step.download"
+                        v-tooltip.bottom="`Download ${step.fileName.split('/').pop()}`"
+                        icon="pi pi-download"
+                        severity="secondary"
+                        size="small"
+                        text
+                        :aria-label="`Download ${step.fileName}`"
+                        @click="download(step)"
+                      />
+                      <Button
+                        label="Copy"
+                        icon="pi pi-copy"
+                        size="small"
+                        severity="secondary"
+                        @click="copy(step)"
+                      />
+                    </div>
+                  </header>
+                  <pre
+                    class="max-h-72 overflow-auto rounded-lg bg-surface-100 p-4 font-mono text-xs leading-relaxed dark:bg-surface-800"
+                    :aria-label="`${step.fileName} code`"
+                    tabindex="0"
+                  ><code>{{ step.code }}</code></pre>
+                </section>
+              </li>
+            </ol>
+
+            <p class="flex items-center gap-2 border-t border-surface-200 pt-4 text-xs text-surface-500 dark:border-surface-700 dark:text-surface-400">
+              <i
+                class="pi pi-check"
+                aria-hidden="true"
+              />
+              That's it: your app now uses “{{ workspace.activeDoc.name }}”. Works with PrimeVue 4 and @primeuix/themes 2.
+            </p>
           </div>
         </TabPanel>
         <TabPanel value="share">
