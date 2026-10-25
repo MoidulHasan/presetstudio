@@ -114,6 +114,25 @@ export function withoutComponent(overrides: TokenTree, component: string): Token
   return deletePath(deletePath(overrides, ['components', component]), ['primitive', 'ps', component])
 }
 
+/**
+ * A theme's overrides without one component's edits, including the links other components
+ * keep to it only to follow it (SplitButton's radius set to `{button.border.radius}`).
+ */
+export function withoutComponentEdits(overrides: TokenTree, component: string): TokenTree {
+  let out = withoutComponent(overrides, component)
+  const others = out.components
+  if (!others || typeof others !== 'object') return out
+  const prefix = `{${component}.`
+  const walk = (node: TokenTree, path: string[]) => {
+    for (const [key, value] of Object.entries(node)) {
+      if (typeof value === 'object') walk(value, [...path, key])
+      else if (typeof value === 'string' && value.startsWith(prefix) && /^\{[^{}]+\}$/.test(value)) out = deletePath(out, [...path, key])
+    }
+  }
+  walk(others, ['components'])
+  return out
+}
+
 /** The palette a group was recolored with (from the overrides), or null for the preset's own. */
 export function recolorChoice(overrides: TokenTree, tokens: TokenDescriptor[], component: string, group: string): PaletteChoice | null {
   const custom = getPath(overrides, customPalettePath(component, group))

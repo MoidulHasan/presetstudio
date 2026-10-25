@@ -7,7 +7,7 @@ import { loadBasePreset } from '~/utils/theme/presets'
 import { describePreset, type TokenDescriptor } from '~/utils/theme/schema'
 import { DESIGN_SECTIONS, isPristine, isSectionModified, resetSection, type DesignSection } from '~/utils/theme/sections'
 import { countComponentOverrides } from '~/utils/theme/components'
-import { clearRecolor, recolorOverrides, type PaletteChoice } from '~/utils/theme/recolor'
+import { clearRecolor, recolorOverrides, withoutComponentEdits, type PaletteChoice } from '~/utils/theme/recolor'
 import { countSemanticOverrides } from '~/utils/theme/semantic'
 import { SEMANTIC_STUDIO_KEYS, countSemanticGroup, withoutSemanticGroup } from '~/utils/theme/semantic-studio'
 import { deletePath, getPath, setPath } from '~/utils/theme/tree'
@@ -177,19 +177,11 @@ export const usePresetStore = defineStore('preset', () => {
   /** Clears the custom tokens of one component, or of every component. */
   function resetComponents(component: string | null = null) {
     update((d) => {
-      d.overrides = deletePath(d.overrides, component ? ['components', component] : ['components'])
-      // Links that only followed this component (SplitButton's radius → Button's) go too.
-      const others = d.overrides.components
-      if (component && others && typeof others === 'object') {
-        const prefix = `{${component}.`
-        const walk = (node: TokenTree, path: string[]) => {
-          for (const [key, value] of Object.entries(node)) {
-            if (typeof value === 'object') walk(value, [...path, key])
-            else if (typeof value === 'string' && value.startsWith(prefix) && /^\{[^{}]+\}$/.test(value)) d.overrides = deletePath(d.overrides, [...path, key])
-          }
-        }
-        walk(others, ['components'])
-      }
+      // One component: also its generated custom palettes and the links that only followed it
+      // (SplitButton's radius → Button's). Every component: all of that at once.
+      d.overrides = component
+        ? withoutComponentEdits(d.overrides, component)
+        : deletePath(deletePath(d.overrides, ['components']), ['primitive', 'ps'])
     })
   }
 
