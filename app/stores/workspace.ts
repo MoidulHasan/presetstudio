@@ -116,6 +116,20 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     switchTheme(doc.id)
   }
 
+  /**
+   * Adds a theme from a file or a share link as a new theme (never replacing one) and opens it.
+   * `theme` must already be validated (`parseThemeFile`, `decodeShareToken`).
+   */
+  function importTheme(name: string, theme: ThemeState) {
+    const taken = new Set(state.value.themes.map(t => t.name))
+    let unique = sanitizeThemeName(name)
+    for (let n = 2; taken.has(unique); n++) unique = sanitizeThemeName(`${name.slice(0, 54)} (${n})`)
+    const doc = createThemeDocument(unique, clone(theme))
+    state.value.themes.push(doc)
+    switchTheme(doc.id)
+    return doc
+  }
+
   function renameTheme(id: string, name: string) {
     const doc = state.value.themes.find(t => t.id === id)
     if (!doc) return
@@ -205,6 +219,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     canRedo: computed(() => canRedo(history.value)),
     switchTheme,
     createTheme,
+    importTheme,
     renameTheme,
     deleteTheme,
     externalChange,

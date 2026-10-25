@@ -196,6 +196,7 @@ P1.5 the hover box follows the pointer, also side by side and after scrolling (i
 - Share link: compress the serialized state (`CompressionStream('deflate-raw')` + base64url) into the URL hash; on load, offer to import it as a new theme. No server.
 - Importing an existing PrimeVue preset `.ts` file is out of scope unless the owner asks (needs parsing JS safely).
 - Done when a theme round-trips through file and link, with tests for encode/decode and malicious input.
+- **Done (2026-10-25):** Export → Share (copy link, download `.presetstudio.json`), Theme actions → Import theme file, and `/editor#theme=…` asks before adding the theme. `share.ts` + tests (round trips, tampered/oversized tokens, a deflate bomb, injected keys and names).
 
 **P2.5 Accessibility coverage**
 - Where: `app/utils/theme/contrast.ts` (`CONTRAST_PAIRS`), Accessibility panel.

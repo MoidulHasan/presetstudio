@@ -160,6 +160,7 @@ onBeforeUnmount(() => {
       </aside>
 
       <EditorExportPanel v-model:visible="exportVisible" />
+      <EditorSharedThemeDialog />
       <Toast position="bottom-right" />
     </div>
   </div>

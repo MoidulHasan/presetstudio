@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { FileUploadUploaderEvent } from 'primevue/fileupload'
 import type { MenuItem } from 'primevue/menuitem'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
+import { MAX_THEME_SIZE, parseThemeFile } from '~/utils/theme/share'
 
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
@@ -37,6 +39,7 @@ const items = computed<MenuItem[]>(() => [
   { label: 'New theme', icon: 'pi pi-plus', command: () => openDialog('create') },
   { label: 'Duplicate', icon: 'pi pi-copy', command: () => openDialog('duplicate') },
   { label: 'Rename', icon: 'pi pi-pencil', command: () => openDialog('rename') },
+  { label: 'Import theme file…', icon: 'pi pi-upload', command: () => (importVisible.value = true) },
   { separator: true },
   { label: 'Reset to base preset', icon: 'pi pi-refresh', command: () => {
     preset.resetTheme()
@@ -49,6 +52,22 @@ const items = computed<MenuItem[]>(() => [
     command: () => (deleteVisible.value = true),
   },
 ])
+
+// --- Import a theme file (read locally, validated, added as a new theme) ------------------
+const importVisible = ref(false)
+
+async function importFile(event: FileUploadUploaderEvent) {
+  const file = Array.isArray(event.files) ? event.files[0] : event.files
+  if (!file) return
+  const shared = file.size <= MAX_THEME_SIZE ? parseThemeFile(await file.text()) : null
+  if (!shared) {
+    toast.add({ severity: 'error', summary: 'Not a theme file', detail: `“${file.name}” isn't a Preset Studio theme file, or it's damaged.`, life: 5000 })
+    return
+  }
+  const doc = workspace.importTheme(shared.name, shared.theme)
+  importVisible.value = false
+  toast.add({ severity: 'success', summary: `Imported “${doc.name}”`, detail: 'Added as a new theme.', life: 3000 })
+}
 
 function confirmDelete() {
   const name = workspace.activeDoc.name
@@ -127,6 +146,30 @@ function confirmDelete() {
           />
         </div>
       </form>
+    </Dialog>
+
+    <Dialog
+      v-model:visible="importVisible"
+      header="Import theme file"
+      modal
+      :style="{ width: '26rem' }"
+    >
+      <div class="flex flex-col gap-4">
+        <p class="text-sm">
+          Choose a <code class="font-mono text-xs">.json</code> theme file saved from Preset Studio
+          (Export → Share). It's added as a new theme; your themes stay as they are.
+        </p>
+        <FileUpload
+          mode="basic"
+          accept="application/json,.json"
+          :max-file-size="MAX_THEME_SIZE"
+          choose-label="Choose file"
+          choose-icon="pi pi-upload"
+          custom-upload
+          auto
+          @uploader="importFile"
+        />
+      </div>
     </Dialog>
 
     <Dialog
