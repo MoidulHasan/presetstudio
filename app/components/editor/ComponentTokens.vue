@@ -23,13 +23,8 @@ const preset = usePresetStore()
 
 const meta = computed(() => COMPONENT_META[props.component]!)
 
-// The edited scheme is the previewed scheme, like the other token panels.
-const scheme = computed<ColorScheme>({
-  get: () => editor.prefs.colorScheme,
-  set: (value) => {
-    editor.prefs.colorScheme = value
-  },
-})
+// The edited scheme is the previewed scheme (the preview's Light | Dark switch).
+const scheme = computed<ColorScheme>(() => editor.prefs.colorScheme)
 
 const keyOf = (token: TokenDescriptor) => token.path.join('.')
 const isCustom = (token: TokenDescriptor) => tokenSource(token, workspace.theme.overrides, preset.designTokens) === 'custom'
@@ -154,18 +149,7 @@ function showInGallery() {
           :subject="meta.label"
         />
       </div>
-      <SelectButton
-        v-if="!designView"
-        v-model="scheme"
-        :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-label="Color scheme to edit"
-        size="small"
-        class="w-full"
-        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-      />
+      <EditorSchemeNote v-if="!designView" />
       <IconField v-if="!designView">
         <InputIcon class="pi pi-search" />
         <InputText

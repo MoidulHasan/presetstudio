@@ -29,6 +29,8 @@ export interface PreviewView {
   inspect: boolean
   /** Component stage to show instead of the page (every variant and state, light and dark). */
   stage: string | null
+  /** The editor shows light and dark together ("Both"): stages draw both modes. */
+  bothSchemes: boolean
 }
 
 export type ApplyMessage = {
@@ -38,7 +40,7 @@ export type ApplyMessage = {
   colorScheme: ColorScheme
 } & PreviewView
 
-const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false, inspect: false, stage: null }
+const DEFAULT_VIEW: PreviewView = { template: 'components', category: 'form', hideScrollbar: false, showFocus: false, inspect: false, stage: null, bothSchemes: false }
 
 /** Scroll position of a preview (side-by-side panes scroll together). */
 export interface ScrollPosition {
@@ -100,7 +102,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
     const category = event.data.category
     if (!(PREVIEW_TEMPLATES as readonly unknown[]).includes(template)) return null
     if (!(PREVIEW_CATEGORIES as readonly unknown[]).includes(category)) return null
-    if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean' || typeof event.data.inspect !== 'boolean') return null
+    if (typeof event.data.hideScrollbar !== 'boolean' || typeof event.data.showFocus !== 'boolean' || typeof event.data.inspect !== 'boolean' || typeof event.data.bothSchemes !== 'boolean') return null
     const stage = event.data.stage
     if (stage !== null && !isStageName(stage)) return null
     return {
@@ -114,6 +116,7 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
       showFocus: event.data.showFocus,
       inspect: event.data.inspect,
       stage: stage as string | null,
+      bothSchemes: event.data.bothSchemes,
     }
   }
   if (event.data.type === 'preview:scroll-to') {

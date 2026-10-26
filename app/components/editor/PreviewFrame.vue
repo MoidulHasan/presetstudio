@@ -35,6 +35,7 @@ function postState() {
     showFocus: editor.prefs.showFocus,
     inspect: editor.prefs.inspect,
     stage: editor.activeStage,
+    bothSchemes: editor.prefs.split,
   }), window.location.origin)
 }
 
@@ -115,7 +116,7 @@ onBeforeUnmount(() => {
   clearTimeout(timer)
 })
 
-watch([() => workspace.theme, () => props.colorScheme, () => editor.prefs.template, () => editor.prefs.category, () => props.hideScrollbar, () => editor.prefs.showFocus, () => editor.prefs.inspect, () => editor.activeStage, () => editor.prefs.compare], sendState)
+watch([() => workspace.theme, () => props.colorScheme, () => editor.prefs.template, () => editor.prefs.category, () => props.hideScrollbar, () => editor.prefs.showFocus, () => editor.prefs.inspect, () => editor.activeStage, () => editor.prefs.compare, () => editor.prefs.split], sendState)
 </script>
 
 <template>

@@ -1,63 +1,42 @@
 <script setup lang="ts">
-import { PREVIEW_SCHEME, SCHEME_CLASS } from '~/composables/usePreviewForcedStyles'
+import { PREVIEW_BOTH, PREVIEW_SCHEME, SCHEME_CLASS } from '~/composables/usePreviewForcedStyles'
 import type { ColorScheme } from '~/utils/theme/types'
 
-// Light and dark side by side for a component stage; the slot renders one scheme.
-// `stacked`: light above dark, for wide grids that need the full width.
-// `single`: light only, for things that look the same in both modes (shape, density).
-// Below xl (a narrow preview) one scheme shows at a time, with a Light | Dark switch that
-// starts at the editor's scheme, instead of a long scroll through both.
+// Light and dark for a component stage, following the editor's one Light | Dark | Both switch:
+// the chosen mode, or both ("Both"), side by side when there's room, otherwise light above dark.
+// `stacked`: always light above dark, for wide grids that need the full width.
+// `single`: one mode only, for things that look the same in both (shape, density); "Both"
+// shows light.
 const props = withDefaults(defineProps<{ intro: string, stacked?: boolean, single?: boolean }>(), { stacked: false, single: false })
 
 const ALL_SCHEMES = [
   { key: 'light', label: 'Light', icon: 'pi pi-sun', cls: SCHEME_CLASS },
   { key: 'dark', label: 'Dark', icon: 'pi pi-moon', cls: `${SCHEME_CLASS} ps-dark` },
 ] as const
-const SCHEMES = computed(() => (props.single ? ALL_SCHEMES.slice(0, 1) : ALL_SCHEMES))
 
-const SWITCH_OPTIONS = ALL_SCHEMES.map(s => ({ value: s.key, label: s.label, icon: s.icon }))
 const editorScheme = inject(PREVIEW_SCHEME, ref<ColorScheme>('light'))
-const shown = ref<ColorScheme>(editorScheme.value)
-watch(editorScheme, (scheme) => {
-  shown.value = scheme
+const both = inject(PREVIEW_BOTH, ref(false))
+
+const schemes = computed(() => {
+  if (both.value) return props.single ? ALL_SCHEMES.slice(0, 1) : ALL_SCHEMES
+  return ALL_SCHEMES.filter(s => s.key === editorScheme.value)
 })
 </script>
 
 <template>
   <div class="mx-auto flex max-w-7xl flex-col gap-4">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <p class="text-xs text-muted-color">
-        {{ intro }}
-      </p>
-      <SelectButton
-        v-if="!single"
-        v-model="shown"
-        :options="SWITCH_OPTIONS"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-label="Mode to show"
-        size="small"
-        class="xl:hidden"
-      >
-        <template #option="{ option }">
-          <i
-            :class="option.icon"
-            aria-hidden="true"
-          />
-          <span>{{ option.label }}</span>
-        </template>
-      </SelectButton>
-    </div>
+    <p class="text-xs text-muted-color">
+      {{ intro }}
+    </p>
     <div
       class="grid gap-4"
-      :class="stacked || single ? '' : 'xl:grid-cols-2'"
+      :class="schemes.length > 1 && !stacked ? 'xl:grid-cols-2' : ''"
     >
       <section
-        v-for="scheme in SCHEMES"
+        v-for="scheme in schemes"
         :key="scheme.key"
-        :class="[scheme.cls, single || scheme.key === shown ? 'flex' : 'hidden xl:flex']"
-        class="min-w-0 flex-col gap-8 rounded-xl border border-surface bg-surface-0 p-5 text-color dark:bg-surface-900"
+        :class="scheme.cls"
+        class="flex min-w-0 flex-col gap-8 rounded-xl border border-surface bg-surface-0 p-5 text-color dark:bg-surface-900"
         :aria-label="`${scheme.label} mode`"
       >
         <h2 class="flex items-center gap-2 text-sm font-semibold">

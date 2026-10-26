@@ -1,3 +1,5 @@
+import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type GalleryCategory, type PreviewCategory, type PreviewTemplate } from './theme/messages'
+
 /** Pattern sections: shared looks that many components use (each edits one semantic group). */
 export const PATTERN_SECTION_KEYS = ['formfield', 'list', 'menu', 'overlay', 'container', 'selection'] as const
 
@@ -136,4 +138,45 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
     icon: 'pi pi-eye',
     description: 'WCAG 2.2 contrast checks for key color pairs in light and dark mode.',
   },
+}
+
+// --- What "In an app" shows --------------------------------------------------------------
+
+/** A sample app page or a component gallery category, as the preview's page menu names it. */
+export type PreviewPage = `page:${Exclude<PreviewTemplate, 'components'>}` | `gallery:${PreviewCategory}`
+
+export function isPreviewPage(value: unknown): value is PreviewPage {
+  if (typeof value !== 'string') return false
+  const [kind, name] = value.split(':')
+  if (kind === 'page') return PREVIEW_TEMPLATES.includes(name as PreviewTemplate) && name !== 'components'
+  return kind === 'gallery' && PREVIEW_CATEGORIES.includes(name as PreviewCategory)
+}
+
+/**
+ * The page each section is seen on "In an app": where what it changes shows up. A component
+ * is seen in its gallery category (`pageForComponent`). The user's own pick wins.
+ */
+export const SECTION_PAGES: Record<EditorSection, PreviewPage> = {
+  start: 'page:dashboard',
+  primary: 'page:dashboard',
+  surface: 'page:settings',
+  status: 'page:dashboard',
+  text: 'page:settings',
+  shape: 'page:dashboard',
+  density: 'page:dashboard',
+  focus: 'page:form',
+  formfield: 'page:form',
+  list: 'gallery:form',
+  menu: 'gallery:menu',
+  overlay: 'gallery:overlay',
+  container: 'page:settings',
+  selection: 'gallery:data',
+  components: 'gallery:all',
+  semantic: 'gallery:all',
+  changes: 'page:dashboard',
+  accessibility: 'page:dashboard',
+}
+
+export function pageForComponent(category: GalleryCategory): PreviewPage {
+  return `gallery:${category}`
 }

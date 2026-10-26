@@ -12,9 +12,13 @@ import {
   EDITOR_SECTIONS,
   PREVIEW_VIEWPORTS,
   SECTION_META,
+  SECTION_PAGES,
   UI_THEMES,
+  isPreviewPage,
+  pageForComponent,
   type EditorLayout,
   type EditorSection,
+  type PreviewPage,
   type PreviewViewport,
   type UiTheme,
 } from '~/utils/editor-sections'
@@ -61,10 +65,20 @@ interface EditorPrefs {
   setupDone: boolean
   /** Below lg, while editing: the preview shows as a strip above the controls. */
   previewStrip: boolean
+  /** "In an app" pages picked by hand, per section ('formfield') or component ('component:datatable'). */
+  pages: Record<string, PreviewPage>
+}
+
+const MAX_PAGE_PICKS = 100
+
+function loadPagePicks(raw: unknown): Record<string, PreviewPage> {
+  if (!raw || typeof raw !== 'object') return {}
+  const picks = Object.entries(raw).filter(([key, page]) => key.length <= 64 && isPreviewPage(page)).slice(0, MAX_PAGE_PICKS)
+  return Object.fromEntries(picks) as Record<string, PreviewPage>
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true, pages: {} }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -89,6 +103,7 @@ function loadPrefs(): EditorPrefs {
       // Saved prefs from before the setup existed belong to people who know the editor.
       setupDone: raw ? raw.setupDone !== false : fallback.setupDone,
       previewStrip: typeof raw?.previewStrip === 'boolean' ? raw.previewStrip : fallback.previewStrip,
+      pages: loadPagePicks(raw?.pages),
     }
   }
   catch {
@@ -192,16 +207,44 @@ export const useEditorStore = defineStore('editor', () => {
     prefs.value.category = 'all'
   }
 
-  /**
-   * Opens a section with a fitting preview: Quick start and What you changed show the sample app
-   * (the brand color everywhere), the catalogs (all tokens, accessibility) the whole component
-   * gallery; other sections bring their own stage.
-   */
+  /** Opens a section; the preview follows (its stage, and its page "In an app"). */
   function openSection(section: EditorSection) {
     prefs.value.section = section
-    if (section === 'start' || section === 'changes') prefs.value.template = 'dashboard'
-    else if (section === 'semantic' || section === 'accessibility') showAllComponents()
   }
+
+  // --- What "In an app" shows --------------------------------------------------------------
+  // Every section (and component) has a page where what it changes shows up; a page picked by
+  // hand is remembered for that section. The preview switches when the section does.
+
+  /** The section, or the open component, the page belongs to. */
+  const previewKey = computed(() => (prefs.value.section === 'components' && prefs.value.component ? `component:${prefs.value.component}` : prefs.value.section))
+
+  const suggestedPage = computed<PreviewPage>(() => {
+    const component = prefs.value.section === 'components' ? prefs.value.component : null
+    const meta = component ? COMPONENT_META[component] : null
+    return meta ? pageForComponent(meta.category) : SECTION_PAGES[prefs.value.section]
+  })
+
+  const currentPage = computed<PreviewPage>(() => (prefs.value.template === 'components' ? `gallery:${prefs.value.category}` : `page:${prefs.value.template}`))
+
+  function showPage(page: PreviewPage) {
+    const [kind, name] = page.split(':') as [string, string]
+    if (kind === 'gallery') {
+      prefs.value.template = 'components'
+      prefs.value.category = name as PreviewCategory
+    }
+    else prefs.value.template = name as PreviewTemplate
+  }
+
+  /** Shows a page and remembers it for this section (the suggestion needs no remembering). */
+  function choosePage(page: PreviewPage) {
+    showPage(page)
+    const key = previewKey.value
+    const { [key]: _previous, ...others } = prefs.value.pages
+    prefs.value.pages = page === suggestedPage.value ? others : { ...others, [key]: page }
+  }
+
+  watch(previewKey, key => showPage(prefs.value.pages[key] ?? suggestedPage.value), { immediate: true })
 
   /**
    * Opens a component: in its visual editor (with the stage) when it has one or belongs to one
@@ -220,10 +263,8 @@ export const useEditorStore = defineStore('editor', () => {
     else if (options.view === 'tokens') {
       prefs.value.componentView = 'tokens'
     }
-    const { category } = COMPONENT_META[component]!
-    // Keep "All"; otherwise switch the gallery to the component's category.
-    if (prefs.value.template === 'components' && prefs.value.category !== 'all') prefs.value.category = category
-    // A component's own stage shows it already; family members are found on their parent's stage.
+    // The preview switches to the component's page (previewKey). A component's own stage shows
+    // it already; family members are found on their parent's stage.
     if (studio !== component) revealComponent(component)
   }
 
@@ -273,11 +314,10 @@ export const useEditorStore = defineStore('editor', () => {
     openSection('start')
   }
 
-  /** Opens the list of every component, with the whole component gallery in the preview. */
+  /** Opens the list of every component (the preview shows the whole gallery, or the page picked for it). */
   function openComponentList() {
     prefs.value.section = 'components'
     prefs.value.component = null
-    showAllComponents()
   }
 
   return {
@@ -299,6 +339,10 @@ export const useEditorStore = defineStore('editor', () => {
     openSection,
     openComponent,
     openComponentList,
+    previewKey,
+    suggestedPage,
+    currentPage,
+    choosePage,
     tokenRequest,
     openToken,
     setupOpen,

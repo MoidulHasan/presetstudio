@@ -14,13 +14,8 @@ const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 
-// The edited scheme is the previewed scheme, like the Surfaces panel.
-const scheme = computed<ColorScheme>({
-  get: () => editor.prefs.colorScheme,
-  set: (value) => {
-    editor.prefs.colorScheme = value
-  },
-})
+// The edited scheme is the previewed scheme (the preview's Light | Dark switch).
+const scheme = computed<ColorScheme>(() => editor.prefs.colorScheme)
 
 const isCustom = (t: TokenDescriptor) => tokenSource(t, workspace.theme.overrides, preset.designTokens) === 'custom'
 
@@ -97,17 +92,7 @@ useTokenRequest(
       defer
       to="#inspector-toolbar"
     >
-      <SelectButton
-        v-model="scheme"
-        :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-label="Color scheme to edit"
-        size="small"
-        class="w-full"
-        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-      />
+      <EditorSchemeNote />
       <IconField>
         <InputIcon class="pi pi-search" />
         <InputText

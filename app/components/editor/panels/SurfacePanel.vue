@@ -11,13 +11,8 @@ const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
-// The edited scheme is the previewed scheme: you always edit what you see.
-const scheme = computed<ColorScheme>({
-  get: () => editor.prefs.colorScheme,
-  set: (value) => {
-    editor.prefs.colorScheme = value
-  },
-})
+// The edited scheme is the previewed scheme (the preview's Light | Dark switch).
+const scheme = computed<ColorScheme>(() => editor.prefs.colorScheme)
 const other = computed<ColorScheme>(() => (scheme.value === 'light' ? 'dark' : 'light'))
 const current = computed(() => workspace.theme.design.surface[scheme.value])
 
@@ -92,21 +87,8 @@ function setTint(value: number | number[]) {
 
 <template>
   <div class="flex flex-col gap-8">
-    <EditorInspectorGroup
-      title="Editing"
-      description="The preview switches with this toggle."
-    >
-      <SelectButton
-        v-model="scheme"
-        :options="[{ value: 'light', label: 'Light mode' }, { value: 'dark', label: 'Dark mode' }]"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-label="Color scheme to edit"
-        class="w-full"
-        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-      />
-    </EditorInspectorGroup>
+    <!-- Light and dark have their own surfaces; the preview's mode decides which is edited. -->
+    <EditorSchemeNote />
 
     <EditorInspectorGroup title="Palette">
       <EditorPaletteStrip

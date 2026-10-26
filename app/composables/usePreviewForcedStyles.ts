@@ -12,8 +12,10 @@ export const FOCUS_CLASS = 'ps-show-focus'
 export const HOVER_CLASS = 'ps-force-hover'
 export const ACTIVE_CLASS = 'ps-force-active'
 export const SCHEME_CLASS = 'ps-scheme'
-/** The editor's color scheme, provided by /preview to stages (they show one scheme on narrow previews). */
+/** The editor's color scheme, provided by /preview to stages: the one they show. */
 export const PREVIEW_SCHEME: InjectionKey<Readonly<Ref<ColorScheme>>> = Symbol('preview-scheme')
+/** Whether the editor shows light and dark together ("Both"): stages then draw both. */
+export const PREVIEW_BOTH: InjectionKey<Readonly<Ref<boolean>>> = Symbol('preview-both')
 const DARK_CLASS = 'ps-dark'
 
 export function usePreviewForcedStyles() {

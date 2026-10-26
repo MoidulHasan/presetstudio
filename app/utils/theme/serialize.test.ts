@@ -187,6 +187,7 @@ describe('messages', () => {
     expect(parseEditorMessage({ origin, data: { ...msg, template: '../admin' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, category: 'nope' } }, origin)).toBeNull()
     expect(parseEditorMessage({ origin, data: { ...msg, hideScrollbar: 'yes' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...msg, bothSchemes: 1 } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: msg }, origin)).toBeNull()
   })
 
