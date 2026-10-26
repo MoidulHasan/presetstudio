@@ -13,6 +13,7 @@ const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const design = computed(() => workspace.theme.design)
+const { base } = useBaseDefault()
 
 const presetHints: Record<BasePresetName, string> = {
   aura: 'Clean and modern, subtle borders',
@@ -58,7 +59,7 @@ function setRadius(value: RadiusScale) {
 }
 
 const neutrals: Array<{ id: string, label: string, value: SurfaceDesign, swatch: string }> = [
-  { id: 'base', label: 'Preset', value: { kind: 'base' }, swatch: 'surface' },
+  { id: 'base', label: '', value: { kind: 'base' }, swatch: 'surface' },
   { id: 'slate', label: 'Cool', value: { kind: 'palette', name: 'slate' }, swatch: 'slate' },
   { id: 'neutral', label: 'Neutral', value: { kind: 'palette', name: 'neutral' }, swatch: 'neutral' },
   { id: 'stone', label: 'Warm', value: { kind: 'palette', name: 'stone' }, swatch: 'stone' },
@@ -83,7 +84,7 @@ function setNeutral(value: SurfaceDesign) {
 const tintedPreview = computed(() =>
   preset.basePreset ? generateNeutralPalette(primaryHue(design.value.primary, preset.basePreset), 0.014) : null)
 
-// "Preset" shows the base preset's own neutrals, not whatever surface is set now.
+// The first option (named after the base preset) shows its own neutrals, not whatever surface is set now.
 const baseResolver = computed(() => preset.baseResolvers?.light ?? null)
 
 function neutralSwatch(option: (typeof neutrals)[number], shade: string): string {
@@ -175,7 +176,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
           :key="option.id"
           name="start-neutral"
           :value="option.id"
-          :label="option.label"
+          :label="option.id === 'base' ? base : option.label"
           :selected="activeNeutral === option.id"
           layout="stacked"
           @select="setNeutral(option.value)"

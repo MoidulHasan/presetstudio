@@ -4,7 +4,7 @@ import { usePresetStore } from '~/stores/preset'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { tokenSource } from '~/utils/theme/semantic'
 
-// A shadow token as presets (the preset's own value shows as "Preset" when it's not one of them).
+// A shadow token as presets (the base preset's own value shows as "Aura default" when it's not one of them).
 const props = defineProps<{ token: TokenDescriptor, label: string, hint?: string }>()
 
 const workspace = useWorkspaceStore()
@@ -20,11 +20,12 @@ const SHADOWS: ShadowPreset[] = [
   { value: '0 4px 12px -2px rgba(0, 0, 0, 0.25)', label: 'Strong' },
 ]
 
+const { baseDefault } = useBaseDefault()
 const raw = computed(() => String(preset.resolvers?.light.resolve(props.token.name)?.raw ?? ''))
 const custom = computed(() => tokenSource(props.token, workspace.theme.overrides, preset.designTokens) === 'custom')
 const options = computed(() => {
   if (SHADOWS.some(s => s.value === raw.value)) return SHADOWS
-  return [{ value: raw.value, label: custom.value ? 'Custom' : 'Preset' }, ...SHADOWS]
+  return [{ value: raw.value, label: custom.value ? 'Custom' : baseDefault.value }, ...SHADOWS]
 })
 </script>
 

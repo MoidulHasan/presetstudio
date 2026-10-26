@@ -147,7 +147,7 @@ const canFix = (result: ClassifiedContrast, scheme: ColorScheme) =>
           <Tag
             v-tooltip.left="STATUS[result.status].tooltip"
             :severity="STATUS[result.status].severity"
-            :value="STATUS[result.status].value"
+            :value="result.status === 'inherited' ? `From ${baseLabel}` : STATUS[result.status].value"
           />
         </li>
       </ul>

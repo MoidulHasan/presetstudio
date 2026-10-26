@@ -16,8 +16,9 @@ type Option = { value: string, label: string, swatch: string | null }
 const swatch = (name: string) => preset.resolvers?.light.resolve(`${name}-500`)?.value ?? 'transparent'
 
 // Kept while the swatches are the same, so recoloring one variant doesn't re-render every picker.
+const { baseDefault } = useBaseDefault()
 const options = stableComputed<Option[]>(() => [
-  { value: 'base', label: 'Preset', swatch: null },
+  { value: 'base', label: baseDefault.value, swatch: null },
   { value: 'primary', label: 'Primary', swatch: swatch('primary') },
   { value: 'surface', label: 'Surface', swatch: swatch('surface') },
   ...PRIMITIVE_COLORS.map(name => ({ value: name, label: name.charAt(0).toUpperCase() + name.slice(1), swatch: swatch(name) })),

@@ -46,6 +46,9 @@ const baseDescription = computed(() => {
   if (shadow && shadow !== 'none') return `${baseLabel.value} draws focus as a soft box-shadow ring.`
   return `${baseLabel.value} has no global focus ring; components style focus themselves.`
 })
+
+// The base preset's own focus ring is named after it, like every "unchanged" choice.
+const { baseDefault } = useBaseDefault()
 </script>
 
 <template>
@@ -56,7 +59,7 @@ const baseDescription = computed(() => {
     >
       <SelectButton
         :model-value="focus.kind"
-        :options="[{ value: 'base', label: 'Preset' }, { value: 'outline', label: 'Custom outline' }]"
+        :options="[{ value: 'base', label: baseDefault }, { value: 'outline', label: 'Custom outline' }]"
         option-label="label"
         option-value="value"
         :allow-empty="false"

@@ -34,11 +34,12 @@ const baseLabel = computed(() => BASE_PRESET_LABELS[workspace.theme.basePreset])
 
 // Constants, not inline literals: this panel re-renders on every color change, and a new
 // options or pt object would re-render these controls too.
-const modeOptions = [
-  { value: 'base', label: 'Preset' },
+const { baseDefault } = useBaseDefault()
+const modeOptions = computed(() => [
+  { value: 'base', label: baseDefault.value },
   { value: 'palette', label: 'Built-in' },
   { value: 'custom', label: 'Custom' },
-]
+])
 const algorithmOptions = [{ value: 'oklch', label: 'Perceptual' }, { value: 'classic', label: 'Classic' }]
 const fullWidthPt = { pcToggleButton: { root: { class: 'flex-1' } } }
 

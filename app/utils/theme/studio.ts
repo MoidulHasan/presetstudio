@@ -40,13 +40,15 @@ export interface VariantRow {
 }
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+/** Severity names as the rest of the editor says them (Status colors: Warning). */
+const SEVERITY_LABELS: Record<string, string> = { warn: 'Warning' }
 
 function collect(entries: Array<{ key: string, style: string, token: TokenDescriptor, local: string[] }>): VariantRow[] {
   const rows = new Map<string, VariantRow>()
   for (const { key, style, token, local } of entries) {
     let row = rows.get(key)
     if (!row) {
-      row = { key, label: capitalize(key), styles: {}, tokens: [] }
+      row = { key, label: SEVERITY_LABELS[key] ?? capitalize(key), styles: {}, tokens: [] }
       rows.set(key, row)
     }
     ;(row.styles[style] ??= []).push({ token, local })
