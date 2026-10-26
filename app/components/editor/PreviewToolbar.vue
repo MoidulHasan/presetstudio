@@ -106,7 +106,7 @@ const viewItems = computed<MenuItem[]>(() => [
 
 <template>
   <div class="@container border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
-    <div class="flex items-center gap-2 px-3 py-1.5">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5 px-3 py-1.5 @2xl:flex-nowrap">
       <SelectButton
         v-model="lens"
         v-tooltip.bottom="lensHint"
@@ -140,7 +140,7 @@ const viewItems = computed<MenuItem[]>(() => [
         aria-label="Page shown in an app"
         size="small"
         scroll-height="24rem"
-        class="w-40 min-w-0 @2xl:w-52"
+        class="min-w-24 flex-1 @2xl:w-52 @2xl:flex-none"
       >
         <template #value>
           <span class="flex min-w-0 items-center gap-2">
@@ -185,6 +185,7 @@ const viewItems = computed<MenuItem[]>(() => [
           off-icon="pi pi-bullseye"
           size="small"
           aria-label="Pick a component to edit"
+          :pt="{ label: { class: 'hidden @2xl:inline' } }"
         />
         <SelectButton
           v-model="mode"

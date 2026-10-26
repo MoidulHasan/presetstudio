@@ -35,27 +35,33 @@ const items = computed(() => EDITOR_DESTINATIONS.map(d => ({
 <template>
   <nav
     aria-label="Editor"
-    :class="props.orientation === 'vertical' ? 'flex flex-col gap-1 p-2' : 'grid grid-cols-5 gap-1 px-2 py-1.5'"
+    :class="props.orientation === 'vertical' ? 'flex flex-col gap-1 p-2' : 'grid grid-cols-5 gap-1 px-2 py-1'"
   >
     <Button
       v-for="item in items"
       :key="item.destination.key"
       severity="secondary"
       text
-      class="!relative !flex-col !gap-1 !px-1 !py-2"
+      class="!relative !flex-col !px-1"
       :class="[
         item.active ? '!bg-surface-100 !text-surface-900 dark:!bg-surface-800 dark:!text-surface-0' : '!text-surface-500 dark:!text-surface-400',
-        props.orientation === 'vertical' ? '!w-full' : '',
+        props.orientation === 'vertical' ? '!w-full !gap-1 !py-2' : '!gap-0.5 !py-1',
       ]"
       :aria-current="item.active ? 'page' : undefined"
       @click="open(item.destination)"
     >
       <i
-        :class="item.destination.icon"
-        class="text-base"
+        :class="[item.destination.icon, props.orientation === 'vertical' ? 'text-base' : 'text-sm']"
         aria-hidden="true"
       />
-      <span class="text-center text-[11px] font-medium leading-tight">{{ item.destination.label }}</span>
+      <span
+        v-if="props.orientation === 'vertical'"
+        class="text-center text-[11px] font-medium leading-tight"
+      >{{ item.destination.label }}</span>
+      <span
+        v-else
+        class="whitespace-nowrap text-center text-[11px] font-medium leading-tight"
+      >{{ item.destination.short ?? item.destination.label }}</span>
       <span
         v-if="item.issues"
         class="absolute right-1.5 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"

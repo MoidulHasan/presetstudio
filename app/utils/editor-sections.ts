@@ -19,6 +19,8 @@ export type EditorLayout = (typeof EDITOR_LAYOUTS)[number]
 export interface Destination {
   key: string
   label: string
+  /** Shorter name for the phone bar, where labels stay on one line. */
+  short?: string
   icon: string
   /** Its sections, in tab order; the first is where the destination opens. */
   sections: readonly EditorSection[]
@@ -31,7 +33,7 @@ export interface Destination {
 export const EDITOR_DESTINATIONS: readonly Destination[] = [
   { key: 'brand', label: 'Brand', icon: 'pi pi-bolt', sections: ['start'] },
   { key: 'colors', label: 'Colors', icon: 'pi pi-palette', sections: ['primary', 'surface', 'status', 'text', 'selection'] },
-  { key: 'shape', label: 'Shape & spacing', icon: 'pi pi-stop', sections: ['shape', 'density', 'focus'] },
+  { key: 'shape', label: 'Shape & spacing', short: 'Shape', icon: 'pi pi-stop', sections: ['shape', 'density', 'focus'] },
   // Shared styles (form fields, lists, …) sit with the components that use them.
   { key: 'components', label: 'Components', icon: 'pi pi-th-large', sections: ['components', 'formfield', 'list', 'menu', 'overlay', 'container'] },
   { key: 'review', label: 'Review', icon: 'pi pi-check-circle', sections: ['changes', 'accessibility', 'semantic'] },

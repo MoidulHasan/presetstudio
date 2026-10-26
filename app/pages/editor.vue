@@ -40,17 +40,13 @@ const pane = computed<Pane>({
     editor.prefs.pane = value
   },
 })
-const paneOptions: Array<{ value: Pane, label: string, icon: string }> = [
-  { value: 'edit', label: 'Edit', icon: 'pi pi-sliders-h' },
-  { value: 'preview', label: 'Preview', icon: 'pi pi-eye' },
-]
-
 // Below lg the panes stack: while editing, the preview stays visible as a strip above the
-// controls (unless hidden), so a change is seen as it's made; Preview shows it full screen.
+// controls (unless hidden), so a change is seen as it's made; the strip's own buttons show it
+// full screen or hide it, and the full preview has a way back.
 // From lg up these classes give way to the side-by-side layout.
 const previewClass = computed(() => {
   if (pane.value === 'preview') return 'flex flex-1'
-  return editor.prefs.previewStrip ? 'flex h-[38vh] shrink-0 border-b border-surface-200 dark:border-surface-800' : 'hidden'
+  return editor.prefs.previewStrip ? 'flex h-[30vh] shrink-0 border-b border-surface-200 dark:border-surface-800' : 'hidden'
 })
 const editClass = computed(() => (pane.value === 'edit' ? 'block min-h-0 flex-1' : 'hidden'))
 /** The preview toolbar only in the full preview (the strip is for watching changes). */
@@ -148,37 +144,18 @@ onBeforeUnmount(() => {
       </div>
     </Message>
 
-    <div class="flex items-center gap-2 border-b border-surface-200 px-3 py-2 lg:hidden dark:border-surface-800">
-      <SelectButton
-        v-model="pane"
-        :options="paneOptions"
-        option-label="label"
-        option-value="value"
-        :allow-empty="false"
-        aria-label="Show editor or preview"
-        size="small"
-        class="flex-1"
-        :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-      >
-        <template #option="{ option }">
-          <i
-            :class="option.icon"
-            aria-hidden="true"
-          />
-          <span>{{ option.label }}</span>
-        </template>
-      </SelectButton>
+    <!-- Phones, with the preview strip hidden: the way to bring it back. -->
+    <div
+      v-if="pane === 'edit' && !editor.prefs.previewStrip"
+      class="flex justify-end border-b border-surface-200 px-2 py-1 lg:hidden dark:border-surface-800"
+    >
       <Button
-        v-if="pane === 'edit'"
-        v-tooltip.bottom="editor.prefs.previewStrip ? 'Hide the preview above the controls' : 'Show the preview above the controls'"
-        :icon="editor.prefs.previewStrip ? 'pi pi-eye-slash' : 'pi pi-eye'"
+        label="Show preview"
+        icon="pi pi-eye"
         severity="secondary"
         size="small"
         text
-        rounded
-        :aria-label="editor.prefs.previewStrip ? 'Hide preview strip' : 'Show preview strip'"
-        :aria-pressed="editor.prefs.previewStrip"
-        @click="editor.prefs.previewStrip = !editor.prefs.previewStrip"
+        @click="editor.prefs.previewStrip = true"
       />
     </div>
 
@@ -240,6 +217,39 @@ onBeforeUnmount(() => {
           :class="toolbarClass"
         />
         <EditorPreviewStage />
+        <!-- Phones: the strip's own controls; the full preview's way back to the controls. -->
+        <div
+          v-if="pane === 'edit'"
+          class="absolute right-2 top-2 z-20 flex gap-1 lg:hidden"
+        >
+          <Button
+            icon="pi pi-window-maximize"
+            severity="secondary"
+            size="small"
+            rounded
+            aria-label="Show the preview full screen"
+            class="!size-8 shadow-sm"
+            @click="pane = 'preview'"
+          />
+          <Button
+            icon="pi pi-eye-slash"
+            severity="secondary"
+            size="small"
+            rounded
+            aria-label="Hide the preview"
+            class="!size-8 shadow-sm"
+            @click="editor.prefs.previewStrip = false"
+          />
+        </div>
+        <Button
+          v-else
+          label="Done"
+          icon="pi pi-check"
+          size="small"
+          rounded
+          class="!absolute bottom-4 right-4 z-20 shadow-md lg:!hidden"
+          @click="pane = 'edit'"
+        />
         <EditorPreviewStatus
           v-if="!editor.setupOpen"
           :class="toolbarClass"
