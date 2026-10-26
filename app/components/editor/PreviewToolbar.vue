@@ -70,6 +70,8 @@ const VIEWPORTS: Array<{ value: PreviewViewport, label: string, icon: string }> 
   { value: 'mobile', label: 'Phone (390 px)', icon: 'pi pi-mobile' },
 ]
 
+const lit = useSpotlightComponents()
+
 const viewMenu = ref<{ toggle: (event: Event) => void } | null>(null)
 const viewItems = computed<MenuItem[]>(() => [
   {
@@ -82,19 +84,29 @@ const viewItems = computed<MenuItem[]>(() => [
     })),
   },
   {
-    label: 'States',
-    items: [{
-      label: editor.prefs.showFocus ? 'Hide focus states' : 'Show focus states',
-      icon: 'pi pi-eye',
-      command: () => (editor.prefs.showFocus = !editor.prefs.showFocus),
-    }],
+    label: 'Show',
+    items: [
+      {
+        label: 'Focus states',
+        icon: 'pi pi-eye',
+        checked: editor.prefs.showFocus,
+        command: () => (editor.prefs.showFocus = !editor.prefs.showFocus),
+      },
+      {
+        label: 'Dim what this section doesn’t change',
+        icon: 'pi pi-lightbulb',
+        checked: editor.prefs.spotlight,
+        disabled: !lit.value?.length || !!editor.activeStage,
+        command: () => (editor.prefs.spotlight = !editor.prefs.spotlight),
+      },
+    ],
   },
 ])
 </script>
 
 <template>
   <div class="@container border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
-    <div class="flex items-center gap-2 px-3 py-2">
+    <div class="flex items-center gap-2 px-3 py-1.5">
       <SelectButton
         v-model="lens"
         v-tooltip.bottom="lensHint"
@@ -140,7 +152,7 @@ const viewItems = computed<MenuItem[]>(() => [
           </span>
         </template>
         <template #optiongroup="{ option }">
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-surface-500">{{ option.label }}</span>
+          <span class="text-xs font-medium text-surface-500">{{ option.label }}</span>
         </template>
         <template #option="{ option }">
           <span class="flex w-full items-center gap-2">

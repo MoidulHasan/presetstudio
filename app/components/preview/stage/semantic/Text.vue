@@ -44,7 +44,7 @@
         v-pick="'cell:text:default'"
         class="flex cursor-pointer flex-col gap-2"
       >
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           In a paragraph
         </h3>
         <p

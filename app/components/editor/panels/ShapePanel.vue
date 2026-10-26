@@ -78,7 +78,7 @@ function previewRadius(value: RadiusScale): string {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorInspectorGroup title="Corner radius">
       <div
         class="grid grid-cols-3 gap-2"

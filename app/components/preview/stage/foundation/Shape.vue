@@ -13,7 +13,7 @@
         <Popover />
       </div>
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Small details
         </h3>
         <div class="flex flex-wrap items-center gap-4">
@@ -31,7 +31,7 @@
         </div>
       </div>
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Controls
         </h3>
         <div class="flex flex-wrap items-center gap-3">
@@ -60,7 +60,7 @@
       </div>
       <div class="grid gap-4 sm:grid-cols-2">
         <div class="flex flex-col gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Containers
           </h3>
           <Card>
@@ -78,7 +78,7 @@
           </Message>
         </div>
         <div class="flex flex-col gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Overlays
           </h3>
           <div class="p-popover p-component !static !mt-2">

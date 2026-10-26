@@ -22,7 +22,7 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
         :key="style.key"
         class="flex flex-col gap-3"
       >
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           {{ style.label }}
         </h3>
         <div class="grid grid-cols-2 gap-3">
@@ -51,7 +51,7 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
       </div>
 
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Sizes
         </h3>
         <div

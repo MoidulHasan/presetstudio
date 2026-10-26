@@ -43,6 +43,8 @@ export function destinationOf(section: EditorSection): Destination {
 
 export interface SectionMeta {
   label: string
+  /** Shorter name for the section tabs, when the label is long ('Primary' for 'Primary color'). */
+  tab?: string
   icon: string
   description: string
 }
@@ -55,6 +57,7 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
   },
   primary: {
     label: 'Primary color',
+    tab: 'Primary',
     icon: 'pi pi-palette',
     description: 'The brand color behind buttons, links, selections and focus states.',
   },
@@ -65,6 +68,7 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
   },
   status: {
     label: 'Status colors',
+    tab: 'Status',
     icon: 'pi pi-info-circle',
     description: 'The colors behind info, success, warning, danger and help: buttons, badges, tags, messages and toasts.',
   },
@@ -125,6 +129,7 @@ export const SECTION_META: Record<EditorSection, SectionMeta> = {
   },
   components: {
     label: 'All components',
+    tab: 'All',
     icon: 'pi pi-th-large',
     description: 'Customize a single component. Components marked Visual have an editor with a live stage.',
   },

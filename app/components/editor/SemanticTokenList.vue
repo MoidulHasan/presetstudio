@@ -152,9 +152,6 @@ useTokenRequest(
           </span>
         </AccordionHeader>
         <AccordionContent :pt="{ root: { class: '!grid-cols-[minmax(0,1fr)]' }, contentWrapper: { class: 'min-w-0' }, content: { class: '!px-0 !pb-3 !pt-0' } }">
-          <p class="mb-2 px-1 text-xs text-surface-500">
-            {{ g.description }}
-          </p>
           <div class="flex flex-col">
             <EditorTokenRow
               v-for="token in g.tokens"

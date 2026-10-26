@@ -78,7 +78,7 @@ const model = computed<MenuItem[]>(() => groups.value.map(group => ({
       :pt="{ list: { class: '!gap-0.5' }, submenuLabel: { class: '!px-2 !pb-1 !pt-3 first:!pt-0' } }"
     >
       <template #submenulabel="{ item }">
-        <span class="text-[11px] font-semibold uppercase tracking-wider text-surface-500">{{ item.label }}</span>
+        <span class="text-xs font-medium text-surface-500">{{ item.label }}</span>
       </template>
       <template #item="{ item, props }">
         <a

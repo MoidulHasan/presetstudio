@@ -23,7 +23,7 @@ const TIERED = [
       </div>
       <div class="grid gap-6 sm:grid-cols-2">
         <div class="flex flex-col gap-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Menu
           </h3>
           <div class="p-menu p-component">
@@ -62,7 +62,7 @@ const TIERED = [
           </div>
         </div>
         <div class="flex flex-col gap-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Tiered menu
           </h3>
           <div class="p-tieredmenu p-component">

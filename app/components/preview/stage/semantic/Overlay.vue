@@ -12,7 +12,7 @@
       </div>
       <div class="grid gap-6 lg:grid-cols-2">
         <div class="flex flex-col gap-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Dropdown
           </h3>
           <div
@@ -38,7 +38,7 @@
           </div>
         </div>
         <div class="flex flex-col gap-2">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Popover
           </h3>
           <div
@@ -57,7 +57,7 @@
         </div>
       </div>
       <div class="flex flex-col gap-2">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Dialog on its backdrop
         </h3>
         <div

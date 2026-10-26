@@ -104,10 +104,16 @@ const usage = computed(() => {
     dark: shadeOf(r.dark.entries.get('primary-color')?.raw),
   }
 })
+
+// The palette's ⓘ: which shade is "the" primary color, and how to fine-tune a custom palette.
+const paletteNote = computed(() => [
+  usage.value ? `${baseLabel.value} uses shade ${usage.value.light} as the primary color in light mode and ${usage.value.dark} in dark mode.` : '',
+  custom.value ? 'Select a shade to fine-tune it.' : '',
+].filter(Boolean).join(' ') || undefined)
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorInspectorGroup title="Source">
       <SelectButton
         :model-value="primary.kind"
@@ -120,12 +126,6 @@ const usage = computed(() => {
         :pt="fullWidthPt"
         @update:model-value="setMode"
       />
-      <p
-        v-if="primary.kind === 'base'"
-        class="text-xs text-surface-500 dark:text-surface-400"
-      >
-        Using {{ baseLabel }}'s default primary palette.
-      </p>
     </EditorInspectorGroup>
 
     <EditorInspectorGroup
@@ -197,7 +197,7 @@ const usage = computed(() => {
 
     <EditorInspectorGroup
       title="Palette"
-      :description="custom ? 'Select a shade to fine-tune it.' : undefined"
+      :description="paletteNote"
     >
       <EditorPaletteStrip
         label="Primary palette"
@@ -225,12 +225,6 @@ const usage = computed(() => {
           @click="resetShade(selectedShade)"
         />
       </div>
-      <p
-        v-if="usage"
-        class="text-xs text-surface-500 dark:text-surface-400"
-      >
-        {{ baseLabel }} uses shade {{ usage.light }} as the primary color in light mode and {{ usage.dark }} in dark mode.
-      </p>
     </EditorInspectorGroup>
 
     <!-- Which shade each state uses (from the palette above), light and dark side by side. -->

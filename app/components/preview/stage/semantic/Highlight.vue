@@ -23,7 +23,7 @@ const selectedKeys = ref({ 0: true })
           v-pick="'cell:background:default'"
           class="flex cursor-pointer flex-col gap-2"
         >
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Selected list option
           </h3>
           <div class="p-listbox p-component">
@@ -62,7 +62,7 @@ const selectedKeys = ref({ 0: true })
           v-pick="'cell:background:default'"
           class="flex cursor-pointer flex-col gap-2"
         >
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Selected tree node
           </h3>
           <Tree
@@ -76,7 +76,7 @@ const selectedKeys = ref({ 0: true })
         v-pick="'cell:background:default'"
         class="flex cursor-pointer flex-col gap-2"
       >
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Selected table row
         </h3>
         <DataTable

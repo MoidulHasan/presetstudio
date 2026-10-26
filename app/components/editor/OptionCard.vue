@@ -29,7 +29,7 @@ const id = useId()
       props.selected
         ? 'border-surface-900 bg-surface-50 dark:border-surface-0 dark:bg-surface-800'
         : 'border-surface-200 hover:border-surface-400 dark:border-surface-700 dark:hover:border-surface-500',
-      props.layout === 'stacked' ? 'flex-col items-center gap-1.5 px-1.5 pb-2 pt-3 text-center text-xs' : 'items-center gap-3 p-3',
+      props.layout === 'stacked' ? 'flex-col items-center gap-1.5 px-1.5 pb-2 pt-2.5 text-center text-xs' : 'items-center gap-2.5 px-3 py-2.5',
     ]"
   >
     <RadioButton

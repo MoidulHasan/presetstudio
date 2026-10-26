@@ -95,7 +95,7 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorInspectorGroup
       title="1. Base style"
       description="Each base preset has its own shape, borders and states."

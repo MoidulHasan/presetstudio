@@ -61,7 +61,7 @@ useStagePick(async ([first, second, third]) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorStudioVariantColors
       ref="colors"
       :component="component"
@@ -120,8 +120,5 @@ useStagePick(async ([first, second, third]) => {
         aria-hidden="true"
       />
     </Button>
-    <p class="text-xs text-surface-500">
-      Need a token that isn't here? Switch to <span class="font-medium">All tokens</span> at the top. Every {{ label }} token is there.
-    </p>
   </div>
 </template>

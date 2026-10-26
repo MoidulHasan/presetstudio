@@ -175,7 +175,7 @@ defineExpose({ focus })
     @option-select="select"
   >
     <template #optiongroup="{ option }">
-      <span class="text-xs font-semibold uppercase tracking-wide text-surface-500 dark:text-surface-400">{{ option.label }}</span>
+      <span class="text-xs font-medium text-surface-500 dark:text-surface-400">{{ option.label }}</span>
     </template>
     <template #option="{ option }">
       <span class="flex min-w-0 flex-1 items-center gap-3">

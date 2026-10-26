@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_CATEGORIES, COMPONENT_META, COMPONENT_NAMES, STUDIO_COMPONENTS, STUDIO_ICONS, studioFor } from '~/utils/theme/components'
@@ -13,7 +12,6 @@ const emit = defineEmits<{
   open: [name: string, query: string]
 }>()
 
-const editor = useEditorStore()
 const preset = usePresetStore()
 
 const listQuery = ref('')
@@ -30,8 +28,6 @@ const tokensByComponent = computed(() => {
   }
   return map
 })
-
-const tokenCount = (name: string) => new Set((tokensByComponent.value.get(name) ?? []).map(t => t.name)).size
 
 const listItems = computed(() => {
   const q = listQuery.value.trim().toLowerCase()
@@ -119,29 +115,13 @@ function open(name: string, carryQuery: boolean) {
       </div>
     </Teleport>
 
-    <!-- One-time tip: the preview is the fastest way to find a component. -->
-    <Message
-      v-if="!editor.prefs.dismissedTips.includes('inspect')"
-      severity="secondary"
-      size="small"
-      closable
-      @close="editor.prefs.dismissedTips = [...editor.prefs.dismissedTips, 'inspect']"
-    >
-      <span class="text-xs">
-        Tip: click <span class="font-semibold"><i
-          class="pi pi-search text-[10px]"
-          aria-hidden="true"
-        /> Inspect</span> above the preview, then any component, to jump straight to it.
-      </span>
-    </Message>
-
     <!-- Visual editors first: every variant and state on a live stage. -->
     <section
       v-if="!listQuery.trim() && listShow === 'all'"
       aria-label="Visual editors"
       class="flex flex-col gap-2"
     >
-      <h3 class="flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-surface-500">
+      <h3 class="flex items-center gap-2 px-2 text-xs font-medium text-surface-500">
         <i
           class="pi pi-sparkles"
           aria-hidden="true"
@@ -182,9 +162,6 @@ function open(name: string, carryQuery: boolean) {
           aria-hidden="true"
         />
       </Button>
-      <p class="px-2 text-xs text-surface-500">
-        More components get visual editors soon. Every component's tokens are below.
-      </p>
     </section>
 
     <p
@@ -199,7 +176,7 @@ function open(name: string, carryQuery: boolean) {
       :key="group.key"
       :aria-label="group.label"
     >
-      <h3 class="mb-1 flex items-center gap-2 px-2 text-[11px] font-semibold uppercase tracking-wider text-surface-500">
+      <h3 class="mb-1 flex items-center gap-2 px-2 text-xs font-medium text-surface-500">
         <i
           :class="group.icon"
           aria-hidden="true"
@@ -246,10 +223,6 @@ function open(name: string, carryQuery: boolean) {
               v-if="item.tokenMatches"
               class="shrink-0 text-xs text-surface-500"
             >{{ item.tokenMatches }} match{{ item.tokenMatches === 1 ? '' : 'es' }}</span>
-            <span
-              v-else
-              class="shrink-0 text-xs text-surface-400"
-            >{{ tokenCount(item.name) }}</span>
             <i
               class="pi pi-chevron-right shrink-0 text-xs text-surface-400"
               aria-hidden="true"

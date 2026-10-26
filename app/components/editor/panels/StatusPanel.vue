@@ -106,10 +106,6 @@ const preview = computed(() => {
 
 <template>
   <div class="flex flex-col gap-4">
-    <p class="text-xs text-surface-500 dark:text-surface-400">
-      Each severity keeps the preset's shades, so light backgrounds, borders and text stay balanced.
-      Click a row on the stage to jump to its severity.
-    </p>
     <section
       v-for="kind in STATUS_KINDS"
       :key="kind"
@@ -121,12 +117,12 @@ const preview = computed(() => {
     >
       <div class="flex items-center gap-3">
         <div class="min-w-0 flex-1">
-          <h3 class="text-sm font-semibold">
+          <h3
+            v-tooltip.top="META[kind].hint"
+            class="text-sm font-semibold"
+          >
             {{ META[kind].label }}
           </h3>
-          <p class="truncate text-xs text-surface-500 dark:text-surface-400">
-            {{ META[kind].hint }}
-          </p>
         </div>
         <!-- Live look of the severity: a solid button and a soft tag. -->
         <span

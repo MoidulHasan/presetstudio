@@ -16,7 +16,7 @@ function editOther() {
 
 <template>
   <div
-    class="flex items-center justify-between gap-2 rounded-lg bg-surface-100 py-1 pl-3 pr-1 text-sm dark:bg-surface-800"
+    class="-my-1 flex items-center justify-between gap-2 text-sm"
     role="status"
   >
     <span class="flex min-w-0 items-center gap-2">

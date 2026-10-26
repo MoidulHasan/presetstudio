@@ -86,7 +86,7 @@ function setTint(value: number | number[]) {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <!-- Light and dark have their own surfaces; the preview's mode decides which is edited. -->
     <EditorSchemeNote />
 
@@ -251,11 +251,13 @@ function setTint(value: number | number[]) {
       </label>
     </EditorInspectorGroup>
 
-    <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-50 p-3 text-xs dark:bg-surface-800">
-      <span v-if="sameAsOther">Same as {{ other }} mode.</span>
-      <span v-else>{{ other === 'dark' ? 'Dark' : 'Light' }} mode uses a different neutral.</span>
+    <!-- Only worth a word when the modes differ. -->
+    <div
+      v-if="!sameAsOther"
+      class="flex items-center justify-between gap-2 text-xs text-surface-600 dark:text-surface-300"
+    >
+      <span>{{ other === 'dark' ? 'Dark' : 'Light' }} mode uses a different neutral.</span>
       <Button
-        v-if="!sameAsOther"
         :label="`Use in ${other} mode too`"
         size="small"
         text

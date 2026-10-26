@@ -115,7 +115,7 @@ function revert(change: ThemeChange) {
       :aria-label="group.label"
       class="flex flex-col gap-1"
     >
-      <h3 class="mb-1 text-[11px] font-semibold uppercase tracking-wider text-surface-500">
+      <h3 class="mb-1 text-xs font-medium text-surface-500">
         {{ group.label }}
       </h3>
       <ul class="flex flex-col divide-y divide-surface-200 rounded-lg border border-surface-200 dark:divide-surface-700 dark:border-surface-700">

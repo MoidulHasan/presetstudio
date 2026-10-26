@@ -54,7 +54,7 @@ useStagePick(async ([style, key, state]) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorStudioVariantColors
       ref="colors"
       component="button"
@@ -167,7 +167,7 @@ useStagePick(async ([style, key, state]) => {
     <div :ref="el => (sections.family = el as HTMLElement | null)">
       <EditorInspectorGroup
         title="Button family"
-        description="These are built from Button, so its colors, sizes and padding above already apply. Here are the few settings of their own."
+        description="These are built from Button, so its colors, sizes and padding above already apply. Here are the few settings of their own. ButtonGroup has none: it joins Buttons and follows everything above."
       >
         <div
           class="flex flex-col gap-3 rounded-lg border p-3 transition-colors"
@@ -235,15 +235,7 @@ useStagePick(async ([style, key, state]) => {
             :max="32"
           />
         </div>
-
-        <p class="text-xs text-surface-500 dark:text-surface-400">
-          <span class="font-medium text-surface-700 dark:text-surface-200">ButtonGroup</span> has no settings of its own: it joins Buttons and follows everything above.
-        </p>
       </EditorInspectorGroup>
     </div>
-
-    <p class="text-xs text-surface-500">
-      Need a token that isn't here? Switch to <span class="font-medium">All tokens</span> at the top. Every Button token is there.
-    </p>
   </div>
 </template>

@@ -31,7 +31,7 @@ function customize() {
     :data-ps-demo="demoOf"
   >
     <div class="flex items-center justify-between gap-2">
-      <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+      <h3 class="text-xs font-medium text-muted-color">
         {{ title }}
       </h3>
       <Button

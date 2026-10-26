@@ -15,7 +15,7 @@ const MENU = [{ label: 'New', icon: 'pi pi-plus' }, { label: 'Search', icon: 'pi
   >
     <template #default>
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Form controls
         </h3>
         <div class="flex flex-wrap items-center gap-3">
@@ -51,7 +51,7 @@ const MENU = [{ label: 'New', icon: 'pi pi-plus' }, { label: 'Search', icon: 'pi
       </div>
       <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1.6fr)]">
         <div class="flex flex-col gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             List
           </h3>
           <Listbox
@@ -61,13 +61,13 @@ const MENU = [{ label: 'New', icon: 'pi pi-plus' }, { label: 'Search', icon: 'pi
           />
         </div>
         <div class="flex flex-col gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Menu
           </h3>
           <Menu :model="MENU" />
         </div>
         <div class="flex flex-col gap-3">
-          <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+          <h3 class="text-xs font-medium text-muted-color">
             Table
           </h3>
           <DataTable :value="ROWS">
@@ -83,7 +83,7 @@ const MENU = [{ label: 'New', icon: 'pi pi-plus' }, { label: 'Search', icon: 'pi
         </div>
       </div>
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Containers
         </h3>
         <div class="grid gap-4 sm:grid-cols-2">

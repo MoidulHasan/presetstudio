@@ -28,9 +28,9 @@ function open(section: EditorSection) {
         v-for="section in destination.sections"
         :key="section"
         :value="section"
-        class="!flex !items-center !gap-1.5 !whitespace-nowrap !px-3 !py-2 !text-sm"
+        class="!flex !items-center !gap-1.5 !whitespace-nowrap !px-2.5 !py-2 !text-sm"
       >
-        {{ SECTION_META[section].label }}
+        {{ SECTION_META[section].tab ?? SECTION_META[section].label }}
         <span
           v-if="isModified(section)"
           class="size-1.5 rounded-full bg-surface-900 dark:bg-surface-0"

@@ -44,10 +44,13 @@ const samples = computed(() => {
     { label: 'Table cell', value: r?.resolve('datatable-body-cell-padding')?.value },
   ]
 })
+
+// The padding values each density gives, for those who want the numbers.
+const showValues = ref(false)
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <EditorInspectorGroup
       title="Spacing"
       description="Scales every padding and gap of every component: inputs, buttons, lists, menus, overlays, panels and tables."
@@ -102,7 +105,21 @@ const samples = computed(() => {
     </EditorInspectorGroup>
 
     <EditorInspectorGroup title="Resulting values">
-      <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs">
+      <template #actions>
+        <Button
+          :label="showValues ? 'Hide' : 'Show'"
+          severity="secondary"
+          size="small"
+          text
+          class="!py-0.5"
+          :aria-expanded="showValues"
+          @click="showValues = !showValues"
+        />
+      </template>
+      <dl
+        v-if="showValues"
+        class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-xs"
+      >
         <template
           v-for="sample in samples"
           :key="sample.label"

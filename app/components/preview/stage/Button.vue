@@ -43,7 +43,7 @@ function severityProps(severity: Severity) {
         :key="style.key"
         class="flex flex-col gap-3"
       >
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           {{ style.label }}
         </h3>
         <!-- Room around each cell so hover shadows and focus rings never touch the next row. -->
@@ -77,7 +77,7 @@ function severityProps(severity: Severity) {
       </div>
 
       <div class="flex flex-col gap-3">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Link
         </h3>
         <div class="grid grid-cols-[5.5rem_repeat(4,minmax(0,1fr))] items-center gap-x-3">
@@ -99,7 +99,7 @@ function severityProps(severity: Severity) {
       </div>
 
       <div class="flex flex-col gap-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Sizes and shapes
         </h3>
         <div
@@ -177,7 +177,7 @@ function severityProps(severity: Severity) {
       </div>
 
       <div class="flex flex-col gap-4">
-        <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
+        <h3 class="text-xs font-medium text-muted-color">
           Button family
         </h3>
         <div

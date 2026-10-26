@@ -75,7 +75,7 @@ const canFix = (result: ClassifiedContrast, scheme: ColorScheme) =>
 </script>
 
 <template>
-  <div class="flex flex-col gap-8">
+  <div class="flex flex-col gap-6">
     <div
       class="flex flex-col gap-1 rounded-lg p-3 text-sm"
       :class="counts.introduced ? 'bg-red-50 text-red-900 dark:bg-red-950 dark:text-red-100' : 'bg-surface-50 dark:bg-surface-800'"

@@ -101,11 +101,11 @@ useStageTargets(body)
     ref="body"
     class="flex flex-col"
   >
-    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-5 py-4 dark:border-surface-800 dark:bg-surface-900">
+    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-4 py-3 dark:border-surface-800 dark:bg-surface-900">
       <!-- The two-pane layout puts its navigation (destination bar, section tabs) here. -->
       <div
         v-if="$slots.nav"
-        class="-mx-5 -mt-4 mb-3 border-b border-surface-200 empty:hidden dark:border-surface-800"
+        class="-mx-4 -mt-3 mb-3 border-b border-surface-200 empty:hidden dark:border-surface-800"
       >
         <slot name="nav" />
       </div>
@@ -119,10 +119,16 @@ useStageTargets(body)
         aria-label="Editor section"
         class="mb-3 w-full xl:hidden"
       />
-      <div class="flex items-start justify-between gap-2">
-        <h2 class="text-base font-semibold">
-          {{ meta.label }}
-        </h2>
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex min-w-0 items-center gap-1">
+          <h2 class="truncate text-base font-semibold">
+            {{ meta.label }}
+          </h2>
+          <EditorInfoTip
+            :text="meta.description"
+            :subject="meta.label"
+          />
+        </div>
         <Button
           v-if="resettable"
           v-tooltip.left="canReset ? resetHint : 'Nothing to reset yet'"
@@ -130,15 +136,12 @@ useStageTargets(body)
           icon="pi pi-undo"
           severity="secondary"
           size="small"
-          outlined
+          text
           class="-my-1 shrink-0"
           :disabled="!canReset"
           @click="onReset"
         />
       </div>
-      <p class="mt-1 text-xs text-surface-500 dark:text-surface-400">
-        {{ meta.description }}
-      </p>
       <!-- Panels can teleport sticky controls (search, filters) here. -->
       <div
         id="inspector-toolbar"
@@ -157,7 +160,7 @@ useStageTargets(body)
     </div>
     <div
       v-else
-      class="p-5"
+      class="px-4 py-4"
     >
       <EditorPanelsQuickStartPanel v-if="editor.prefs.section === 'start'" />
       <EditorPanelsPrimaryPanel v-else-if="editor.prefs.section === 'primary'" />

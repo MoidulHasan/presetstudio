@@ -63,7 +63,7 @@ const settingsItems = computed<MenuItem[]>(() => [
 </script>
 
 <template>
-  <header class="flex h-14 shrink-0 items-center gap-2 border-b border-surface-200 px-3 sm:gap-3 dark:border-surface-800">
+  <header class="flex h-12 shrink-0 items-center gap-2 border-b border-surface-200 px-3 sm:gap-3 dark:border-surface-800">
     <!-- Classic layout: from xl the logo cell is exactly as wide as the section nav below it, so their borders line up. -->
     <div
       class="hidden h-full shrink-0 items-center border-surface-200 lg:flex dark:border-surface-800"

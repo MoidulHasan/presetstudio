@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
-    class="min-h-screen bg-surface-50 p-6 text-surface-700 transition-opacity duration-150 dark:bg-surface-950 dark:text-surface-200"
+    class="min-h-screen bg-surface-50 p-4 text-surface-700 transition-opacity duration-150 dark:bg-surface-950 dark:text-surface-200"
     :class="themed ? 'opacity-100' : 'opacity-0'"
   >
     <Message
@@ -225,3 +225,19 @@ onBeforeUnmount(() => {
     <Toast />
   </div>
 </template>
+
+<style>
+/* Stage parts that open a control (v-pick): they point, and the innermost one hovered is outlined. */
+[data-ps-pick] {
+  cursor: pointer;
+}
+
+[data-ps-pick]:hover:not(:has([data-ps-pick]:hover)) {
+  outline: 1px dashed rgba(37, 99, 235, 0.65);
+  outline-offset: 3px;
+}
+
+html.ps-inspecting [data-ps-pick]:hover {
+  outline: none;
+}
+</style>
