@@ -1,4 +1,6 @@
-<!-- Shown while a client-only page (the editor) boots, instead of a blank screen. -->
+<!-- Shown while a client-only page (the editor) boots, instead of a blank screen. The mark is
+     the logo's five-step scale in the brand ramp (BRAND_RAMP in app/utils/logo.ts); once the
+     editor is up, the logo takes the open theme's colors. -->
 <style>
   #ps-loading {
     position: fixed;
@@ -6,20 +8,23 @@
     display: grid;
     place-items: center;
     background: #ffffff;
-    color: #475569;
+    color: #52525b;
     font: 500 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --s1: #b4d8d3; --s2: #48958d; --s3: #0f766e; --s4: #00544e; --s5: #00443f;
   }
   @media (prefers-color-scheme: dark) {
     #ps-loading { background: #09090b; color: #a1a1aa; }
   }
-  #ps-loading .ps-loading-inner { display: flex; flex-direction: column; align-items: center; gap: 14px; }
-  #ps-loading .ps-mark { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 36px; height: 36px; }
-  #ps-loading .ps-mark span { border-radius: 4px; animation: ps-pulse 1.2s ease-in-out infinite; }
-  #ps-loading .ps-mark span:nth-child(1) { background: #a78bfa; }
-  #ps-loading .ps-mark span:nth-child(2) { background: #38bdf8; animation-delay: .15s; }
-  #ps-loading .ps-mark span:nth-child(4) { background: #fbbf24; animation-delay: .3s; }
-  #ps-loading .ps-mark span:nth-child(3) { background: #34d399; animation-delay: .45s; }
-  @keyframes ps-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+  #ps-loading .ps-loading-inner { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  #ps-loading .ps-mark { display: flex; align-items: center; gap: 2px; height: 36px; overflow: hidden; border-radius: 6px; }
+  #ps-loading .ps-mark span { width: 9px; height: 100%; animation: ps-step 1.2s ease-in-out infinite; }
+  #ps-loading .ps-mark span:nth-child(1) { background: var(--s1); }
+  #ps-loading .ps-mark span:nth-child(2) { background: var(--s2); animation-delay: .1s; }
+  #ps-loading .ps-mark span:nth-child(3) { background: var(--s3); animation-delay: .2s; }
+  #ps-loading .ps-mark span:nth-child(4) { background: var(--s4); animation-delay: .3s; }
+  #ps-loading .ps-mark span:nth-child(5) { background: var(--s5); animation-delay: .4s; }
+  /* A wave across the scale, left to right; the colors stay, so it still reads as the logo. */
+  @keyframes ps-step { 0%, 50%, 100% { transform: scaleY(1); } 25% { transform: scaleY(.55); } }
   @media (prefers-reduced-motion: reduce) { #ps-loading .ps-mark span { animation: none; } }
 </style>
 <div
@@ -31,7 +36,7 @@
       class="ps-mark"
       aria-hidden="true"
     >
-      <span></span><span></span><span></span><span></span>
+      <span></span><span></span><span></span><span></span><span></span>
     </div>
     <span>Loading Preset Studio…</span>
   </div>

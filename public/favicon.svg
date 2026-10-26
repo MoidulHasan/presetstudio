@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- The Preset Studio mark: a five-step scale, here in the brand ramp (BRAND_RAMP in
+       app/utils/logo.ts). All five steps show on light and dark browser tabs. -->
+  <clipPath id="mark">
+    <rect x="2" y="4" width="28" height="24" rx="4" />
+  </clipPath>
+  <g clip-path="url(#mark)">
+    <rect fill="#b4d8d3" x="2" y="4" width="5" height="24" />
+    <rect fill="#48958d" x="7.75" y="4" width="5" height="24" />
+    <rect fill="#0f766e" x="13.5" y="4" width="5" height="24" />
+    <rect fill="#00544e" x="19.25" y="4" width="5" height="24" />
+    <rect fill="#00443f" x="25" y="4" width="5" height="24" />
+  </g>
+</svg>

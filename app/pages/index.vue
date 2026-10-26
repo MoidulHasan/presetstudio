@@ -52,6 +52,8 @@ const choices = ref<LandingChoices>({ base: 'aura', brand: '#0f766e', corners: '
 const theme = computed(() => landingTheme(choices.value))
 // The hero's base preset is always loaded: a base is only chosen once it is.
 const hero = computed(() => draw(choices.value)!)
+// The logo takes the color picked here.
+useLogoColors(() => Object.fromEntries(hero.value.shades.map(band => [band.shade, band.value])))
 
 async function chooseBase(name: BasePresetName) {
   await ensurePreset(name)

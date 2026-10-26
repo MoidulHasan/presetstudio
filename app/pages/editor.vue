@@ -10,6 +10,8 @@ useSeoMeta({ title: 'Editor · Preset Studio', robots: 'noindex' })
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
+// The logo takes the open theme's primary scale.
+useLogoColors(() => preset.resolvedScale('primary', 'light'))
 const exportVisible = ref(false)
 const exportTab = ref('app')
 function openExport(tab: 'app' | 'share') {
