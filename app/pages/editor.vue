@@ -173,23 +173,16 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="flex min-h-0 flex-1 flex-col lg:flex-row">
-      <!-- First-run setup (either layout): the setup panel, with the sample app beside it. -->
-      <template v-if="editor.setupOpen">
-        <aside
-          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[26rem] lg:border-r xl:w-[28rem] dark:border-surface-800"
-          :class="editClass"
-          aria-label="Set up your theme"
-        >
-          <EditorSetup />
-        </aside>
-        <section
-          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
-          :class="previewClass"
-          aria-label="Preview"
-        >
-          <EditorPreviewStage />
-        </section>
-      </template>
+      <!-- The panes beside the preview change with the layout (and the first-run setup); the
+           preview itself is one element in every layout, so its iframe is never reloaded. -->
+      <aside
+        v-if="editor.setupOpen"
+        class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[26rem] lg:border-r xl:w-[28rem] dark:border-surface-800"
+        :class="editClass"
+        aria-label="Set up your theme"
+      >
+        <EditorSetup />
+      </aside>
 
       <!-- Two panes: destination rail and one panel on the left, the preview takes the rest. -->
       <template v-else-if="editor.prefs.layout === 'panels'">
@@ -214,42 +207,39 @@ onBeforeUnmount(() => {
             </template>
           </EditorInspector>
         </aside>
-        <section
-          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
-          :class="previewClass"
-          aria-label="Preview"
-        >
-          <EditorPreviewToolbar :class="toolbarClass" />
-          <EditorPreviewStage />
-        </section>
       </template>
 
       <!-- Classic: section nav · preview · inspector. -->
-      <template v-else>
-        <aside
-          class="ps-pane-scroll hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
-          aria-label="Sections"
-        >
-          <EditorSectionNav />
-        </aside>
+      <aside
+        v-else
+        class="ps-pane-scroll hidden w-56 shrink-0 overflow-y-auto border-r border-surface-200 xl:block dark:border-surface-800"
+        aria-label="Sections"
+      >
+        <EditorSectionNav />
+      </aside>
 
-        <section
-          class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
-          :class="previewClass"
-          aria-label="Preview"
-        >
-          <EditorPreviewToolbar :class="toolbarClass" />
-          <EditorPreviewStage />
-        </section>
+      <section
+        key="preview"
+        class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
+        :class="previewClass"
+        aria-label="Preview"
+      >
+        <!-- The setup keeps the preview to the sample app, without the toolbar. -->
+        <EditorPreviewToolbar
+          v-if="!editor.setupOpen"
+          :class="toolbarClass"
+        />
+        <EditorPreviewStage />
+      </section>
 
-        <aside
-          class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
-          :class="editClass"
-          aria-label="Inspector"
-        >
-          <EditorInspector />
-        </aside>
-      </template>
+      <aside
+        v-if="!editor.setupOpen && editor.prefs.layout === 'classic'"
+        class="ps-pane-scroll w-full min-w-0 shrink-0 overflow-y-auto overflow-x-hidden border-surface-200 lg:block lg:flex-none lg:w-[22rem] lg:border-l xl:w-[24rem] dark:border-surface-800"
+        :class="editClass"
+        aria-label="Inspector"
+      >
+        <EditorInspector />
+      </aside>
 
       <EditorExportPanel
         v-model:visible="exportVisible"
