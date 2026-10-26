@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { PaletteChoice } from '~/utils/theme/recolor'
 
-// One variant's row in VariantColors: open/close, its colors in light|dark, its palette.
+// One variant's row in VariantColors: open/close, its color (in the previewed mode, or light|dark
+// with "Both"), its palette.
 // Props are primitives, so recoloring one variant doesn't re-render the others' rows.
 const props = defineProps<{
   label: string
@@ -15,6 +16,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{ toggle: [], recolor: [choice: PaletteChoice | null] }>()
+const { both, scheme } = useShownScheme()
 
 const choice = computed<PaletteChoice | null>(() => {
   if (props.choiceKind === 'palette') return { kind: 'palette', name: props.choiceValue }
@@ -43,10 +45,12 @@ const choice = computed<PaletteChoice | null>(() => {
         aria-hidden="true"
       >
         <span
+          v-if="both || scheme === 'light'"
           class="flex-1"
           :style="{ background: light }"
         />
         <span
+          v-if="both || scheme === 'dark'"
           class="flex-1"
           :style="{ background: dark }"
         />

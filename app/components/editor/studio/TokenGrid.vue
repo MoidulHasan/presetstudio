@@ -14,6 +14,7 @@ const props = defineProps<{
 }>()
 
 const selected = ref<{ row: string, column: string } | null>(null)
+const { both } = useShownScheme()
 const { current: highlight, flash } = useFlash<string>()
 const root = ref<HTMLElement | null>(null)
 
@@ -59,13 +60,7 @@ defineExpose({ focus })
       class="grid items-center gap-x-2 gap-y-1.5"
       :style="{ gridTemplateColumns: `6.5rem repeat(${columns.length}, minmax(0, 1fr))` }"
     >
-      <span class="text-[10px] text-surface-500"><i
-        class="pi pi-sun"
-        aria-hidden="true"
-      /> | <i
-        class="pi pi-moon"
-        aria-hidden="true"
-      /></span>
+      <span class="text-[10px] text-surface-500">{{ both ? 'Light | Dark' : '' }}</span>
       <span
         v-for="column in columns"
         :key="column.key"

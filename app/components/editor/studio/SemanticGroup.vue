@@ -82,7 +82,7 @@ useStagePick(async ([kind, first, second]) => {
     >
       <EditorInspectorGroup
         title="Colors"
-        :description="grid.columns.length > 1 ? 'Light and dark side by side in every cell. Select one to edit both.' : 'Light and dark side by side. Select one to edit both.'"
+        description="Each color shows in the mode the preview shows (both with Both). Select one to change it in light and dark."
       >
         <EditorStudioTokenGrid
           ref="gridRef"

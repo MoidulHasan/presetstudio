@@ -31,6 +31,7 @@ const rows = ref<Record<string, HTMLElement | null>>({})
 /** The color cell being edited; its editor shows under the grid (in the panel's flow). */
 const selected = ref<{ row: string, style: string, property: string, state: StudioState } | null>(null)
 
+const { both } = useShownScheme()
 const styleOf = (row: VariantRow): string => rowStyle.value[row.key] ?? Object.keys(row.styles)[0]!
 const matrixOf = (row: VariantRow) => stateMatrix(row.styles[styleOf(row)] ?? [])
 
@@ -135,7 +136,7 @@ defineExpose({ focus })
     title="Colors"
     :description="`${description} Open a variant to fine-tune single colors.`"
   >
-    <ul class="flex flex-col divide-y divide-surface-200 rounded-lg border border-surface-200 dark:divide-surface-700 dark:border-surface-700">
+    <ul class="-mx-2 flex flex-col">
       <li
         v-for="row in variants"
         :key="row.key"
@@ -157,7 +158,7 @@ defineExpose({ focus })
 
         <div
           v-if="openRow === row.key"
-          class="flex flex-col gap-3 border-t border-surface-200 bg-surface-50 p-3 dark:border-surface-700 dark:bg-surface-800/50"
+          class="mx-2 mb-2 flex flex-col gap-3 rounded-lg bg-surface-50 p-3 dark:bg-surface-800/50"
         >
           <SelectButton
             v-if="Object.keys(row.styles).length > 1"
@@ -175,13 +176,7 @@ defineExpose({ focus })
             :style="{ gridTemplateColumns: `6rem repeat(${matrixStates(matrixOf(row)).length}, minmax(0, 1fr))` }"
             :data-stage-target="`${styleOf(row)}:${row.key}`"
           >
-            <span class="text-[10px] text-surface-500"><i
-              class="pi pi-sun"
-              aria-hidden="true"
-            /> | <i
-              class="pi pi-moon"
-              aria-hidden="true"
-            /></span>
+            <span class="text-[10px] text-surface-500">{{ both ? 'Light | Dark' : '' }}</span>
             <span
               v-for="state in matrixStates(matrixOf(row))"
               :key="state"

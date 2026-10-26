@@ -111,8 +111,8 @@ const preview = computed(() => {
       :key="kind"
       :ref="el => (sections[kind] = el as HTMLElement | null)"
       :data-stage-target="`status:${kind}`"
-      :class="highlighted === kind ? '!border-surface-900 dark:!border-surface-0' : ''"
-      class="flex flex-col gap-3 rounded-lg border border-surface-200 p-3 dark:border-surface-700"
+      :class="highlighted === kind ? 'bg-surface-100 dark:bg-surface-800' : ''"
+      class="-mx-2 flex flex-col gap-2 rounded-lg p-2 transition-colors"
       :aria-label="`${META[kind].label} color`"
     >
       <div class="flex items-center gap-3">
