@@ -94,6 +94,14 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
+// Clicks in the preview happen in its iframe and never reach this document, so a menu or dropdown
+// open here wouldn't see them as a click outside. Focus moving into the preview counts as one.
+function onWindowBlur() {
+  requestAnimationFrame(() => {
+    if (document.activeElement instanceof HTMLIFrameElement) document.body.click()
+  })
+}
+
 // The editor's own light/dark mode. The preview iframe has its own document, so it's unaffected.
 const systemDark = ref(false)
 let media: MediaQueryList | undefined
@@ -105,6 +113,7 @@ onMounted(() => {
   // First visit: a guided setup instead of the full editor.
   if (!editor.prefs.setupDone && preset.pristine && workspace.state.themes.length === 1) editor.openSetup()
   window.addEventListener('keydown', onKeydown)
+  window.addEventListener('blur', onWindowBlur)
   media = window.matchMedia('(prefers-color-scheme: dark)')
   systemDark.value = media.matches
   media.addEventListener('change', onMediaChange)
@@ -112,6 +121,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('blur', onWindowBlur)
   media?.removeEventListener('change', onMediaChange)
   document.documentElement.classList.remove('ps-dark')
 })
@@ -220,7 +230,7 @@ onBeforeUnmount(() => {
 
       <section
         key="preview"
-        class="order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
+        class="relative order-first min-w-0 flex-col bg-surface-50 lg:order-none lg:flex lg:h-auto lg:flex-1 lg:border-b-0 dark:bg-surface-950"
         :class="previewClass"
         aria-label="Preview"
       >
