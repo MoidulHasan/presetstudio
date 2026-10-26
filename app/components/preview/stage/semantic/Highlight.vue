@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // Highlight stage: the same "selected" look across components: list options, table rows, tree
 // nodes (selected, and selected + focused).
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const ROWS = [
   { id: 1, name: 'Desk lamp', price: '$49' },
@@ -21,8 +20,8 @@ const selectedKeys = ref({ 0: true })
       </div>
       <div class="grid gap-6 sm:grid-cols-2">
         <div
+          v-pick="'cell:background:default'"
           class="flex cursor-pointer flex-col gap-2"
-          @click="emit('pick', 'cell:background:default')"
         >
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
             Selected list option
@@ -48,10 +47,10 @@ const selectedKeys = ref({ 0: true })
                   Lisbon
                 </li>
                 <li
+                  v-pick="'cell:background:focus'"
                   class="p-listbox-option p-listbox-option-selected p-focus"
                   role="option"
                   aria-selected="true"
-                  @click.stop="emit('pick', 'cell:background:focus')"
                 >
                   Madrid (focused)
                 </li>
@@ -60,8 +59,8 @@ const selectedKeys = ref({ 0: true })
           </div>
         </div>
         <div
+          v-pick="'cell:background:default'"
           class="flex cursor-pointer flex-col gap-2"
-          @click="emit('pick', 'cell:background:default')"
         >
           <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
             Selected tree node
@@ -74,8 +73,8 @@ const selectedKeys = ref({ 0: true })
         </div>
       </div>
       <div
+        v-pick="'cell:background:default'"
         class="flex cursor-pointer flex-col gap-2"
-        @click="emit('pick', 'cell:background:default')"
       >
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
           Selected table row

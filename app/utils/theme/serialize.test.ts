@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, createShortcutMessage, createStagePickMessage, parseEditorMessage, parsePreviewMessage } from './messages'
+import { createApplyMessage, createInspectMessage, createReadyMessage, createRevealedMessage, createRevealMessage, createScrollMessage, createScrollToMessage, createHighlightMessage, createShortcutMessage, createSpotlightMessage, createStagePickMessage, parseEditorMessage, parsePreviewMessage } from './messages'
 import { generateClassicPalette, normalizeHex } from './palette'
 import {
   createWorkspace,
@@ -221,6 +221,13 @@ describe('component inspect messages', () => {
     expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:danger:hover') }, origin)).toEqual(createStagePickMessage('root:danger:hover'))
     expect(parsePreviewMessage({ origin, data: createStagePickMessage('root:<b>') }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: createShortcutMessage('search') }, origin)).toEqual(createShortcutMessage('search'))
+    expect(parseEditorMessage({ origin, data: createHighlightMessage('*:danger:hover', 'hover') }, origin)).toEqual(createHighlightMessage('*:danger:hover', 'hover'))
+    expect(parseEditorMessage({ origin, data: createHighlightMessage(null, 'focus') }, origin)).toEqual(createHighlightMessage(null, 'focus'))
+    expect(parseEditorMessage({ origin, data: createHighlightMessage('cell:"><img', 'hover') }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: { ...createHighlightMessage('cell:border', 'hover'), mode: 'shake' } }, origin)).toBeNull()
+    expect(parseEditorMessage({ origin, data: createSpotlightMessage(['button', 'nope', '__proto__']) }, origin)).toEqual(createSpotlightMessage(['button']))
+    expect(parseEditorMessage({ origin, data: createSpotlightMessage(null) }, origin)).toEqual(createSpotlightMessage(null))
+    expect(parseEditorMessage({ origin, data: { ...createSpotlightMessage(null), components: 'button' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin, data: { ...createShortcutMessage('undo'), shortcut: 'delete-all' } }, origin)).toBeNull()
     expect(parsePreviewMessage({ origin: 'https://evil.example', data: createShortcutMessage('undo') }, origin)).toBeNull()
   })

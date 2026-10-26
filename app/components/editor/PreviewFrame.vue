@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
-import { createApplyMessage, createRevealMessage, createScrollToMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
+import { createApplyMessage, createHighlightMessage, createRevealMessage, createScrollToMessage, createSpotlightMessage, parsePreviewMessage, type ScrollPosition } from '~/utils/theme/messages'
 import type { ColorScheme } from '~/utils/theme/types'
 
 const props = defineProps<{ colorScheme: ColorScheme, label: string, hideScrollbar?: boolean }>()
@@ -65,6 +65,7 @@ function onMessage(event: MessageEvent) {
     // Also fires again whenever the iframe reloads.
     ready.value = true
     sendState()
+    sendSpotlight()
   }
   else if (message?.type === 'preview:scroll') {
     emit('scroll', { x: message.x, y: message.y })
@@ -101,6 +102,27 @@ watch(() => editor.revealRequest, (request) => {
     target.postMessage(createRevealMessage(request.component), window.location.origin)
   }))
 })
+
+// --- Pointing at things --------------------------------------------------------------------
+function post(message: Parameters<Window['postMessage']>[0]) {
+  if (ready.value) frame.value?.contentWindow?.postMessage(message, window.location.origin)
+}
+
+// A control hovered, focused or just changed in the panel: outline what it edits on the stage.
+// After the pending theme update, so a pulse shows the new value.
+watch(() => editor.stageHint, (hint) => {
+  if (!hint) return
+  flushState()
+  post(createHighlightMessage(hint.target, hint.mode))
+})
+
+// "In an app", the components the section doesn't change are dimmed (unless switched off).
+const spotlightComponents = useSpotlightComponents()
+const spotlight = computed(() => (!editor.activeStage && editor.prefs.spotlight ? spotlightComponents.value : null))
+function sendSpotlight() {
+  post(createSpotlightMessage(spotlight.value ? [...spotlight.value] : null))
+}
+watch(spotlight, sendSpotlight)
 
 /** Scrolls the preview without it reporting the scroll back (used to sync panes). */
 function scrollTo(position: ScrollPosition) {

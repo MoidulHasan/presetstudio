@@ -2,7 +2,6 @@
 import { ACTIVE_CLASS, HOVER_CLASS } from '~/composables/usePreviewForcedStyles'
 
 // Primary stage: the scale and everything that uses the primary color, in every state.
-const emit = defineEmits<{ pick: [target: string] }>()
 const SHADES = ['50', '100', '200', '300', '400', '500', '600', '700', '800', '900', '950']
 const STATES = [
   { key: 'default', label: 'Default', cls: '' },
@@ -26,9 +25,9 @@ const STATES = [
         <div
           v-for="state in STATES"
           :key="state.key"
+          v-pick="`cell:color:${state.key}`"
           :class="state.cls"
           class="cursor-pointer"
-          @click="emit('pick', `cell:color:${state.key}`)"
         >
           <Button
             :label="state.label"
@@ -38,9 +37,9 @@ const STATES = [
         <div
           v-for="state in STATES"
           :key="`o-${state.key}`"
+          v-pick="`cell:color:${state.key}`"
           :class="state.cls"
           class="cursor-pointer"
-          @click="emit('pick', `cell:color:${state.key}`)"
         >
           <Button
             :label="state.label"
@@ -50,8 +49,8 @@ const STATES = [
         </div>
       </div>
       <div
+        v-pick="'cell:color:default'"
         class="flex cursor-pointer flex-wrap items-center gap-5"
-        @click="emit('pick', 'cell:color:default')"
       >
         <Checkbox
           :model-value="true"
@@ -80,8 +79,8 @@ const STATES = [
         >A link</a>
       </div>
       <div
+        v-pick="'cell:color:default'"
         class="cursor-pointer"
-        @click="emit('pick', 'cell:color:default')"
       >
         <Tabs value="0">
           <TabList>

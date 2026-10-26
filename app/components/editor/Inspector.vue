@@ -91,6 +91,9 @@ function onReset() {
 // Scroll the panel back to the top when switching sections.
 const body = ref<HTMLElement | null>(null)
 watch([() => editor.prefs.section, () => editor.prefs.component], () => body.value?.closest('aside')?.scrollTo({ top: 0 }))
+
+// Hovering or using a control points at what it edits in the preview.
+useStageTargets(body)
 </script>
 
 <template>

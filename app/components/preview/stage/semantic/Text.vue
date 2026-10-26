@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // Text stage: default and muted text, at rest and hovered (the hover colors as links use them).
-const emit = defineEmits<{ pick: [target: string] }>()
 </script>
 
 <template>
@@ -12,38 +11,38 @@ const emit = defineEmits<{ pick: [target: string] }>()
         <span class="text-[11px] text-muted-color">Hover</span>
         <span class="text-xs text-muted-color">Text</span>
         <p
+          v-pick="'cell:text:default'"
           class="m-0 cursor-pointer text-lg font-semibold"
           style="color: var(--p-text-color)"
-          @click="emit('pick', 'cell:text:default')"
         >
           Project settings
         </p>
         <p
+          v-pick="'cell:text:hover'"
           class="m-0 cursor-pointer text-lg font-semibold"
           style="color: var(--p-text-hover-color)"
-          @click="emit('pick', 'cell:text:hover')"
         >
           Project settings
         </p>
         <span class="text-xs text-muted-color">Muted</span>
         <p
+          v-pick="'cell:muted:default'"
           class="m-0 cursor-pointer text-sm"
           style="color: var(--p-text-muted-color)"
-          @click="emit('pick', 'cell:muted:default')"
         >
           Last edited 3 minutes ago
         </p>
         <p
+          v-pick="'cell:muted:hover'"
           class="m-0 cursor-pointer text-sm"
           style="color: var(--p-text-hover-muted-color)"
-          @click="emit('pick', 'cell:muted:hover')"
         >
           Last edited 3 minutes ago
         </p>
       </div>
       <div
+        v-pick="'cell:text:default'"
         class="flex cursor-pointer flex-col gap-2"
-        @click="emit('pick', 'cell:text:default')"
       >
         <h3 class="text-xs font-semibold uppercase tracking-wide text-muted-color">
           In a paragraph

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // List stage: options in every state (focus and selection are classes, so they're shown with
 // PrimeVue's own Listbox markup); a real Listbox and an open-looking Select panel use them too.
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const OPTIONS = [
   { label: 'Amsterdam', cls: '', pick: 'cell:text:default', hint: 'Default' },
@@ -31,20 +30,20 @@ const OPTIONS = [
                 aria-label="List option states"
               >
                 <li
+                  v-pick="'cell:groupbackground:default'"
                   class="p-listbox-option-group cursor-pointer"
                   role="presentation"
-                  @click="emit('pick', 'cell:groupbackground:default')"
                 >
                   Europe
                 </li>
                 <li
                   v-for="option in OPTIONS"
                   :key="option.label"
+                  v-pick="option.pick"
                   :class="option.cls"
                   class="p-listbox-option cursor-pointer"
                   role="option"
                   :aria-selected="!!option.selected"
-                  @click="emit('pick', option.pick)"
                 >
                   <span class="flex-1">{{ option.label }}</span>
                   <span class="text-[10px] opacity-60">{{ option.hint }}</span>
@@ -58,8 +57,8 @@ const OPTIONS = [
             With checkmarks
           </h3>
           <div
+            v-pick="'cell:icon:default'"
             class="cursor-pointer"
-            @click="emit('pick', 'cell:icon:default')"
           >
             <Listbox
               :model-value="'Lisbon'"
@@ -72,8 +71,8 @@ const OPTIONS = [
         </div>
       </div>
       <div
+        v-pick="'section:size'"
         class="flex cursor-pointer items-center gap-3"
-        @click="emit('pick', 'section:size')"
       >
         <span class="text-xs text-muted-color">Spacing follows the list padding, gap and option padding.</span>
       </div>

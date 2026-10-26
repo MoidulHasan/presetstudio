@@ -114,6 +114,7 @@ const preview = computed(() => {
       v-for="kind in STATUS_KINDS"
       :key="kind"
       :ref="el => (sections[kind] = el as HTMLElement | null)"
+      :data-stage-target="`status:${kind}`"
       :class="highlighted === kind ? '!border-surface-900 dark:!border-surface-0' : ''"
       class="flex flex-col gap-3 rounded-lg border border-surface-200 p-3 dark:border-surface-700"
       :aria-label="`${META[kind].label} color`"

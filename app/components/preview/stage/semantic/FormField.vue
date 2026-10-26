@@ -2,7 +2,6 @@
 import { FOCUS_CLASS, HOVER_CLASS } from '~/composables/usePreviewForcedStyles'
 
 // Form field stage: inputs in every state the form field tokens cover, forced visible.
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const STATES = [
   { key: 'default', label: 'Default', cls: '', props: {} },
@@ -46,9 +45,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="borderPick(state.key)"
             :class="state.cls"
             class="min-w-0 cursor-pointer"
-            @click="emit('pick', borderPick(state.key))"
           >
             <InputText
               placeholder="Name"
@@ -62,9 +61,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="state.key === 'disabled' ? 'cell:text:disabled' : 'cell:text:default'"
             :class="state.cls"
             class="min-w-0 cursor-pointer"
-            @click="emit('pick', state.key === 'disabled' ? 'cell:text:disabled' : 'cell:text:default')"
           >
             <InputText
               model-value="Ada Lovelace"
@@ -78,9 +77,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="borderPick(state.key)"
             :class="state.cls"
             class="min-w-0 cursor-pointer"
-            @click="emit('pick', borderPick(state.key))"
           >
             <Select
               :options="CITIES"
@@ -96,9 +95,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="['hover', 'focus'].includes(state.key) ? `cell:filled:${state.key}` : state.key === 'disabled' ? 'cell:background:disabled' : state.key === 'invalid' ? 'cell:border:invalid' : 'cell:filled:default'"
             :class="state.cls"
             class="min-w-0 cursor-pointer"
-            @click="emit('pick', ['hover', 'focus'].includes(state.key) ? `cell:filled:${state.key}` : state.key === 'disabled' ? 'cell:background:disabled' : state.key === 'invalid' ? 'cell:border:invalid' : 'cell:filled:default')"
           >
             <InputText
               placeholder="Name"
@@ -113,9 +112,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="state.key === 'invalid' ? 'cell:placeholder:invalid' : 'cell:icon:default'"
             :class="state.cls"
             class="min-w-0 cursor-pointer"
-            @click="emit('pick', state.key === 'invalid' ? 'cell:placeholder:invalid' : 'cell:icon:default')"
           >
             <IconField>
               <InputIcon class="pi pi-search" />
@@ -142,9 +141,9 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
           <div
             v-for="sample in FLOAT_SAMPLES"
             :key="sample.key"
+            v-pick="sample.pick"
             :class="sample.cls"
             class="min-w-0 cursor-pointer pt-2"
-            @click="emit('pick', sample.pick)"
           >
             <FloatLabel variant="on">
               <InputText
@@ -161,8 +160,8 @@ const borderPick = (state: string) => (state === 'disabled' ? 'cell:background:d
       </div>
 
       <div
+        v-pick="'section:size'"
         class="flex cursor-pointer flex-wrap items-center gap-3"
-        @click="emit('pick', 'section:size')"
       >
         <span class="w-[5.5rem] text-xs text-muted-color">Sizes</span>
         <InputText

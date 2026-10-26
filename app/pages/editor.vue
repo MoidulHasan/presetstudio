@@ -230,6 +230,10 @@ onBeforeUnmount(() => {
           :class="toolbarClass"
         />
         <EditorPreviewStage />
+        <EditorPreviewStatus
+          v-if="!editor.setupOpen"
+          :class="toolbarClass"
+        />
       </section>
 
       <aside

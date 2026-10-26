@@ -49,7 +49,7 @@ function findComponent(name: string): HTMLElement | null {
 const NESTED_ALIASES: Record<string, string> = { dropdown: 'select', action: 'button' }
 const NAMES_BY_LENGTH = Object.keys(COMPONENT_META).sort((a, b) => b.length - a.length)
 
-function nestedComponent(pcName: string): string | null {
+export function nestedComponent(pcName: string): string | null {
   const name = pcName.slice(2)
   if (Object.hasOwn(COMPONENT_META, name)) return name
   const alias = Object.keys(NESTED_ALIASES).find(key => name.endsWith(key))

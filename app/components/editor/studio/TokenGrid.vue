@@ -2,7 +2,8 @@
 import type { TokenDescriptor } from '~/utils/theme/schema'
 
 // A grid of color tokens: rows (properties) × columns (states or kinds), each cell a light|dark
-// pair. The selected cell is edited right under the grid, in the panel's flow.
+// pair. The selected cell is edited right under the grid, in the panel's flow. Cells, rows and
+// columns point at their stage elements ('cell:<row>:<column>', see useStageTargets).
 export interface GridCell { light?: TokenDescriptor, dark?: TokenDescriptor }
 
 const props = defineProps<{
@@ -68,6 +69,7 @@ defineExpose({ focus })
       <span
         v-for="column in columns"
         :key="column.key"
+        :data-stage-target="`cell:*:${column.key}`"
         class="truncate text-center text-[11px] font-medium"
         :class="highlight === column.key ? 'text-primary' : 'text-surface-500'"
         :title="column.label"
@@ -79,6 +81,7 @@ defineExpose({ focus })
         <span
           class="truncate text-xs"
           :title="row.label"
+          :data-stage-target="`cell:${row.key}`"
         >{{ row.label }}</span>
         <template
           v-for="column in columns"
@@ -86,6 +89,7 @@ defineExpose({ focus })
         >
           <EditorStudioColorPair
             v-if="row.cells[column.key]"
+            :data-stage-target="`cell:${row.key}:${column.key}`"
             :light="row.cells[column.key]!.light"
             :dark="row.cells[column.key]!.dark"
             :label="columns.length > 1 ? `${row.label} · ${column.label}` : row.label"
@@ -103,6 +107,7 @@ defineExpose({ focus })
 
     <div
       v-if="selectedCell"
+      :data-stage-target="selected ? `cell:${selected.row}:${selected.column}` : undefined"
       class="flex flex-col gap-2 rounded-lg border border-surface-200 bg-surface-0 p-2 dark:border-surface-700 dark:bg-surface-900"
     >
       <div class="flex items-center justify-between gap-2 px-1">

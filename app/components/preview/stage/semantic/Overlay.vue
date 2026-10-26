@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // Overlay stage: a dropdown panel, a popover and a dialog, shown open (PrimeVue's own markup).
-const emit = defineEmits<{ pick: [target: string] }>()
 </script>
 
 <template>
@@ -17,8 +16,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
             Dropdown
           </h3>
           <div
+            v-pick="'cell:background:select'"
             class="p-select-overlay p-component cursor-pointer !static"
-            @click="emit('pick', 'cell:background:select')"
           >
             <div class="p-select-list-container">
               <ul
@@ -43,8 +42,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
             Popover
           </h3>
           <div
+            v-pick="'cell:background:popover'"
             class="p-popover p-component cursor-pointer !static !mt-3"
-            @click="emit('pick', 'cell:background:popover')"
           >
             <div class="p-popover-content">
               <p class="m-0 text-sm font-semibold">
@@ -62,8 +61,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
           Dialog on its backdrop
         </h3>
         <div
+          v-pick="'cell:backdrop:modal'"
           class="relative h-72 cursor-pointer overflow-hidden rounded-lg border border-surface"
-          @click="emit('pick', 'cell:backdrop:modal')"
         >
           <div class="flex flex-col gap-2 p-4">
             <p class="m-0 font-semibold">
@@ -75,10 +74,10 @@ const emit = defineEmits<{ pick: [target: string] }>()
           </div>
           <div class="p-overlay-mask !absolute inset-0 grid place-items-center p-4">
             <div
+              v-pick="'cell:background:modal'"
               class="p-dialog p-component !static w-full max-w-sm"
               role="dialog"
               aria-label="Example dialog"
-              @click.stop="emit('pick', 'cell:background:modal')"
             >
               <div class="p-dialog-header">
                 <span class="p-dialog-title">Edit profile</span>

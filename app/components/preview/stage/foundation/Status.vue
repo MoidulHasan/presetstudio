@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // Status stage: each severity across the components status colors reach.
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const ROWS = [
   { kind: 'info', label: 'Info', button: 'info', tag: 'info', message: 'info' },
@@ -22,12 +21,12 @@ const ROWS = [
             :key="row.kind"
           >
             <span
+              v-pick="`status:${row.kind}`"
               class="cursor-pointer text-xs text-muted-color"
-              @click="emit('pick', `status:${row.kind}`)"
             >{{ row.label }}</span>
             <span
+              v-pick="`status:${row.kind}`"
               class="cursor-pointer"
-              @click="emit('pick', `status:${row.kind}`)"
             >
               <Button
                 :label="row.label"
@@ -37,8 +36,8 @@ const ROWS = [
               />
             </span>
             <span
+              v-pick="`status:${row.kind}`"
               class="cursor-pointer"
-              @click="emit('pick', `status:${row.kind}`)"
             >
               <Tag
                 v-if="row.tag"
@@ -47,8 +46,8 @@ const ROWS = [
               />
             </span>
             <span
+              v-pick="`status:${row.kind}`"
               class="cursor-pointer"
-              @click="emit('pick', `status:${row.kind}`)"
             >
               <Badge
                 v-if="row.tag"
@@ -57,8 +56,8 @@ const ROWS = [
               />
             </span>
             <div
+              v-pick="`status:${row.kind}`"
               class="min-w-0 cursor-pointer"
-              @click="emit('pick', `status:${row.kind}`)"
             >
               <Message
                 v-if="row.message"

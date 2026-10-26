@@ -140,6 +140,7 @@ defineExpose({ focus })
         v-for="row in variants"
         :key="row.key"
         :ref="el => (rows[row.key] = el as HTMLElement | null)"
+        :data-stage-target="`*:${row.key}`"
         class="flex flex-col"
       >
         <EditorStudioVariantHeader
@@ -172,6 +173,7 @@ defineExpose({ focus })
           <div
             class="grid items-center gap-x-2 gap-y-1.5"
             :style="{ gridTemplateColumns: `6rem repeat(${matrixStates(matrixOf(row)).length}, minmax(0, 1fr))` }"
+            :data-stage-target="`${styleOf(row)}:${row.key}`"
           >
             <span class="text-[10px] text-surface-500"><i
               class="pi pi-sun"
@@ -183,6 +185,7 @@ defineExpose({ focus })
             <span
               v-for="state in matrixStates(matrixOf(row))"
               :key="state"
+              :data-stage-target="`${styleOf(row)}:${row.key}:${state}`"
               class="text-center text-[11px] font-medium"
               :class="highlight?.row === row.key && highlight.state === state ? 'text-primary' : 'text-surface-500'"
             >{{ STATE_LABELS[state] }}</span>
@@ -200,6 +203,7 @@ defineExpose({ focus })
               >
                 <EditorStudioColorPair
                   v-if="prop.cells[state]"
+                  :data-stage-target="`${styleOf(row)}:${row.key}:${state}`"
                   :light="prop.cells[state]!.light"
                   :dark="prop.cells[state]!.dark"
                   :label="`${prop.label} · ${STATE_LABELS[state]}`"

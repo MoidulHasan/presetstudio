@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // Navigation stage: menu items at rest, focused and active, with icons and submenu labels.
 // Focus and active are classes, so PrimeVue's own Menu/TieredMenu markup shows them.
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const MENU = [
   { label: 'New', icon: 'pi pi-plus', cls: '', pick: 'cell:text:default', hint: 'Default' },
@@ -34,19 +33,19 @@ const TIERED = [
               aria-label="Menu item states"
             >
               <li
+                v-pick="'cell:submenu:default'"
                 class="p-menu-submenu-label cursor-pointer"
                 role="none"
-                @click="emit('pick', 'cell:submenu:default')"
               >
                 Documents
               </li>
               <li
                 v-for="item in MENU"
                 :key="item.label"
+                v-pick="item.pick"
                 :class="item.cls"
                 class="p-menu-item cursor-pointer"
                 role="menuitem"
-                @click="emit('pick', item.pick)"
               >
                 <div class="p-menu-item-content">
                   <a class="p-menu-item-link">
@@ -75,10 +74,10 @@ const TIERED = [
               <li
                 v-for="item in TIERED"
                 :key="item.label"
+                v-pick="item.pick"
                 :class="item.cls"
                 class="p-tieredmenu-item cursor-pointer"
                 role="menuitem"
-                @click="emit('pick', item.pick)"
               >
                 <div class="p-tieredmenu-item-content">
                   <a class="p-tieredmenu-item-link">

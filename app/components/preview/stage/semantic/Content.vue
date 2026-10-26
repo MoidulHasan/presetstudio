@@ -2,7 +2,6 @@
 import { HOVER_CLASS } from '~/composables/usePreviewForcedStyles'
 
 // Content stage: the containers that use the content colors and radius.
-const emit = defineEmits<{ pick: [target: string] }>()
 </script>
 
 <template>
@@ -10,8 +9,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
     <template #default>
       <div class="grid gap-4 sm:grid-cols-2">
         <Card
+          v-pick="'cell:background:default'"
           class="cursor-pointer"
-          @click="emit('pick', 'cell:background:default')"
         >
           <template #title>
             Card
@@ -23,9 +22,9 @@ const emit = defineEmits<{ pick: [target: string] }>()
           </template>
         </Card>
         <Panel
+          v-pick="'cell:border:default'"
           header="Panel"
           class="cursor-pointer"
-          @click="emit('pick', 'cell:border:default')"
         >
           <p class="m-0">
             The border uses the content border color.
@@ -33,8 +32,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
         </Panel>
       </div>
       <div
+        v-pick="'cell:background:hover'"
         class="cursor-pointer"
-        @click="emit('pick', 'cell:background:hover')"
       >
         <Accordion value="0">
           <AccordionPanel value="0">
@@ -59,8 +58,8 @@ const emit = defineEmits<{ pick: [target: string] }>()
         </Accordion>
       </div>
       <div
+        v-pick="'cell:text:default'"
         class="cursor-pointer"
-        @click="emit('pick', 'cell:text:default')"
       >
         <Tabs value="0">
           <TabList>

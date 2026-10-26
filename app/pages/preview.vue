@@ -16,6 +16,7 @@ import {
   type ScrollPosition,
 } from '~/utils/theme/messages'
 import { PREVIEW_BOTH, PREVIEW_SCHEME } from '~/composables/usePreviewForcedStyles'
+import { PICK_EVENT } from '~/plugins/pick'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { createDefaultThemeState, type ColorScheme, type ThemeState, type TokenTree } from '~/utils/theme/types'
 
@@ -91,9 +92,15 @@ const inspector = usePreviewInspector((component) => {
   window.parent.postMessage(createInspectMessage(component), window.location.origin)
 })
 
-function sendStagePick(target: string) {
-  window.parent.postMessage(createStagePickMessage(target), window.location.origin)
+// Stage elements tagged with v-pick report clicks (the innermost one); the editor opens its control.
+function onPick(event: Event) {
+  const target = (event as CustomEvent<unknown>).detail
+  if (typeof target === 'string') window.parent.postMessage(createStagePickMessage(target), window.location.origin)
 }
+
+// --- Pointing at things (the editor's hovered control, the section's spotlight) ------------
+const highlight = usePreviewHighlight()
+const spotlight = usePreviewSpotlight()
 
 async function reveal(component: string) {
   const { found, uses } = await inspector.reveal(component)
@@ -129,6 +136,8 @@ function onMessage(event: MessageEvent) {
   const message = parseEditorMessage(event, window.location.origin)
   if (message?.type === 'preview:scroll-to') return scrollTo(message)
   if (message?.type === 'preview:reveal') return void reveal(message.component)
+  if (message?.type === 'preview:highlight') return highlight.show(message.target, message.mode)
+  if (message?.type === 'preview:spotlight') return spotlight.set(message.components)
   if (message?.type !== 'theme:apply') return
   template.value = message.template
   category.value = message.category
@@ -144,6 +153,7 @@ function onMessage(event: MessageEvent) {
 
 onMounted(() => {
   window.addEventListener('message', onMessage)
+  document.addEventListener(PICK_EVENT, onPick)
   if (embedded) {
     window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('keydown', onKeydown, true)
@@ -155,11 +165,14 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('message', onMessage)
+  document.removeEventListener(PICK_EVENT, onPick)
   window.removeEventListener('scroll', onScroll)
   window.removeEventListener('keydown', onKeydown, true)
   cancelAnimationFrame(scrollFrame)
   forced.dispose()
   inspector.dispose()
+  highlight.dispose()
+  spotlight.dispose()
 })
 </script>
 
@@ -181,33 +194,26 @@ onBeforeUnmount(() => {
     </Message>
     <PreviewStageButton
       v-if="stage === 'button'"
-      @pick="sendStagePick"
     />
     <PreviewStageMessage
       v-else-if="stage === 'message'"
-      @pick="sendStagePick"
     />
     <PreviewStageToast
       v-else-if="stage === 'toast'"
-      @pick="sendStagePick"
     />
     <PreviewStageTag
       v-else-if="stage === 'tag'"
-      @pick="sendStagePick"
     />
     <PreviewStageBadge
       v-else-if="stage === 'badge'"
-      @pick="sendStagePick"
     />
     <PreviewStageFoundation
       v-else-if="stage?.startsWith('foundation-')"
       :stage="stage"
-      @pick="sendStagePick"
     />
     <PreviewStageSemantic
       v-else-if="stage?.startsWith('semantic-')"
       :stage="stage"
-      @pick="sendStagePick"
     />
     <PreviewDashboard v-else-if="template === 'dashboard'" />
     <PreviewForm v-else-if="template === 'form'" />

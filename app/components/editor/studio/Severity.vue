@@ -73,6 +73,7 @@ useStagePick(async ([first, second, third]) => {
       v-for="section in config.sections"
       :key="section.key"
       :ref="el => (sections[section.key] = el as HTMLElement | null)"
+      :data-stage-target="`section:${section.key}`"
     >
       <EditorInspectorGroup
         :title="section.title"

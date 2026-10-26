@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // The Badge stage: every severity in all four sizes, as a dot and on an icon (OverlayBadge).
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const SEVERITIES = ['primary', 'secondary', 'success', 'info', 'warn', 'danger', 'contrast'] as const
 const SIZES = [
@@ -35,22 +34,22 @@ const severityOf = (s: (typeof SEVERITIES)[number]) => (s === 'primary' ? undefi
             <Badge
               v-for="size in SIZES"
               :key="size.key"
+              v-pick="size.key === 'normal' ? `root:${severity}:default` : `section:size:${size.key}`"
               value="8"
               :size="size.size"
               :severity="severityOf(severity)"
               class="cursor-pointer"
-              @click="emit('pick', size.key === 'normal' ? `root:${severity}:default` : `section:size:${size.key}`)"
             />
             <Badge
+              v-pick="'section:size'"
               :severity="severityOf(severity)"
               class="cursor-pointer"
-              @click="emit('pick', 'section:size')"
             />
             <OverlayBadge
+              v-pick="`root:${severity}:default`"
               value="4"
               :severity="severityOf(severity)"
               class="w-fit cursor-pointer"
-              @click="emit('pick', `root:${severity}:default`)"
             >
               <i
                 class="pi pi-bell text-xl"

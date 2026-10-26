@@ -1,3 +1,4 @@
+import { isStagePattern } from '../stage-targets'
 import { isComponentName } from './components'
 import { isStageName } from './stages'
 import { parseThemeState } from './serialize'
@@ -51,7 +52,16 @@ export interface ScrollPosition {
 export type ScrollToMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll-to' } & ScrollPosition
 /** Scroll a component into view and flash it. */
 export type RevealMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:reveal', component: string }
-export type EditorToPreviewMessage = ApplyMessage | ScrollToMessage | RevealMessage
+/** How a stage element is pointed at: while a control is hovered or focused, or once after a change. */
+export const HIGHLIGHT_MODES = ['hover', 'focus', 'pulse'] as const
+export type HighlightMode = (typeof HIGHLIGHT_MODES)[number]
+/** Outline the stage elements a control edits (a target pattern, see stage-targets.ts); null clears. */
+export type HighlightMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:highlight', target: string | null, mode: HighlightMode }
+/** "In an app": keep these components lit and dim the rest; null shows everything. */
+export type SpotlightMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:spotlight', components: string[] | null }
+export type EditorToPreviewMessage = ApplyMessage | ScrollToMessage | RevealMessage | HighlightMessage | SpotlightMessage
+
+const MAX_SPOTLIGHT = 200
 
 export type ReadyMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:ready' }
 export type ScrollMessage = { channel: typeof MESSAGE_CHANNEL, type: 'preview:scroll' } & ScrollPosition
@@ -126,6 +136,16 @@ export function parseEditorMessage(event: MessageEventLike, expectedOrigin: stri
   if (event.data.type === 'preview:reveal' && isComponentName(event.data.component)) {
     return { channel: MESSAGE_CHANNEL, type: 'preview:reveal', component: event.data.component }
   }
+  if (event.data.type === 'preview:highlight' && (HIGHLIGHT_MODES as readonly unknown[]).includes(event.data.mode)
+    && (event.data.target === null || isStagePattern(event.data.target))) {
+    return { channel: MESSAGE_CHANNEL, type: 'preview:highlight', target: event.data.target as string | null, mode: event.data.mode as HighlightMode }
+  }
+  if (event.data.type === 'preview:spotlight') {
+    const list = event.data.components
+    if (list === null) return { channel: MESSAGE_CHANNEL, type: 'preview:spotlight', components: null }
+    if (!Array.isArray(list)) return null
+    return { channel: MESSAGE_CHANNEL, type: 'preview:spotlight', components: list.filter(isComponentName).slice(0, MAX_SPOTLIGHT) }
+  }
   return null
 }
 
@@ -191,6 +211,14 @@ export function createRevealedMessage(component: string, found: boolean, uses: s
 
 export function createStagePickMessage(target: string): StagePickMessage {
   return { channel: MESSAGE_CHANNEL, type: 'preview:stage-pick', target }
+}
+
+export function createHighlightMessage(target: string | null, mode: HighlightMode): HighlightMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:highlight', target, mode }
+}
+
+export function createSpotlightMessage(components: string[] | null): SpotlightMessage {
+  return { channel: MESSAGE_CHANNEL, type: 'preview:spotlight', components }
 }
 
 export function createShortcutMessage(shortcut: PreviewShortcut): ShortcutMessage {

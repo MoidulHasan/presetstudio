@@ -3,7 +3,6 @@ import { HOVER_CLASS } from '~/composables/usePreviewForcedStyles'
 
 // The Message stage: every severity in the default, outlined and simple styles (close button
 // at rest and hovered), plus sizes. Clicking tells the editor what to edit.
-const emit = defineEmits<{ pick: [target: string] }>()
 
 const SEVERITIES = ['info', 'success', 'warn', 'error', 'secondary', 'contrast'] as const
 const STYLES = [
@@ -34,9 +33,9 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
             <div
               v-for="hover in [false, true]"
               :key="String(hover)"
+              v-pick="`${style.key}:${severity}:${hover ? 'hover' : 'default'}`"
               :class="hover ? HOVER_CLASS : ''"
               class="min-w-0 cursor-pointer"
-              @click="emit('pick', `${style.key}:${severity}:${hover ? 'hover' : 'default'}`)"
             >
               <Message
                 :severity="severity"
@@ -58,8 +57,8 @@ const label = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
         <div
           v-for="size in (['small', 'large'] as const)"
           :key="size"
+          v-pick="`section:size:${size === 'small' ? 'sm' : 'lg'}`"
           class="cursor-pointer"
-          @click="emit('pick', `section:size:${size === 'small' ? 'sm' : 'lg'}`)"
         >
           <Message
             severity="info"

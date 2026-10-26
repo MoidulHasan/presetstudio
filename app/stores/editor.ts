@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
+import { PREVIEW_CATEGORIES, PREVIEW_TEMPLATES, type HighlightMode, type PreviewCategory, type PreviewTemplate } from '~/utils/theme/messages'
 import { COMPONENT_META, STUDIO_COMPONENTS, isComponentName, studioFor } from '~/utils/theme/components'
 import { withoutComponent } from '~/utils/theme/recolor'
 import { PATTERN_SECTIONS, semanticStageName, semanticStudio, withoutSemanticGroup, type PatternSection } from '~/utils/theme/semantic-studio'
@@ -67,6 +67,8 @@ interface EditorPrefs {
   previewStrip: boolean
   /** "In an app" pages picked by hand, per section ('formfield') or component ('component:datatable'). */
   pages: Record<string, PreviewPage>
+  /** "In an app": dim the components the open section doesn't change. */
+  spotlight: boolean
 }
 
 const MAX_PAGE_PICKS = 100
@@ -78,7 +80,7 @@ function loadPagePicks(raw: unknown): Record<string, PreviewPage> {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true, pages: {} }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true, pages: {}, spotlight: true }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -104,6 +106,7 @@ function loadPrefs(): EditorPrefs {
       setupDone: raw ? raw.setupDone !== false : fallback.setupDone,
       previewStrip: typeof raw?.previewStrip === 'boolean' ? raw.previewStrip : fallback.previewStrip,
       pages: loadPagePicks(raw?.pages),
+      spotlight: typeof raw?.spotlight === 'boolean' ? raw.spotlight : fallback.spotlight,
     }
   }
   catch {
@@ -170,6 +173,16 @@ export const useEditorStore = defineStore('editor', () => {
   watch(stageName, (name) => {
     if (stagePick.value && stagePick.value.stage !== name) stagePick.value = null
   })
+
+  /**
+   * What a control in the panel points at on the stage (a target pattern, see stage-targets.ts):
+   * held while it's hovered or focused, a pulse after a change. The id makes repeats observable.
+   */
+  const stageHint = shallowRef<{ target: string | null, mode: HighlightMode, id: number } | null>(null)
+  let hintId = 0
+  function pointAtStage(target: string | null, mode: HighlightMode) {
+    stageHint.value = { target, mode, id: ++hintId }
+  }
 
   /** Overrides with the open editor's own edits removed, while Compare is held. */
   function compareOverrides(): TokenTree {
@@ -331,6 +344,8 @@ export const useEditorStore = defineStore('editor', () => {
     stagePick,
     pickOnStage,
     compareOverrides,
+    stageHint,
+    pointAtStage,
     revealRequest,
     revealed,
     revealComponent,

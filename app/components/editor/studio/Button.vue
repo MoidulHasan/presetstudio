@@ -64,7 +64,10 @@ useStagePick(async ([style, key, state]) => {
     />
 
     <!-- Shape -->
-    <div :ref="el => (sections.shape = el as HTMLElement | null)">
+    <div
+      :ref="el => (sections.shape = el as HTMLElement | null)"
+      data-stage-target="shape"
+    >
       <EditorInspectorGroup
         title="Shape"
         description="Corner radius is for every button and follows the form field radius from the Shape section by default. Pill radius is only for buttons with the rounded prop; anything over half the button's height makes fully round ends."
@@ -86,7 +89,10 @@ useStagePick(async ([style, key, state]) => {
     </div>
 
     <!-- Size -->
-    <div :ref="el => (sections.size = el as HTMLElement | null)">
+    <div
+      :ref="el => (sections.size = el as HTMLElement | null)"
+      data-stage-target="size"
+    >
       <EditorInspectorGroup title="Size and spacing">
         <SelectButton
           v-model="size"
@@ -165,6 +171,7 @@ useStagePick(async ([style, key, state]) => {
       >
         <div
           class="flex flex-col gap-3 rounded-lg border p-3 transition-colors"
+          data-stage-target="family:splitbutton"
           :class="familyHighlight === 'splitbutton' ? 'border-surface-900 dark:border-surface-0' : 'border-surface-200 dark:border-surface-700'"
         >
           <div class="flex items-center justify-between gap-2">
@@ -202,6 +209,7 @@ useStagePick(async ([style, key, state]) => {
 
         <div
           class="flex flex-col gap-3 rounded-lg border p-3 transition-colors"
+          data-stage-target="family:speeddial"
           :class="familyHighlight === 'speeddial' ? 'border-surface-900 dark:border-surface-0' : 'border-surface-200 dark:border-surface-700'"
         >
           <div class="flex items-center justify-between gap-2">

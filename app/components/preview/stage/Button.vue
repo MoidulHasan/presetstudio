@@ -4,7 +4,6 @@ import { ACTIVE_CLASS, FOCUS_CLASS, HOVER_CLASS } from '~/composables/usePreview
 // The Button stage: every variant in every state, light and dark side by side. States are
 // forced with classes (copies of the :hover/:active/:focus-visible rules), so nothing needs
 // hovering. Clicking a cell tells the editor what to edit ('root:danger:hover').
-const emit = defineEmits<{ pick: [target: string] }>()
 
 type Severity = 'primary' | 'secondary' | 'success' | 'info' | 'warn' | 'help' | 'danger' | 'contrast' | 'plain'
 
@@ -63,10 +62,9 @@ function severityProps(severity: Severity) {
             <div
               v-for="state in STATES"
               :key="state.key"
+              v-pick="`${style.key}:${severity}:${state.key === 'focus' ? 'default' : state.key}`"
               :class="state.cls"
               class="flex cursor-pointer justify-center"
-              :data-ps-pick="`${style.key}:${severity}:${state.key}`"
-              @click="emit('pick', `${style.key}:${severity}:${state.key === 'focus' ? 'default' : state.key}`)"
             >
               <Button
                 label="Button"
@@ -87,9 +85,9 @@ function severityProps(severity: Severity) {
           <div
             v-for="state in STATES"
             :key="state.key"
+            v-pick="`link:link:${state.key === 'focus' ? 'default' : state.key}`"
             :class="state.cls"
             class="flex cursor-pointer justify-center"
-            @click="emit('pick', `link:link:${state.key === 'focus' ? 'default' : state.key}`)"
           >
             <Button
               label="Button"
@@ -105,8 +103,8 @@ function severityProps(severity: Severity) {
           Sizes and shapes
         </h3>
         <div
+          v-pick="'size'"
           class="flex cursor-pointer flex-wrap items-center gap-3"
-          @click="emit('pick', 'size')"
         >
           <Button
             label="Small"
@@ -141,8 +139,8 @@ function severityProps(severity: Severity) {
           />
         </div>
         <div
+          v-pick="'shape'"
           class="flex cursor-pointer flex-wrap items-center gap-3"
-          @click="emit('pick', 'shape')"
         >
           <Button
             label="Rounded"
@@ -183,8 +181,8 @@ function severityProps(severity: Severity) {
           Button family
         </h3>
         <div
+          v-pick="'family:buttongroup'"
           class="flex cursor-pointer flex-wrap items-center gap-3"
-          @click="emit('pick', 'family:buttongroup')"
         >
           <span class="w-24 text-xs text-muted-color">ButtonGroup</span>
           <ButtonGroup>
@@ -206,8 +204,8 @@ function severityProps(severity: Severity) {
           </ButtonGroup>
         </div>
         <div
+          v-pick="'family:splitbutton'"
           class="flex cursor-pointer flex-wrap items-center gap-3"
-          @click="emit('pick', 'family:splitbutton')"
         >
           <span class="w-24 text-xs text-muted-color">SplitButton</span>
           <SplitButton
@@ -236,8 +234,8 @@ function severityProps(severity: Severity) {
           />
         </div>
         <div
+          v-pick="'family:speeddial'"
           class="flex cursor-pointer items-center gap-3"
-          @click="emit('pick', 'family:speeddial')"
         >
           <span class="w-24 shrink-0 text-xs text-muted-color">SpeedDial</span>
           <!-- Shown open, so the gap between actions is visible. -->
