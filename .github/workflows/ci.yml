@@ -17,7 +17,7 @@ jobs:
     # Pinned, so the OS image changes when we choose to, not when `ubuntu-latest` moves.
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       # Version comes from `packageManager` in package.json.
       - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v5
