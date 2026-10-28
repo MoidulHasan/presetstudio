@@ -178,7 +178,7 @@ onBeforeUnmount(() => {
       <!-- Two panes: destination rail and one panel on the left, the preview takes the rest. -->
       <template v-else-if="editor.prefs.layout === 'panels'">
         <aside
-          class="ps-pane-scroll hidden w-[5.75rem] shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
+          class="ps-pane-scroll hidden w-24 shrink-0 overflow-y-auto border-r border-surface-200 lg:block dark:border-surface-800"
           aria-label="Destinations"
         >
           <EditorDestinationNav />

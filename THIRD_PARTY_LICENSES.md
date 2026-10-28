@@ -40,3 +40,7 @@ THE SOFTWARE.
 ```
 
 Other dependencies are listed in `package.json` and `pnpm-lock.yaml`. Run `pnpm license:check` to list every installed package whose license is not on the permissive allowlist.
+
+## Inter (font)
+
+The site and the editor are set in [Inter](https://github.com/rsms/inter), self-hosted from `public/fonts/` (Latin and Latin Extended subsets of the variable font, weight and optical size). Copyright (c) 2016 The Inter Project Authors. Licensed under the SIL Open Font License, Version 1.1; the full license is in [`public/fonts/Inter-OFL.txt`](public/fonts/Inter-OFL.txt). The font is used unmodified.

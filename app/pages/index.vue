@@ -181,7 +181,7 @@ const FAQ = [
           <p class="text-sm font-medium text-surface-500">
             For PrimeVue 4 · free and open source
           </p>
-          <h1 class="max-w-[15ch] text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[3.4rem]">
+          <h1 class="max-w-[15ch] text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.022em] sm:text-[3.4rem]">
             Theme PrimeVue around your brand
           </h1>
           <p class="max-w-[46ch] text-lg leading-relaxed text-surface-600">
@@ -293,7 +293,7 @@ const FAQ = [
         <div class="mb-10 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
           <h2
             id="editor"
-            class="text-3xl font-semibold tracking-[-0.025em]"
+            class="text-3xl font-semibold tracking-[-0.015em]"
           >
             See it, don’t guess
           </h2>
@@ -348,7 +348,7 @@ const FAQ = [
       <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
         <h2
           id="trust"
-          class="mb-12 text-3xl font-semibold tracking-[-0.025em]"
+          class="mb-12 text-3xl font-semibold tracking-[-0.015em]"
         >
           What you can count on
         </h2>
@@ -462,7 +462,7 @@ const FAQ = [
         <div class="mb-12 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
           <h2
             id="layers"
-            class="text-3xl font-semibold tracking-[-0.025em]"
+            class="text-3xl font-semibold tracking-[-0.015em]"
           >
             One color, all the way down
           </h2>
@@ -607,7 +607,7 @@ const FAQ = [
         <div class="mb-10 flex max-w-2xl flex-col gap-2">
           <h2
             id="examples"
-            class="text-3xl font-semibold tracking-[-0.025em]"
+            class="text-3xl font-semibold tracking-[-0.015em]"
           >
             Four themes to start from
           </h2>
@@ -677,7 +677,7 @@ const FAQ = [
         <div class="flex flex-col gap-4">
           <h2
             id="export"
-            class="text-3xl font-semibold tracking-[-0.025em]"
+            class="text-3xl font-semibold tracking-[-0.015em]"
           >
             What you take home
           </h2>
@@ -724,7 +724,7 @@ const FAQ = [
       <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
         <h2
           id="questions"
-          class="text-3xl font-semibold tracking-[-0.025em]"
+          class="text-3xl font-semibold tracking-[-0.015em]"
         >
           Questions
         </h2>
@@ -738,7 +738,10 @@ const FAQ = [
             :key="item.q"
             :value="item.q"
           >
-            <AccordionHeader>{{ item.q }}</AccordionHeader>
+            <!-- PrimeVue mutes closed headers; questions read as text, not as disabled items. -->
+            <AccordionHeader>
+              <span class="text-surface-900">{{ item.q }}</span>
+            </AccordionHeader>
             <AccordionContent>
               <p class="max-w-[62ch] leading-relaxed text-surface-600">
                 {{ item.a }}
@@ -763,7 +766,7 @@ const FAQ = [
         />
       </ol>
       <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-16 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p class="max-w-[24ch] text-2xl font-semibold tracking-[-0.02em]">
+        <p class="max-w-[24ch] text-2xl font-semibold tracking-[-0.012em]">
           Your choices come with you into the editor.
         </p>
         <Button

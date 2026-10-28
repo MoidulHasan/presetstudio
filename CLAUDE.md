@@ -12,7 +12,7 @@ PrimeVue 5+ and the latest versions of several PrimeTek packages are proprietary
 
 Never install primevue 5.x, any `@primevue/*` 5.x, `@primeuix/themes` 3.x, `@primeuix/styled` 1.x, `@primeuix/styles` 3.x or primeicons 8.x. Never add a PrimeTek package without an explicit exact version (`pnpm add -E pkg@x.y.z`).
 
-Any other new dependency must be MIT, ISC, BSD or Apache-2.0. Check with `npm view <pkg> license` before installing. Run `pnpm license:check` after dependency changes.
+Any other new dependency must be MIT, ISC, BSD or Apache-2.0. One approved exception, a font: Inter (SIL OFL 1.1), self-hosted in `public/fonts` with its license file and listed in `THIRD_PARTY_LICENSES.md`; no other OFL assets without asking. Check with `npm view <pkg> license` before installing. Run `pnpm license:check` after dependency changes.
 
 Don't copy code, UI, text or assets from PrimeTek's paid Theme Designer, PrimeBlocks or primeui.dev. Only the public MIT source of primevue / @primeuix/themes may be used as reference.
 

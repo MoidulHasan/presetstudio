@@ -14,10 +14,12 @@ export default defineNuxtConfig({
         { name: 'description', content: 'Preset Studio: an open-source visual theme (preset) generator for PrimeVue 4.' },
       ],
       // The SVG adapts to a dark browser theme; the ICO is for browsers without SVG icons.
+      // The font's Latin file is on every page's first screen, so it loads with the page.
       link: [
         { rel: 'icon', href: '/favicon.ico', sizes: '48x48' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'apple-touch-icon', href: '/apple-touch-icon.png' },
+        { rel: 'preload', href: '/fonts/inter-latin.woff2', as: 'font', type: 'font/woff2', crossorigin: '' },
       ],
     },
   },

@@ -30,7 +30,7 @@ function open(section: EditorSection) {
         :key="section"
         v-tooltip.bottom="{ value: SECTION_META[section].description, showDelay: 600 }"
         :value="section"
-        class="!flex !items-center !gap-1.5 !whitespace-nowrap !px-2.5 !py-2 !text-sm"
+        class="!flex !items-center !gap-1.5 !whitespace-nowrap !px-1.5 !py-2 !text-[13px] xl:!px-2"
         @click="section === 'components' && editor.prefs.component && open(section)"
       >
         {{ SECTION_META[section].tab ?? SECTION_META[section].label }}
