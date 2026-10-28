@@ -142,27 +142,15 @@ const nuxtSetup = (() => {
 })()
 const vueSetup = generateVueSnippet('MyPreset', 'my-preset')
 
-// --- Questions -------------------------------------------------------------------------------
+// --- Questions: only what the rest of the page doesn't already answer -------------------------
 const FAQ = [
-  {
-    q: 'Is it free?',
-    a: 'Yes. Preset Studio is open source under the MIT license, and the presets you export are yours to use anywhere.',
-  },
   {
     q: 'Which versions does it work with?',
     a: 'PrimeVue 4 in styled mode, with the four presets of @primeuix/themes 2: Aura, Lara, Nora and Material. Unstyled mode isn’t covered.',
   },
   {
-    q: 'Where is my theme kept?',
-    a: 'In your browser. There’s no account and nothing is uploaded. To move a theme, export it as a file or a link; the link carries the theme inside it.',
-  },
-  {
     q: 'Why not just ask an AI to write the preset?',
     a: 'For a one-line change, like a new primary color, an AI does fine. Beyond that it works blind: it can’t see the result, it often invents token names that do nothing, and it changes a few tokens where a decision like density needs dozens. Here you see every component and state as you go, every token is checked against PrimeVue’s own engine, and contrast is tested in both modes. The two get along: let your AI wire the exported preset into your app.',
-  },
-  {
-    q: 'Does it work with Nuxt?',
-    a: 'Yes. The export comes with the setup for Nuxt (@primevue/nuxt-module) and for Vue with Vite.',
   },
   {
     q: 'Is it made by PrimeTek?',
@@ -185,9 +173,8 @@ const FAQ = [
             Theme PrimeVue around your brand
           </h1>
           <p class="max-w-[46ch] text-lg leading-relaxed text-surface-600">
-            Give it one color. Preset Studio builds the full scale, wires it into every component
-            the way your base style intends, and shows every state in light and dark before you
-            export the preset.
+            Give it one color. See every component in every state, light and dark, and export a
+            preset with only what you changed.
           </p>
         </div>
 
@@ -290,18 +277,12 @@ const FAQ = [
       aria-labelledby="editor"
     >
       <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="mb-10 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
-          <h2
-            id="editor"
-            class="text-3xl font-semibold tracking-[-0.015em]"
-          >
-            See it, don’t guess
-          </h2>
-          <p class="max-w-[60ch] leading-relaxed text-surface-600">
-            The editor puts your theme on a live stage: each variant in every state, in light and
-            dark at once, next to the settings that change it. No build, no reload.
-          </p>
-        </div>
+        <h2
+          id="editor"
+          class="mb-10 text-3xl font-semibold tracking-[-0.015em]"
+        >
+          See it, don’t guess
+        </h2>
         <img
           src="/landing/editor.jpg"
           width="1800"
@@ -317,7 +298,7 @@ const FAQ = [
               Every state, no hovering
             </h3>
             <p class="text-sm leading-relaxed text-surface-600">
-              Default, hover, pressed and focus side by side, for every variant of the component.
+              Default, hover, pressed and focus side by side, for every variant.
             </p>
           </li>
           <li class="flex flex-col gap-1">
@@ -325,7 +306,7 @@ const FAQ = [
               Light and dark together
             </h3>
             <p class="text-sm leading-relaxed text-surface-600">
-              Every color is set for both modes. Change it once and watch both.
+              Every color is set for both modes. Change it once, see both.
             </p>
           </li>
           <li class="flex flex-col gap-1">
@@ -333,7 +314,7 @@ const FAQ = [
               Click to edit
             </h3>
             <p class="text-sm leading-relaxed text-surface-600">
-              Click anything in the preview, a button, a tag, a field, and its settings open.
+              Click a button, a tag or a field in the preview to open its settings.
             </p>
           </li>
         </ul>
@@ -359,8 +340,8 @@ const FAQ = [
                 Correct by construction
               </h3>
               <p class="text-sm leading-relaxed text-surface-600">
-                Every token is checked against PrimeVue’s own engine, in all four presets, so nothing
-                in your preset is misspelled or made up. The export holds only what you changed:
+                Every token is checked against PrimeVue’s own engine. The export holds only what you
+                changed:
               </p>
             </div>
             <ul class="text-sm">
@@ -381,8 +362,7 @@ const FAQ = [
                 Readable in light and dark
               </h3>
               <p class="text-sm leading-relaxed text-surface-600">
-                Contrast is checked in both modes, with a one-click fix for each failure. Pick a pale
-                yellow at the top and watch these fail.
+                Checked in both modes, with a one-click fix. Try a pale yellow at the top.
               </p>
             </div>
             <table class="w-full text-sm">
@@ -427,14 +407,9 @@ const FAQ = [
           </div>
 
           <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
-            <div class="flex flex-col gap-1">
-              <h3 class="font-semibold">
-                Yours, and private
-              </h3>
-              <p class="text-sm leading-relaxed text-surface-600">
-                Nothing to sign up for and nothing to pay.
-              </p>
-            </div>
+            <h3 class="font-semibold">
+              Yours, and private
+            </h3>
             <ul class="flex flex-col text-sm">
               <li
                 v-for="point in ['Open source under the MIT license', 'Runs in your browser: nothing is uploaded', 'Themes travel as a link or a file', 'A plain definePreset file, nothing extra to install']"
@@ -467,9 +442,8 @@ const FAQ = [
             One color, all the way down
           </h2>
           <p class="max-w-[60ch] leading-relaxed text-surface-600">
-            A preset has three layers: a palette, semantic tokens that give its shades a meaning, and
-            component tokens. Your color replaces the palette and every reference stays, so it lands
-            where {{ baseLabel }} wants it. Switch the base style at the top and the shades move.
+            Your color replaces the palette and every reference stays, so it lands where
+            {{ baseLabel }} wants it.
           </p>
         </div>
 
@@ -612,7 +586,7 @@ const FAQ = [
             Four themes to start from
           </h2>
           <p class="text-surface-600">
-            Made in Preset Studio from a handful of choices each. Open one to keep going from there.
+            Open one to keep going from there.
           </p>
         </div>
         <!-- Below md, one row to swipe through instead of four cards stacked. -->
