@@ -111,7 +111,6 @@ const actionEntries = computed<Entry[]>(() => [
   { id: 'action:undo', kind: 'action', label: 'Undo', detail: undoHint, icon: 'pi pi-undo', run: () => workspace.undo() },
   { id: 'action:redo', kind: 'action', label: 'Redo', icon: 'pi pi-refresh', run: () => workspace.redo() },
   { id: 'action:setup', kind: 'action', label: 'Run the guided setup', keywords: 'first start wizard look brand', icon: 'pi pi-play', run: () => editor.openSetup() },
-  { id: 'action:layout', kind: 'action', label: editor.prefs.layout === 'panels' ? 'Use the classic layout (three panes)' : 'Use the two-pane layout', keywords: 'layout panes view', icon: 'pi pi-objects-column', run: () => (editor.prefs.layout = editor.prefs.layout === 'panels' ? 'classic' : 'panels') },
   { id: 'action:ui-dark', kind: 'action', label: 'Editor appearance: dark', keywords: 'theme mode night', icon: 'pi pi-moon', run: () => (editor.prefs.uiTheme = 'dark') },
   { id: 'action:ui-light', kind: 'action', label: 'Editor appearance: light', keywords: 'theme mode day', icon: 'pi pi-sun', run: () => (editor.prefs.uiTheme = 'light') },
   { id: 'action:ui-system', kind: 'action', label: 'Editor appearance: system', keywords: 'theme mode auto', icon: 'pi pi-desktop', run: () => (editor.prefs.uiTheme = 'system') },

@@ -8,7 +8,6 @@ import type { TokenDescriptor } from '~/utils/theme/schema'
 import { groupKeyOf } from '~/utils/theme/semantic'
 import { COLOR_SCHEMES, type ColorScheme, type TokenTree } from '~/utils/theme/types'
 import {
-  EDITOR_LAYOUTS,
   EDITOR_SECTIONS,
   PREVIEW_VIEWPORTS,
   SECTION_META,
@@ -16,7 +15,6 @@ import {
   UI_THEMES,
   isPreviewPage,
   pageForComponent,
-  type EditorLayout,
   type EditorSection,
   type PreviewPage,
   type PreviewViewport,
@@ -59,8 +57,6 @@ interface EditorPrefs {
   semanticView: 'design' | 'tokens'
   /** The editor's own color scheme (independent of the theme being designed). */
   uiTheme: UiTheme
-  /** The editor's layout: two panes (default) or the classic three. */
-  layout: EditorLayout
   /** The first-run setup was finished or skipped (it then only opens for a new theme). */
   setupDone: boolean
   /** Below lg, while editing: the preview shows as a strip above the controls. */
@@ -80,7 +76,7 @@ function loadPagePicks(raw: unknown): Record<string, PreviewPage> {
 }
 
 function loadPrefs(): EditorPrefs {
-  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', layout: 'panels', setupDone: false, previewStrip: true, pages: {}, spotlight: true }
+  const fallback: EditorPrefs = { colorScheme: 'light', section: 'start', split: false, template: 'dashboard', category: 'form', viewport: 'full', showFocus: false, component: null, inspect: false, pane: 'edit', stage: true, componentView: 'design', compare: false, dismissedTips: [], semanticView: 'design', uiTheme: 'system', setupDone: false, previewStrip: true, pages: {}, spotlight: true }
   try {
     const raw = JSON.parse(readStorage(PREFS_KEY) ?? 'null') as Partial<EditorPrefs> | null
     return {
@@ -101,7 +97,6 @@ function loadPrefs(): EditorPrefs {
       semanticView: raw?.semanticView === 'tokens' ? 'tokens' : fallback.semanticView,
       dismissedTips: Array.isArray(raw?.dismissedTips) ? raw.dismissedTips.filter((t): t is string => typeof t === 'string').slice(0, 20) : [],
       uiTheme: UI_THEMES.includes(raw?.uiTheme as UiTheme) ? raw!.uiTheme! : fallback.uiTheme,
-      layout: EDITOR_LAYOUTS.includes(raw?.layout as EditorLayout) ? raw!.layout! : fallback.layout,
       // Saved prefs from before the setup existed belong to people who know the editor.
       setupDone: raw ? raw.setupDone !== false : fallback.setupDone,
       previewStrip: typeof raw?.previewStrip === 'boolean' ? raw.previewStrip : fallback.previewStrip,

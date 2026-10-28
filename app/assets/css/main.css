@@ -52,7 +52,7 @@ body {
 }
 
 /*
- * Editor panes (rail, panel, classic sidebars): their edges sit mid-screen, where a full
+ * Editor panes (rail, panel, setup): their edges sit mid-screen, where a full
  * scrollbar looks like a stray divider. A thin one shows only while the pane is hovered or
  * has keyboard focus; the gutter is reserved so content doesn't shift when it appears.
  */

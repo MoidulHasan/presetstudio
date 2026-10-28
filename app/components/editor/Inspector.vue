@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
-import { EDITOR_SECTIONS, SECTION_META, destinationOf, type EditorSection } from '~/utils/editor-sections'
+import { SECTION_META, destinationOf } from '~/utils/editor-sections'
 import { CATEGORY_META } from '~/utils/preview-categories'
-import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
+import { COMPONENT_META } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
 import { semanticStudio } from '~/utils/theme/semantic-studio'
 
@@ -24,34 +24,16 @@ const meta = computed(() => {
   }
   return SECTION_META[editor.prefs.section]
 })
-// In the two-pane layout the navigation names the section (the active tab, or the rail for
-// Overview), so there's no title row, except inside a component (its name, the way back, Show in
-// preview). A section's explanation is on its tab, and Reset closes the panel.
-const slots = useSlots()
-const tabbed = computed(() => !!slots.nav && destinationOf(editor.prefs.section).sections.length > 1)
-const titled = computed(() => !slots.nav || !!openComponent.value)
+// The navigation names the section (the active tab, or the rail for Overview), so there's no
+// title row, except inside a component (its name, the way back, Show in preview). A section's
+// explanation is on its tab, and Reset closes the panel.
+const tabbed = computed(() => destinationOf(editor.prefs.section).sections.length > 1)
+const titled = computed(() => !!openComponent.value)
 
 function showInPreview(component: string) {
   editor.prefs.pane = 'preview'
   editor.revealComponent(component)
 }
-
-// Same entries as the section nav: visual component editors are listed by name.
-const sectionOptions = EDITOR_SECTIONS.flatMap(value => [
-  { value, label: SECTION_META[value].label },
-  ...(value === 'components' ? STUDIO_COMPONENTS.map(name => ({ value: `component:${name}`, label: `${COMPONENT_META[name]!.label} (visual editor)` })) : []),
-])
-
-const sectionValue = computed({
-  get: () => (editor.prefs.section === 'components' && editor.prefs.component && STUDIO_COMPONENTS.includes(editor.prefs.component)
-    ? `component:${editor.prefs.component}`
-    : editor.prefs.section),
-  set: (value: string) => {
-    if (value.startsWith('component:')) return editor.openComponent(value.slice('component:'.length))
-    if (value === 'components') return editor.openComponentList()
-    editor.openSection(value as EditorSection)
-  },
-})
 
 const designSection = computed(() =>
   (DESIGN_SECTIONS as readonly string[]).includes(editor.prefs.section) ? (editor.prefs.section as DesignSection) : null)
@@ -129,23 +111,13 @@ useStageTargets(body)
     </h2>
     <!-- Hidden when there's nothing to show in it (Overview: no tabs, no title, no toolbar). -->
     <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900 [&:not(:has([role=tablist])):has(#inspector-toolbar:empty:only-child)]:hidden">
-      <!-- The two-pane layout puts the destination's section tabs here. -->
+      <!-- The destination's section tabs. -->
       <slot name="nav" />
       <!-- Hidden when it would hold only an empty toolbar. -->
       <div
         class="flex flex-col gap-3 px-4 py-3 [&:has(>#inspector-toolbar:empty:only-child)]:hidden"
         :class="{ 'border-t border-surface-200 dark:border-surface-800': tabbed }"
       >
-        <!-- Classic layout: below xl the section nav is hidden; pick sections here instead. -->
-        <Select
-          v-if="!$slots.nav"
-          v-model="sectionValue"
-          :options="sectionOptions"
-          option-label="label"
-          option-value="value"
-          aria-label="Editor section"
-          class="w-full xl:hidden"
-        />
         <div
           v-if="titled"
           class="flex items-center justify-between gap-2"

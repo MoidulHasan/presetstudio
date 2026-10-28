@@ -12,10 +12,6 @@ export type PreviewViewport = (typeof PREVIEW_VIEWPORTS)[number]
 export const UI_THEMES = ['system', 'light', 'dark'] as const
 export type UiTheme = (typeof UI_THEMES)[number]
 
-/** 'panels': destination rail + one panel + preview. 'classic': section nav · preview · inspector. */
-export const EDITOR_LAYOUTS = ['panels', 'classic'] as const
-export type EditorLayout = (typeof EDITOR_LAYOUTS)[number]
-
 export interface Destination {
   key: string
   label: string
@@ -27,7 +23,7 @@ export interface Destination {
 }
 
 /**
- * The editor's top-level places, named by what people want to do (the 'panels' layout).
+ * The editor's top-level places, named by what people want to do.
  * Every section belongs to exactly one.
  */
 export const EDITOR_DESTINATIONS: readonly Destination[] = [

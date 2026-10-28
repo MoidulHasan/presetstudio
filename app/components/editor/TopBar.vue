@@ -2,7 +2,7 @@
 import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
-import type { EditorLayout, UiTheme } from '~/utils/editor-sections'
+import type { UiTheme } from '~/utils/editor-sections'
 
 // The theme (switch, rename, import, reset…), whether it's saved, search (⌘K), undo/redo, and the
 // one way out: Export (code for your app, a share link or the theme file). The base preset is
@@ -20,10 +20,6 @@ const APPEARANCES: Array<{ value: UiTheme, label: string, icon: string }> = [
   { value: 'system', label: 'System', icon: 'pi pi-desktop' },
   { value: 'light', label: 'Light', icon: 'pi pi-sun' },
   { value: 'dark', label: 'Dark', icon: 'pi pi-moon' },
-]
-const LAYOUTS: Array<{ value: EditorLayout, label: string, icon: string }> = [
-  { value: 'panels', label: 'Two panes', icon: 'pi pi-window-maximize' },
-  { value: 'classic', label: 'Classic (three panes)', icon: 'pi pi-objects-column' },
 ]
 
 // Search: a box from md up, a button opening it in a dialog below. ⌘K / Ctrl+K opens whichever shows.
@@ -57,26 +53,17 @@ const settingsItems = computed<MenuItem[]>(() => [
     label: 'Editor appearance',
     items: APPEARANCES.map(a => ({ label: a.label, icon: a.icon, checked: editor.prefs.uiTheme === a.value, command: () => (editor.prefs.uiTheme = a.value) })),
   },
-  {
-    label: 'Layout',
-    items: LAYOUTS.map(l => ({ label: l.label, icon: l.icon, checked: editor.prefs.layout === l.value, command: () => (editor.prefs.layout = l.value) })),
-  },
 ])
 </script>
 
 <template>
   <header class="flex h-12 shrink-0 items-center gap-2 border-b border-surface-200 px-3 sm:gap-3 dark:border-surface-800">
-    <!-- Classic layout: from xl the logo cell is exactly as wide as the section nav below it, so their borders line up. -->
-    <div
-      class="hidden h-full shrink-0 items-center border-surface-200 lg:flex dark:border-surface-800"
-      :class="editor.prefs.layout === 'classic' ? 'xl:-ml-3 xl:w-56 xl:border-r xl:px-4' : ''"
-    >
+    <div class="hidden h-full shrink-0 items-center lg:flex">
       <AppLogo class="whitespace-nowrap" />
     </div>
     <Divider
       layout="vertical"
       class="!mx-1 hidden lg:block"
-      :class="editor.prefs.layout === 'classic' ? 'xl:!hidden' : ''"
     />
     <EditorThemeSwitcher class="min-w-0" />
 
