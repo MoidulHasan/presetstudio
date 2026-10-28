@@ -32,6 +32,13 @@ export function usePreviewSpotlight() {
       el.toggleAttribute('data-ps-lit', !!lit && !!name && lit.has(name))
       el.toggleAttribute('data-ps-frame', !!name && COMPONENT_META[name]?.category === 'panel')
     }
+    // A component that renders on demand (Dialog, Popover, Toast…) isn't on the page until it's
+    // opened: its gallery demo stays lit instead, with the buttons that open it.
+    for (const demo of document.querySelectorAll<HTMLElement>('[data-ps-demo]')) {
+      const names = demo.dataset.psDemo?.split(' ') ?? []
+      const onDemand = !!lit && names.some(name => lit!.has(name)) && !demo.querySelector('[data-pc-name][data-ps-lit]')
+      demo.toggleAttribute('data-ps-lit', onDemand)
+    }
   }
 
   // Pages render in parts (lazy gallery sections, overlays): mark what appears.
