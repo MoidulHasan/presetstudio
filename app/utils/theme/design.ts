@@ -120,7 +120,7 @@ function statusTokens(status: Record<StatusKind, StatusDesign>, base: TokenTree)
 
 // borderRadius primitives: none, xs, sm, md, lg, xl. 'base' keeps the preset's values.
 export const RADIUS_VALUES: Record<Exclude<RadiusScale, 'base' | 'custom'>, Record<string, string>> = {
-  none: { none: '0', xs: '0', sm: '0', md: '0', lg: '0', xl: '0' },
+  none: { none: '0', xs: '0px', sm: '0px', md: '0px', lg: '0px', xl: '0px' },
   small: { none: '0', xs: '1px', sm: '2px', md: '4px', lg: '6px', xl: '8px' },
   large: { none: '0', xs: '3px', sm: '6px', md: '10px', lg: '14px', xl: '18px' },
   xlarge: { none: '0', xs: '4px', sm: '8px', md: '12px', lg: '16px', xl: '24px' },
@@ -128,7 +128,8 @@ export const RADIUS_VALUES: Record<Exclude<RadiusScale, 'base' | 'custom'>, Reco
 
 export const MAX_RADIUS = 32
 
-const px = (n: number) => (n > 0 ? `${n}px` : '0')
+// Zero keeps its unit: PrimeVue does arithmetic on some radii (calc(radius - 1px)).
+const px = (n: number) => `${Math.max(0, n)}px`
 
 /** borderRadius primitives for a radius design, or null to keep the base preset's. */
 export function radiusValues(radius: RadiusScale, custom: CustomRadius): Record<string, string> | null {
@@ -163,7 +164,9 @@ export function scaleLength(value: string, factor: number): string | null {
     if (!m) return null
     const n = Number(m[1]) * factor
     const unit = m[2] ?? ''
-    if (n === 0) return '0'
+    // Zero stays as written: a bare 0 breaks calc() where PrimeVue adds it to a length
+    // (Material's toggleswitch gap, `0px`, made `calc(1.5rem + 0)` and froze the handle).
+    if (n === 0) return part
     const precision = unit === 'px' ? 1 : 1000
     return `${Math.round(n * precision) / precision}${unit}`
   })

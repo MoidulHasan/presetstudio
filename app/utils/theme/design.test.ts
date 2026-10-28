@@ -28,6 +28,37 @@ describe('scaleLength', () => {
     expect(scaleLength('12px', 1.25)).toBe('15px')
     expect(scaleLength('{form.field.padding.x}', 2)).toBeNull()
   })
+
+  it('keeps a zero exactly as written, unit included', () => {
+    // A bare 0 is invalid next to a length in calc(): Material's toggleswitch handle froze.
+    expect(scaleLength('0px', 1.25)).toBe('0px')
+    expect(scaleLength('0rem 0.5rem', 2)).toBe('0rem 1rem')
+  })
+})
+
+describe('density units', () => {
+  // Every value density writes keeps the unit of each part it scales, in every preset.
+  it('never changes or drops a unit', () => {
+    const units = (value: string) => value.trim().split(/\s+/).map(part => /[a-z%]+$/i.exec(part)?.[0] ?? '')
+    for (const preset of [aura, lara, nora, material]) {
+      for (const densityScale of [0.5, 1.5]) {
+        const before = createResolver(buildEffectivePreset(withDesign({}), preset), 'light')
+        const overrides = buildPresetOverrides(withDesign({ density: 'custom', densityScale }), preset)
+        const nameAt = new Map([...before.entries].map(([name, entry]) => [entry.path.join('.'), name]))
+        const walk = (node: TokenTree, path: string[]) => {
+          for (const [key, value] of Object.entries(node)) {
+            if (typeof value === 'object') walk(value as TokenTree, [...path, key])
+            else if (typeof value === 'string' && /padding|gap|gutter|margin/i.test(key)) {
+              const name = nameAt.get([...path, key].join('.'))
+              const was = name ? before.resolve(name)?.value : undefined
+              if (was !== undefined) expect(units(value), `${[...path, key].join('.')}: ${was} → ${value}`).toEqual(units(was))
+            }
+          }
+        }
+        walk(overrides, [])
+      }
+    }
+  })
 })
 
 describe('designToTokens', () => {
@@ -58,8 +89,8 @@ describe('designToTokens', () => {
 
   it('applies a radius scale to the primitives', () => {
     const r = createResolver(buildEffectivePreset(withDesign({ radius: 'none' }), aura), 'light')
-    expect(r.resolve('button-border-radius')!.value).toBe('0')
-    expect(r.resolve('border-radius-xl')!.value).toBe('0')
+    expect(r.resolve('button-border-radius')!.value).toBe('0px')
+    expect(r.resolve('border-radius-xl')!.value).toBe('0px')
   })
 
   it('scales literal paddings and leaves references alone', () => {
@@ -94,7 +125,7 @@ describe('designToTokens', () => {
     const design = withDesign({ radius: 'custom', customRadius: { xs: 1, sm: 3, md: 0, lg: 9, xl: 20 } }).design
     const r = createResolver(buildEffectivePreset({ design, overrides: {} }, aura), 'light')
     expect(r.resolve('border-radius-xs')!.value).toBe('1px')
-    expect(r.resolve('border-radius-md')!.value).toBe('0')
+    expect(r.resolve('border-radius-md')!.value).toBe('0px')
     expect(r.resolve('border-radius-xl')!.value).toBe('20px')
     expect(radiusScaleFrom(6)).toEqual({ xs: 2, sm: 4, md: 6, lg: 8, xl: 12 })
   })

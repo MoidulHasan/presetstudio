@@ -26,7 +26,7 @@ describe('specimenVars', () => {
     const vars = specimenVars(themeResolver(state, lara), ['button'])
     expect(vars['--p-button-primary-background']).toBe(vars['--p-primary-color'])
     expect(vars['--p-primary-color']).not.toBe(specimenVars(themeResolver(createDefaultThemeState('lara'), lara), [])['--p-primary-color'])
-    expect(vars['--p-button-border-radius']).toBe('0')
+    expect(vars['--p-button-border-radius']).toBe('0px')
   })
 
   it('uses the dark values for the dark scheme', () => {
