@@ -412,7 +412,7 @@ const FAQ = [
             </h3>
             <ul class="flex flex-col text-sm">
               <li
-                v-for="point in ['Open source under the MIT license', 'Runs in your browser: nothing is uploaded', 'Themes travel as a link or a file', 'A plain definePreset file, nothing extra to install']"
+                v-for="point in ['Open source under the MIT license', 'Your themes stay in your browser', 'Themes travel as a link or a file', 'A plain definePreset file, nothing extra to install']"
                 :key="point"
                 class="flex items-start gap-2.5 border-t border-surface-200 py-2"
               >

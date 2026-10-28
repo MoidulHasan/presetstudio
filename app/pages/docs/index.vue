@@ -16,6 +16,7 @@ const CONTENTS = [
   { id: 'dark', label: 'Dark mode' },
   { id: 'later', label: 'Change it later' },
   { id: 'share', label: 'Share a theme' },
+  { id: 'privacy', label: 'Privacy' },
   { id: 'supported', label: 'What’s supported' },
   { id: 'trouble', label: 'If something looks wrong' },
 ]
@@ -131,6 +132,17 @@ document.documentElement.classList.toggle('app-dark')</code></pre>
           <strong>Export → Share</strong> gives a link that carries the whole theme inside it; nothing is uploaded.
           Whoever opens it gets their own copy, as a new theme. Some chat apps cut very long links; the theme
           file always works.
+        </p>
+      </section>
+
+      <section aria-labelledby="privacy">
+        <h2 id="privacy">
+          Privacy
+        </h2>
+        <p>
+          Your themes never leave your browser. Share links keep the theme after the <code>#</code>, which
+          browsers don’t send anywhere. The site counts anonymous page views with Vercel Web Analytics,
+          without cookies.
         </p>
       </section>
 

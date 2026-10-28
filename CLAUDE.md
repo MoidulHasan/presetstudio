@@ -25,6 +25,7 @@ Trademark: the product is "Preset Studio" (`presetstudio` in code/URLs). Never u
 - Pinia (`@pinia/nuxt`) for editor state
 - Tailwind CSS v4 (`@tailwindcss/vite`) + `tailwindcss-primeui` for editor layout
 - `@nuxt/eslint` (lint), Vitest (unit tests)
+- Vercel Web Analytics (`@vercel/analytics`, MIT): `plugins/analytics.client.ts` counts anonymous page views on the live site only (not in dev, not in the preview iframe) and strips the URL hash from every event, since share and start links carry a whole theme there. The docs say so under Privacy.
 
 ## Architecture
 
