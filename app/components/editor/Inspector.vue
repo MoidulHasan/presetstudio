@@ -162,7 +162,7 @@ useStageTargets(body)
       v-else
       class="px-4 py-4"
     >
-      <EditorPanelsQuickStartPanel v-if="editor.prefs.section === 'start'" />
+      <EditorPanelsOverviewPanel v-if="editor.prefs.section === 'start'" />
       <EditorPanelsPrimaryPanel v-else-if="editor.prefs.section === 'primary'" />
       <EditorPanelsSurfacePanel v-else-if="editor.prefs.section === 'surface'" />
       <EditorPanelsStatusPanel v-else-if="editor.prefs.section === 'status'" />

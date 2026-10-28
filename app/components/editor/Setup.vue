@@ -51,7 +51,7 @@ const scheme = computed<ColorScheme>({
     </header>
 
     <div class="flex-1 p-5">
-      <EditorPanelsQuickStartPanel :show-next-steps="false" />
+      <EditorPanelsQuickStartPanel />
     </div>
 
     <footer class="sticky bottom-0 flex items-center justify-between gap-2 border-t border-surface-200 bg-surface-0 px-5 py-3 dark:border-surface-800 dark:bg-surface-900">

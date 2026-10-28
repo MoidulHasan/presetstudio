@@ -31,7 +31,7 @@ export interface Destination {
  * Every section belongs to exactly one.
  */
 export const EDITOR_DESTINATIONS: readonly Destination[] = [
-  { key: 'brand', label: 'Brand', icon: 'pi pi-bolt', sections: ['start'] },
+  { key: 'brand', label: 'Overview', icon: 'pi pi-home', sections: ['start'] },
   { key: 'colors', label: 'Colors', icon: 'pi pi-palette', sections: ['primary', 'surface', 'status', 'text', 'selection'] },
   { key: 'shape', label: 'Shape & spacing', short: 'Shape', icon: 'pi pi-stop', sections: ['shape', 'density', 'focus'] },
   // Shared styles (form fields, lists, …) sit with the components that use them.
@@ -53,9 +53,9 @@ export interface SectionMeta {
 
 export const SECTION_META: Record<EditorSection, SectionMeta> = {
   start: {
-    label: 'Quick start',
-    icon: 'pi pi-bolt',
-    description: 'Four decisions that get you most of the way. Fine-tune each one in the sections below.',
+    label: 'Overview',
+    icon: 'pi pi-home',
+    description: 'Your theme at a glance: each choice and where it’s set, whether it’s ready, and the way out.',
   },
   primary: {
     label: 'Primary color',

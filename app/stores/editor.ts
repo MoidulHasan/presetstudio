@@ -311,6 +311,13 @@ export const useEditorStore = defineStore('editor', () => {
     tokenRequest.value = { name: token.name, key: token.path.join('.'), component, group, id: ++tokenRequestId }
   }
 
+  /** A request to open the Export drawer on one of its tabs (from panels; editor.vue opens it). */
+  const exportRequest = shallowRef<{ tab: 'app' | 'share', id: number } | null>(null)
+  let exportId = 0
+  function requestExport(tab: 'app' | 'share') {
+    exportRequest.value = { tab, id: ++exportId }
+  }
+
   // --- First-run setup --------------------------------------------------------------------
   /** The setup (pick a look, brand color, corners, neutrals) replaces the editor's panels. */
   const setupOpen = ref(false)
@@ -360,6 +367,8 @@ export const useEditorStore = defineStore('editor', () => {
     choosePage,
     tokenRequest,
     openToken,
+    exportRequest,
+    requestExport,
     setupOpen,
     openSetup,
     closeSetup,

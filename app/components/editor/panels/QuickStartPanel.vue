@@ -1,15 +1,12 @@
 <script setup lang="ts">
-import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import { RADIUS_VALUES, primaryHue } from '~/utils/theme/design'
 import { generateNeutralPalette, normalizeHex } from '~/utils/theme/palette'
 import { BASE_PRESETS, BASE_PRESET_LABELS, type BasePresetName, type RadiusScale, type SurfaceDesign } from '~/utils/theme/types'
 
-// Also the body of the first-run setup, which has its own way forward instead of next steps.
-withDefaults(defineProps<{ showNextSteps?: boolean }>(), { showNextSteps: true })
+// The four questions of the first-run setup (look, brand color, corners, neutrals).
 
-const editor = useEditorStore()
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 const design = computed(() => workspace.theme.design)
@@ -203,60 +200,5 @@ function neutralSwatch(option: (typeof neutrals)[number], shade: string): string
         Light and dark use different neutrals. Pick one here to use it for both.
       </p>
     </EditorInspectorGroup>
-
-    <div
-      v-if="showNextSteps"
-      class="flex flex-col gap-1 rounded-lg border border-surface-200 p-3 text-sm dark:border-surface-700"
-    >
-      <p class="px-3 pt-1 font-medium">
-        Next steps
-      </p>
-      <Button
-        severity="secondary"
-        text
-        class="!justify-start"
-        @click="editor.prefs.section = 'accessibility'"
-      >
-        <i
-          class="pi pi-eye"
-          aria-hidden="true"
-        />
-        <span class="flex-1 text-left">Check contrast</span>
-        <Tag
-          v-if="preset.contrastIssues"
-          :value="`${preset.contrastIssues} issue${preset.contrastIssues === 1 ? '' : 's'}`"
-          severity="danger"
-        />
-        <Tag
-          v-else
-          value="All good"
-          severity="success"
-        />
-      </Button>
-      <Button
-        severity="secondary"
-        text
-        class="!justify-start"
-        @click="editor.prefs.section = 'primary'"
-      >
-        <i
-          class="pi pi-sliders-h"
-          aria-hidden="true"
-        />
-        <span class="flex-1 text-left">Fine-tune colors, shape, density and focus</span>
-      </Button>
-      <Button
-        severity="secondary"
-        text
-        class="!justify-start"
-        @click="editor.openComponentList()"
-      >
-        <i
-          class="pi pi-th-large"
-          aria-hidden="true"
-        />
-        <span class="flex-1 text-left">Customize components</span>
-      </Button>
-    </div>
   </div>
 </template>

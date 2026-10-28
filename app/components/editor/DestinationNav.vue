@@ -3,7 +3,7 @@ import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
 import { EDITOR_DESTINATIONS, destinationOf, type Destination, type EditorSection } from '~/utils/editor-sections'
 
-// The editor's five places (Brand, Colors, Shape & spacing, Components, Review): a rail beside
+// The editor's five places (Overview, Colors, Shape & spacing, Components, Review): a rail beside
 // the panel on wide screens, a bar above it on narrow ones. A destination reopens the section
 // last used in it.
 const props = withDefaults(defineProps<{ orientation?: 'vertical' | 'horizontal' }>(), { orientation: 'vertical' })

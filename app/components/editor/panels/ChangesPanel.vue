@@ -99,13 +99,13 @@ function revert(change: ThemeChange) {
         No changes yet
       </p>
       <p class="max-w-64 text-xs text-surface-500 dark:text-surface-400">
-        This theme is {{ baseLabel }} as it comes. Start with Brand to pick your look and color.
+        This theme is {{ baseLabel }} as it comes. The guided setup picks your look and color in four steps.
       </p>
       <Button
-        label="Go to Brand"
+        label="Run the setup"
         icon="pi pi-bolt"
         size="small"
-        @click="editor.openSection('start')"
+        @click="editor.openSetup()"
       />
     </div>
 

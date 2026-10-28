@@ -19,6 +19,10 @@ function openExport(tab: 'app' | 'share') {
   exportVisible.value = true
 }
 
+watch(() => editor.exportRequest, (request) => {
+  if (request) openExport(request.tab)
+})
+
 function reload() {
   window.location.reload()
 }
