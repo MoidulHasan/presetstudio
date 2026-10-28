@@ -62,7 +62,7 @@ const steps = computed<Snippet[]>(() => {
     const nuxt = generateNuxtSnippets(identifier, fileBase)
     return [
       presetStep(`themes/${fileBase}.ts`),
-      { title: 'Wrap it for the PrimeVue module', hint: 'The Nuxt module takes the preset together with its options (dark mode follows the system here).', fileName: 'themes/theme.ts', code: nuxt.themeFile, download: true },
+      { title: 'Wrap it for the PrimeVue module', hint: 'The Nuxt module takes the preset together with its options (dark mode follows the system here). On Nuxt 4 both files go in app/themes/, where ~ points.', fileName: 'themes/theme.ts', code: nuxt.themeFile, download: true },
       { title: 'Point Nuxt at it', hint: 'Add these lines to your Nuxt config, next to your other settings.', fileName: 'nuxt.config.ts', code: nuxt.config },
     ]
   }
