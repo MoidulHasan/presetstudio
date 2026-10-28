@@ -89,11 +89,6 @@ const designView = computed(() => hasStudio.value && editor.prefs.componentView 
 
 const revealedHere = computed(() => (editor.revealed?.component === props.component ? editor.revealed : null))
 
-function showInPreview() {
-  editor.prefs.pane = 'preview'
-  editor.revealComponent(props.component)
-}
-
 function showInGallery() {
   editor.prefs.template = 'components'
   editor.prefs.category = meta.value.category
@@ -107,27 +102,6 @@ function showInGallery() {
       defer
       to="#inspector-toolbar"
     >
-      <div class="flex items-center justify-between gap-2">
-        <Button
-          :label="`All components`"
-          icon="pi pi-arrow-left"
-          severity="secondary"
-          size="small"
-          text
-          class="-ml-2"
-          @click="editor.openComponentList()"
-        />
-        <Button
-          v-tooltip.left="'Scroll the preview to this component'"
-          label="Show in preview"
-          icon="pi pi-eye"
-          severity="secondary"
-          size="small"
-          text
-          class="-mr-2"
-          @click="showInPreview"
-        />
-      </div>
       <div
         v-if="hasStudio"
         class="flex items-center gap-2"

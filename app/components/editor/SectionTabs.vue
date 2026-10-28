@@ -23,10 +23,12 @@ function open(section: EditorSection) {
     @update:value="(value) => open(value as EditorSection)"
   >
     <TabList :pt="{ tabList: { class: '!border-b-0' } }">
-      <!-- Tabs ignores clicks on the active tab, so "All" inside a component goes back to the list here. -->
+      <!-- Tabs ignores clicks on the active tab, so "All" inside a component goes back to the list here.
+           The tab names the section (there's no title row), so it also carries its explanation. -->
       <Tab
         v-for="section in destination.sections"
         :key="section"
+        v-tooltip.bottom="{ value: SECTION_META[section].description, showDelay: 600 }"
         :value="section"
         class="!flex !items-center !gap-1.5 !whitespace-nowrap !px-2.5 !py-2 !text-sm"
         @click="section === 'components' && editor.prefs.component && open(section)"

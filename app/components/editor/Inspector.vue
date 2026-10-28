@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
-import { EDITOR_SECTIONS, SECTION_META, type EditorSection } from '~/utils/editor-sections'
+import { EDITOR_SECTIONS, SECTION_META, destinationOf, type EditorSection } from '~/utils/editor-sections'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_META, STUDIO_COMPONENTS } from '~/utils/theme/components'
 import { DESIGN_SECTIONS, type DesignSection } from '~/utils/theme/sections'
@@ -24,6 +24,18 @@ const meta = computed(() => {
   }
   return SECTION_META[editor.prefs.section]
 })
+// With section tabs (the two-pane layout), the active tab names the section, so there's no title
+// row, except inside a component (its name, the way back, Show in preview). Its explanation is
+// on the tab, and Reset closes the panel.
+const slots = useSlots()
+const tabbed = computed(() => !!slots.nav && destinationOf(editor.prefs.section).sections.length > 1)
+const titled = computed(() => !tabbed.value || !!openComponent.value)
+
+function showInPreview(component: string) {
+  editor.prefs.pane = 'preview'
+  editor.revealComponent(component)
+}
+
 // Same entries as the section nav: visual component editors are listed by name.
 const sectionOptions = EDITOR_SECTIONS.flatMap(value => [
   { value, label: SECTION_META[value].label },
@@ -56,6 +68,14 @@ const resetHint = computed(() => {
   if (editor.prefs.section === 'semantic') return 'Clear every custom semantic token'
   if (editor.prefs.section === 'components') return openComponent.value ? `Clear the custom ${openComponent.value.label} tokens` : 'Clear the custom tokens of every component'
   return `Put ${meta.value.label.toLowerCase()} back to the base preset`
+})
+
+const { baseDefault } = useBaseDefault()
+const resetLabel = computed(() => {
+  if (editor.prefs.section === 'changes') return 'Revert every change'
+  if (editor.prefs.section === 'semantic') return 'Clear every custom token'
+  if (editor.prefs.section === 'components') return 'Clear every component’s custom tokens'
+  return `Reset to ${baseDefault.value}`
 })
 
 const canReset = computed(() => {
@@ -101,52 +121,86 @@ useStageTargets(body)
     ref="body"
     class="flex flex-col"
   >
-    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 px-4 py-3 dark:border-surface-800 dark:bg-surface-900">
-      <!-- The two-pane layout puts its navigation (destination bar, section tabs) here. -->
-      <div
-        v-if="$slots.nav"
-        class="-mx-4 -mt-3 mb-3 border-b border-surface-200 empty:hidden dark:border-surface-800"
+    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
+      <!-- The two-pane layout puts the destination's section tabs here. -->
+      <slot name="nav" />
+      <h2
+        v-if="!titled"
+        class="sr-only"
       >
-        <slot name="nav" />
-      </div>
-      <!-- Classic layout: below xl the section nav is hidden; pick sections here instead. -->
-      <Select
-        v-else
-        v-model="sectionValue"
-        :options="sectionOptions"
-        option-label="label"
-        option-value="value"
-        aria-label="Editor section"
-        class="mb-3 w-full xl:hidden"
-      />
-      <div class="flex items-center justify-between gap-2">
-        <div class="flex min-w-0 items-center gap-1">
-          <h2 class="truncate text-base font-semibold">
-            {{ meta.label }}
-          </h2>
-          <EditorInfoTip
-            :text="meta.description"
-            :subject="meta.label"
-          />
+        {{ meta.label }}
+      </h2>
+      <!-- Hidden when it would hold only an empty toolbar. -->
+      <div
+        class="flex flex-col gap-3 px-4 py-3 [&:has(>#inspector-toolbar:empty:only-child)]:hidden"
+        :class="{ 'border-t border-surface-200 dark:border-surface-800': tabbed }"
+      >
+        <!-- Classic layout: below xl the section nav is hidden; pick sections here instead. -->
+        <Select
+          v-if="!$slots.nav"
+          v-model="sectionValue"
+          :options="sectionOptions"
+          option-label="label"
+          option-value="value"
+          aria-label="Editor section"
+          class="w-full xl:hidden"
+        />
+        <div
+          v-if="titled"
+          class="flex items-center justify-between gap-2"
+        >
+          <div class="flex min-w-0 items-center gap-1">
+            <Button
+              v-if="openComponent"
+              v-tooltip.bottom="'All components'"
+              icon="pi pi-arrow-left"
+              severity="secondary"
+              size="small"
+              text
+              rounded
+              aria-label="All components"
+              class="-my-1 -ml-2 shrink-0"
+              @click="editor.openComponentList()"
+            />
+            <h2 class="truncate text-base font-semibold">
+              {{ meta.label }}
+            </h2>
+            <EditorInfoTip
+              :text="meta.description"
+              :subject="meta.label"
+            />
+          </div>
+          <div class="-my-1 flex shrink-0 items-center">
+            <Button
+              v-if="editor.prefs.component && openComponent"
+              v-tooltip.bottom="'Scroll the preview to it'"
+              icon="pi pi-eye"
+              severity="secondary"
+              size="small"
+              text
+              rounded
+              aria-label="Show in preview"
+              @click="showInPreview(editor.prefs.component)"
+            />
+            <Button
+              v-if="resettable"
+              v-tooltip.left="canReset ? resetHint : 'Nothing to reset yet'"
+              label="Reset"
+              icon="pi pi-undo"
+              severity="secondary"
+              size="small"
+              text
+              :disabled="!canReset"
+              @click="onReset"
+            />
+          </div>
         </div>
-        <Button
-          v-if="resettable"
-          v-tooltip.left="canReset ? resetHint : 'Nothing to reset yet'"
-          label="Reset"
-          icon="pi pi-undo"
-          severity="secondary"
-          size="small"
-          text
-          class="-my-1 shrink-0"
-          :disabled="!canReset"
-          @click="onReset"
+        <!-- Panels can teleport sticky controls (search, filters) here. -->
+        <div
+          id="inspector-toolbar"
+          class="flex flex-col gap-2 empty:hidden"
         />
       </div>
-      <!-- Panels can teleport sticky controls (search, filters) here. -->
-      <div
-        id="inspector-toolbar"
-        class="mt-3 flex flex-col gap-2 empty:hidden"
-      />
     </header>
 
     <div
@@ -174,6 +228,17 @@ useStageTargets(body)
       <EditorPanelsComponentsPanel v-else-if="editor.prefs.section === 'components'" />
       <EditorPanelsChangesPanel v-else-if="editor.prefs.section === 'changes'" />
       <EditorPanelsAccessibilityPanel v-else-if="editor.prefs.section === 'accessibility'" />
+      <!-- Without a title row, Reset closes the panel, and only when there's something to reset. -->
+      <Button
+        v-if="!titled && resettable && canReset"
+        :label="resetLabel"
+        icon="pi pi-undo"
+        severity="secondary"
+        size="small"
+        text
+        class="-ml-3 mt-6"
+        @click="onReset"
+      />
     </div>
   </div>
 </template>
