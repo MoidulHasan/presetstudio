@@ -115,9 +115,10 @@ export const usePresetStore = defineStore('preset', () => {
   })
 
   /** Contrast failures introduced by this theme (not inherited from the base preset). */
+  /** Failing contrast checks, light and dark, the base preset's own included (they ship too). */
   const contrastIssues = computed(() => {
     const c = contrast.value
-    return c ? [...c.light, ...c.dark].filter(r => r.status === 'introduced').length : 0
+    return c ? [...c.light, ...c.dark].filter(r => r.status === 'introduced' || r.status === 'inherited').length : 0
   })
 
   // --- What's changed ----------------------------------------------------------------
@@ -158,6 +159,18 @@ export const usePresetStore = defineStore('preset', () => {
   }
 
   /** Removes a token override, and linked tokens that still only follow it. */
+  /** Several token edits as one change (one undo step), e.g. a contrast fix. */
+  function setTokens(edits: Array<{ path: string[], value: string }>, coalesceKey: string | null = null) {
+    const safe = edits.flatMap((edit) => {
+      const value = sanitizeTokenValue(edit.value)
+      return value === null ? [] : [{ path: edit.path, value }]
+    })
+    if (!safe.length) return
+    update((d) => {
+      for (const edit of safe) d.overrides = setPath(d.overrides, edit.path, edit.value)
+    }, coalesceKey)
+  }
+
   function resetToken(path: string[], linked: LinkedToken[] = []) {
     update((d) => {
       d.overrides = deletePath(d.overrides, path)
@@ -236,6 +249,7 @@ export const usePresetStore = defineStore('preset', () => {
     modifiedSections,
     pristine,
     setToken,
+    setTokens,
     resetToken,
     resetSemantic,
     resetComponents,

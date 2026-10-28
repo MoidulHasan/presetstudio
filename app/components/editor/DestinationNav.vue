@@ -65,7 +65,7 @@ const items = computed(() => EDITOR_DESTINATIONS.map(d => ({
       <span
         v-if="item.issues"
         class="absolute right-1.5 top-1 grid h-4 min-w-4 place-items-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white"
-        :aria-label="`${item.issues} contrast issues introduced by this theme`"
+        :aria-label="`${item.issues} contrast checks fail`"
       >{{ item.issues }}</span>
       <span
         v-else-if="item.modified"

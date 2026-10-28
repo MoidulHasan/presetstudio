@@ -149,11 +149,11 @@ function downloadThemeFile() {
               class="pi pi-check-circle text-green-600 dark:text-green-400"
               aria-hidden="true"
             />
-            No new contrast issues
+            Contrast checks pass
           </span>
           <Button
             v-else
-            :label="`${preset.contrastIssues} contrast issue${preset.contrastIssues === 1 ? '' : 's'}: review`"
+            :label="`${preset.contrastIssues} contrast check${preset.contrastIssues === 1 ? '' : 's'} fail: review`"
             icon="pi pi-exclamation-triangle"
             severity="danger"
             size="small"

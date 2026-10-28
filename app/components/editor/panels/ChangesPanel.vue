@@ -61,7 +61,7 @@ function revert(change: ThemeChange) {
           class="pi pi-check-circle text-green-600 dark:text-green-400"
           aria-hidden="true"
         />
-        No new contrast issues.
+        Contrast checks pass.
       </p>
       <div
         v-else
@@ -72,7 +72,7 @@ function revert(change: ThemeChange) {
             class="pi pi-exclamation-triangle"
             aria-hidden="true"
           />
-          {{ preset.contrastIssues }} contrast issue{{ preset.contrastIssues === 1 ? '' : 's' }} introduced
+          {{ preset.contrastIssues }} contrast check{{ preset.contrastIssues === 1 ? '' : 's' }} fail
         </span>
         <Button
           label="Review contrast"

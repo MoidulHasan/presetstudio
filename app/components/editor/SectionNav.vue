@@ -123,7 +123,7 @@ const model = computed<MenuItem[]>(() => groups.value.map(group => ({
             :value="preset.contrastIssues"
             severity="danger"
             size="small"
-            :aria-label="`${preset.contrastIssues} contrast issues introduced by this theme`"
+            :aria-label="`${preset.contrastIssues} contrast checks fail`"
           />
         </a>
       </template>
