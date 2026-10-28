@@ -1,10 +1,26 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
+import { useWorkspaceStore } from '~/stores/workspace'
+import { EXAMPLE_THEMES, landingTheme, type ExampleTheme } from '~/utils/landing'
 import type { ColorScheme } from '~/utils/theme/types'
 
 // First-run setup: the four Quick start choices in a focused panel, with the sample app live
 // beside it. Shown on the first visit and for a new theme; everything stays editable later.
 const editor = useEditorStore()
+const workspace = useWorkspaceStore()
+
+// The home page's example themes, here too: one fills the four answers below (and density),
+// so it's a starting point to adjust, not a separate theme. Undoable like any edit.
+function applyExample(example: ExampleTheme) {
+  const { basePreset, design } = landingTheme(example.choices)
+  workspace.update((d) => {
+    d.basePreset = basePreset
+    d.design.primary = design.primary
+    d.design.radius = design.radius
+    d.design.surface = design.surface
+    d.design.density = design.density
+  })
+}
 
 const SCHEMES: Array<{ value: ColorScheme, label: string, icon: string }> = [
   { value: 'light', label: 'Light', icon: 'pi pi-sun' },
@@ -50,7 +66,32 @@ const scheme = computed<ColorScheme>({
       </div>
     </header>
 
-    <div class="flex-1 p-5">
+    <div class="flex flex-1 flex-col gap-6 p-5">
+      <EditorInspectorGroup
+        title="Start from an example"
+        description="Fills the choices below; adjust anything from there."
+      >
+        <div class="flex flex-wrap gap-2">
+          <Button
+            v-for="example in EXAMPLE_THEMES"
+            :key="example.name"
+            v-tooltip.bottom="example.description"
+            severity="secondary"
+            outlined
+            size="small"
+            class="!gap-2"
+            :aria-label="`Start from ${example.name}: ${example.description}`"
+            @click="applyExample(example)"
+          >
+            <span
+              class="size-3.5 rounded-full"
+              :style="{ backgroundColor: example.choices.brand }"
+              aria-hidden="true"
+            />
+            {{ example.name }}
+          </Button>
+        </div>
+      </EditorInspectorGroup>
       <EditorPanelsQuickStartPanel />
     </div>
 
