@@ -4,7 +4,7 @@ import { REPO_URL } from '~/utils/site'
 import { EXAMPLE_THEMES, SPECIMEN_COMPONENTS, landingTheme, type LandingChoices, type LandingCorners } from '~/utils/landing'
 import { listChanges } from '~/utils/theme/changes'
 import { CONTRAST_PAIRS, checkContrast } from '~/utils/theme/contrast'
-import { generatePresetCode } from '~/utils/theme/export'
+import { generateNuxtSnippets, generatePresetCode, generateVueSnippet } from '~/utils/theme/export'
 import { loadBasePreset } from '~/utils/theme/presets'
 import { encodeShareToken, shareUrl, startPath } from '~/utils/theme/share'
 import { referenceChain, specimenVars, themeResolver, type ChainStep } from '~/utils/theme/specimen'
@@ -13,7 +13,7 @@ import { BASE_PRESETS, BASE_PRESET_LABELS, SHADES, type BasePresetName, type Tok
 
 useSeoMeta({
   title: 'Preset Studio: theme PrimeVue around your brand',
-  description: 'Pick a base style and your brand color, adjust colors, corners, density and single components with a live preview, then export a PrimeVue 4 preset. Free, open source, runs in your browser.',
+  description: 'A visual theme editor for PrimeVue 4. Pick your brand color, see every component in every state in light and dark, check contrast, and export a preset with only what you changed. Free, open source, runs in your browser.',
   ogTitle: 'Preset Studio: theme PrimeVue around your brand',
   ogDescription: 'A free, open-source visual theme editor for PrimeVue 4.',
 })
@@ -52,6 +52,7 @@ const choices = ref<LandingChoices>({ base: 'aura', brand: '#0f766e', corners: '
 const theme = computed(() => landingTheme(choices.value))
 // The hero's base preset is always loaded: a base is only chosen once it is.
 const hero = computed(() => draw(choices.value)!)
+const baseLabel = computed(() => BASE_PRESET_LABELS[choices.value.base])
 // The logo takes the color picked here.
 useLogoColors(() => Object.fromEntries(hero.value.shades.map(band => [band.shade, band.value])))
 
@@ -61,12 +62,13 @@ async function chooseBase(name: BasePresetName) {
 }
 
 const baseOptions = BASE_PRESETS.map(name => ({ value: name, label: BASE_PRESET_LABELS[name] }))
-const cornerOptions: Array<{ value: LandingCorners, label: string }> = [
-  { value: 'none', label: 'Square' },
-  { value: 'base', label: 'Default' },
-  { value: 'large', label: 'Rounded' },
-  { value: 'xlarge', label: 'Soft' },
-]
+// `radius` draws the option's shape on a 20 × 16px box.
+const cornerOptions = computed<Array<{ value: LandingCorners, label: string, radius: string }>>(() => [
+  { value: 'none', label: 'Square', radius: '0' },
+  { value: 'base', label: `${baseLabel.value} default`, radius: '3px' },
+  { value: 'large', label: 'Rounded', radius: '5px' },
+  { value: 'xlarge', label: 'Soft', radius: '8px' },
+])
 
 const opening = ref<string | null>(null)
 
@@ -80,6 +82,19 @@ async function continueInEditor() {
     opening.value = null
   }
 }
+
+// --- What you can count on: two of the editor's checks, run on the hero's theme ----------------
+const CONTRAST_SHOWN = ['primary', 'text', 'muted', 'highlight', 'primary-ui']
+const contrastRows = computed(() => {
+  const base = presets.value[choices.value.base]!
+  const pairs = CONTRAST_PAIRS.filter(pair => CONTRAST_SHOWN.includes(pair.id))
+  const light = checkContrast(hero.value.resolver, pairs)
+  const dark = checkContrast(themeResolver(theme.value, base, 'dark'), pairs)
+  return light.map((result, index) => ({ pair: result.pair, light: result, dark: dark[index]! }))
+})
+const ratio = (value: number | null) => (value === null ? 'n/a' : `${value.toFixed(1)}:1`)
+
+const changes = computed(() => listChanges(theme.value))
 
 // --- One color, all the way down -------------------------------------------------------------
 // Real reference chains from the hero's theme: switching the base style shows its own wiring.
@@ -99,12 +114,6 @@ const cascade = computed(() => CASCADE.map((row) => {
   return { ...row, palette, shade, semantic: pick('semantic'), component: pick('component') }
 }))
 
-// What the choices export to: the real file, not a mock.
-const code = computed(() => {
-  const base = presets.value[choices.value.base]
-  return base ? generatePresetCode(theme.value, base, { name: 'MyPreset' }) : ''
-})
-
 // --- Example themes ------------------------------------------------------------------------
 onMounted(() => {
   for (const name of BASE_PRESETS) void ensurePreset(name)
@@ -122,132 +131,325 @@ async function openExample(name: string, choicesOf: LandingChoices) {
   }
 }
 
-// --- What the editor does with it: three of its checks, run on the hero's theme ----------------
-const CONTRAST_SHOWN = ['primary', 'text', 'muted', 'highlight', 'primary-ui']
-const contrastRows = computed(() => {
-  const base = presets.value[choices.value.base]!
-  const pairs = CONTRAST_PAIRS.filter(pair => CONTRAST_SHOWN.includes(pair.id))
-  const light = checkContrast(hero.value.resolver, pairs)
-  const dark = checkContrast(themeResolver(theme.value, base, 'dark'), pairs)
-  return light.map((result, index) => ({ pair: result.pair, light: result, dark: dark[index]! }))
+// --- What you take home: the real files for the choices at the top ---------------------------
+const code = computed(() => {
+  const base = presets.value[choices.value.base]
+  return base ? generatePresetCode(theme.value, base, { name: 'MyPreset' }) : ''
 })
-const ratio = (value: number | null) => (value === null ? 'n/a' : `${value.toFixed(1)}:1`)
+const nuxtSetup = (() => {
+  const { themeFile, config } = generateNuxtSnippets('MyPreset', 'my-preset')
+  return `${themeFile}\n${config}`
+})()
+const vueSetup = generateVueSnippet('MyPreset', 'my-preset')
 
-const changes = computed(() => listChanges(theme.value))
-
-const SEVERITIES = [
-  { label: 'Primary', severity: undefined },
-  { label: 'Secondary', severity: 'secondary' },
-  { label: 'Success', severity: 'success' },
-  { label: 'Danger', severity: 'danger' },
-] as const
-const VARIANTS = [
-  { label: 'Solid', outlined: false, text: false },
-  { label: 'Outlined', outlined: true, text: false },
-  { label: 'Text', outlined: false, text: true },
+// --- Questions -------------------------------------------------------------------------------
+const FAQ = [
+  {
+    q: 'Is it free?',
+    a: 'Yes. Preset Studio is open source under the MIT license, and the presets you export are yours to use anywhere.',
+  },
+  {
+    q: 'Which versions does it work with?',
+    a: 'PrimeVue 4 in styled mode, with the four presets of @primeuix/themes 2: Aura, Lara, Nora and Material. Unstyled mode isn’t covered.',
+  },
+  {
+    q: 'Where is my theme kept?',
+    a: 'In your browser. There’s no account and nothing is uploaded. To move a theme, export it as a file or a link; the link carries the theme inside it.',
+  },
+  {
+    q: 'Why not just ask an AI to write the preset?',
+    a: 'For a one-line change, like a new primary color, an AI does fine. Beyond that it works blind: it can’t see the result, it often invents token names that do nothing, and it changes a few tokens where a decision like density needs dozens. Here you see every component and state as you go, every token is checked against PrimeVue’s own engine, and contrast is tested in both modes. The two get along: let your AI wire the exported preset into your app.',
+  },
+  {
+    q: 'Does it work with Nuxt?',
+    a: 'Yes. The export comes with the setup for Nuxt (@primevue/nuxt-module) and for Vue with Vite.',
+  },
+  {
+    q: 'Is it made by PrimeTek?',
+    a: 'No. Preset Studio is an independent open-source project, not affiliated with or endorsed by PrimeTek. It builds on the MIT-licensed source of PrimeVue 4 and @primeuix/themes.',
+  },
 ] as const
 </script>
 
 <template>
   <div class="text-surface-900">
-    <!-- Hero: the controls on the left; on the right, the palette they generate, edge to edge,
-         under a piece of a real app drawn in it. -->
-    <section class="@container grid border-b border-surface-200 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-      <div class="flex min-w-0 flex-col justify-center gap-8 px-4 py-12 sm:px-6 lg:py-16 lg:pl-[max(1.5rem,calc((100cqw_-_72rem)/2_+_1.5rem))] lg:pr-14">
-        <div class="flex flex-col gap-5">
+    <!-- Hero, in the content column like the header. On phones the theme shows right after the
+         headline; from lg the text sits beside it, centered on its height. -->
+    <section class="border-b border-surface-200">
+      <div class="mx-auto grid max-w-6xl gap-8 px-4 py-12 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:gap-x-14 lg:gap-y-10 lg:py-16">
+        <div class="flex flex-col gap-5 lg:self-end">
+          <p class="text-sm font-medium text-surface-500">
+            For PrimeVue 4 · free and open source
+          </p>
           <h1 class="max-w-[15ch] text-[2.5rem] font-semibold leading-[1.05] tracking-[-0.035em] sm:text-[3.4rem]">
             Theme PrimeVue around your brand
           </h1>
           <p class="max-w-[46ch] text-lg leading-relaxed text-surface-600">
             Give it one color. Preset Studio builds the full scale, wires it into every component
-            the way your base style intends, and hands you the preset for PrimeVue&nbsp;4.
+            the way your base style intends, and shows every state in light and dark before you
+            export the preset.
           </p>
         </div>
 
-        <div class="flex max-w-xl flex-col gap-6">
-          <fieldset class="flex flex-col gap-2">
-            <legend class="mb-2 text-sm font-medium">
-              Brand color
-            </legend>
-            <EditorBrandColorField v-model="choices.brand" />
-          </fieldset>
-          <div class="flex flex-col gap-2">
-            <span
-              id="hero-base"
-              class="text-sm font-medium"
-            >Base style</span>
+        <!-- The theme, live: the palette it generates under a piece of a real app drawn in it. -->
+        <div class="flex min-w-0 flex-col gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <div class="relative flex min-h-[30rem] min-w-0 items-center justify-center overflow-hidden rounded-3xl px-5 py-12 sm:px-12 lg:min-h-[34rem]">
+            <ol
+              class="absolute inset-0 flex"
+              aria-label="Your primary scale"
+            >
+              <li
+                v-for="(band, index) in hero.shades"
+                :key="band.shade"
+                class="flex flex-1 items-end justify-center pb-3 text-[0.6875rem] font-medium tabular-nums transition-colors duration-500 ease-out motion-reduce:transition-none"
+                :class="index < 5 ? 'text-black/55' : 'text-white/80'"
+                :style="{ backgroundColor: band.value, transitionDelay: `${index * 30}ms` }"
+                :title="`${band.shade}: ${band.value}`"
+              >
+                {{ band.shade }}
+              </li>
+            </ol>
+            <LandingSpecimen
+              :vars="hero.vars"
+              elevated
+              phone-compact
+              class="relative w-full max-w-md"
+            />
+          </div>
+          <!-- The panel's own switches: the options name themselves (preset names, corner shapes),
+               so the labels are their tooltips and accessible names. -->
+          <div class="flex flex-wrap items-center justify-between gap-3">
             <SelectButton
+              v-tooltip.bottom="'Base style'"
               :model-value="choices.base"
               :options="baseOptions"
               option-label="label"
               option-value="value"
               :allow-empty="false"
-              aria-labelledby="hero-base"
-              class="w-full"
-              :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
+              aria-label="Base style"
+              size="small"
               @update:model-value="chooseBase"
             />
-          </div>
-          <div class="flex flex-col gap-2">
-            <span
-              id="hero-corners"
-              class="text-sm font-medium"
-            >Corners</span>
             <SelectButton
               v-model="choices.corners"
               :options="cornerOptions"
               option-label="label"
               option-value="value"
               :allow-empty="false"
-              aria-labelledby="hero-corners"
-              class="w-full"
-              :pt="{ pcToggleButton: { root: { class: 'flex-1' } } }"
-            />
+              aria-label="Corners"
+              size="small"
+            >
+              <template #option="{ option }">
+                <span
+                  v-tooltip.bottom="`Corners: ${option.label}`"
+                  class="block h-4 w-5 border-2 border-current"
+                  :style="{ borderRadius: option.radius }"
+                  aria-hidden="true"
+                />
+                <span class="sr-only">{{ option.label }}</span>
+              </template>
+            </SelectButton>
           </div>
         </div>
 
-        <div class="flex flex-wrap items-center gap-3">
-          <Button
-            label="Continue in the editor"
-            size="large"
-            :loading="opening === 'hero'"
-            @click="continueInEditor"
-          />
-          <Button
-            as="a"
-            :href="REPO_URL"
-            target="_blank"
-            rel="noopener"
-            label="Source on GitHub"
-            icon="pi pi-github"
-            severity="secondary"
-            size="large"
-            text
-          />
+        <div class="flex max-w-xl flex-col gap-8 lg:col-start-1 lg:row-start-2 lg:self-start">
+          <fieldset class="flex flex-col gap-2">
+            <legend class="mb-2 text-sm font-medium">
+              Your brand color
+            </legend>
+            <EditorBrandColorField v-model="choices.brand" />
+          </fieldset>
+          <div class="flex flex-wrap items-center gap-3">
+            <Button
+              label="Open the editor"
+              icon="pi pi-arrow-right"
+              icon-pos="right"
+              size="large"
+              :loading="opening === 'hero'"
+              @click="continueInEditor"
+            />
+            <Button
+              as="a"
+              :href="REPO_URL"
+              target="_blank"
+              rel="noopener"
+              label="Source on GitHub"
+              icon="pi pi-github"
+              severity="secondary"
+              size="large"
+              text
+            />
+          </div>
         </div>
       </div>
+    </section>
 
-      <div class="relative flex min-h-[34rem] min-w-0 items-center justify-center overflow-hidden px-5 py-14 sm:px-12 lg:min-h-[42rem]">
-        <ol
-          class="absolute inset-0 flex"
-          aria-label="Your primary scale"
-        >
-          <li
-            v-for="(band, index) in hero.shades"
-            :key="band.shade"
-            class="flex flex-1 items-end justify-center pb-3 text-[0.6875rem] font-medium tabular-nums transition-colors duration-500 ease-out motion-reduce:transition-none"
-            :class="index < 5 ? 'text-black/55' : 'text-white/80'"
-            :style="{ backgroundColor: band.value, transitionDelay: `${index * 30}ms` }"
-            :title="`${band.shade}: ${band.value}`"
+    <!-- The product itself: the editor on a component, every state, light and dark. -->
+    <section
+      class="border-b border-surface-200"
+      aria-labelledby="editor"
+    >
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <div class="mb-10 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+          <h2
+            id="editor"
+            class="text-3xl font-semibold tracking-[-0.025em]"
           >
-            {{ band.shade }}
+            See it, don’t guess
+          </h2>
+          <p class="max-w-[60ch] leading-relaxed text-surface-600">
+            The editor puts your theme on a live stage: each variant in every state, in light and
+            dark at once, next to the settings that change it. No build, no reload.
+          </p>
+        </div>
+        <img
+          src="/landing/editor.jpg"
+          width="1800"
+          height="1050"
+          alt="The Preset Studio editor on Button: its colors, shape and spacing on the left; every button variant in its default, hover, pressed and focus states on the right, in light and dark side by side."
+          loading="lazy"
+          decoding="async"
+          class="h-auto w-full rounded-xl border border-surface-200 shadow-xl"
+        >
+        <ul class="mt-10 grid gap-8 sm:grid-cols-3">
+          <li class="flex flex-col gap-1">
+            <h3 class="font-semibold">
+              Every state, no hovering
+            </h3>
+            <p class="text-sm leading-relaxed text-surface-600">
+              Default, hover, pressed and focus side by side, for every variant of the component.
+            </p>
           </li>
-        </ol>
-        <LandingSpecimen
-          :vars="hero.vars"
-          elevated
-          class="relative w-full max-w-md"
-        />
+          <li class="flex flex-col gap-1">
+            <h3 class="font-semibold">
+              Light and dark together
+            </h3>
+            <p class="text-sm leading-relaxed text-surface-600">
+              Every color is set for both modes. Change it once and watch both.
+            </p>
+          </li>
+          <li class="flex flex-col gap-1">
+            <h3 class="font-semibold">
+              Click to edit
+            </h3>
+            <p class="text-sm leading-relaxed text-surface-600">
+              Click anything in the preview, a button, a tag, a field, and its settings open.
+            </p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Why trust the result: two of the editor's checks, live for the theme at the top. -->
+    <section
+      class="border-b border-surface-200"
+      aria-labelledby="trust"
+    >
+      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
+        <h2
+          id="trust"
+          class="mb-12 text-3xl font-semibold tracking-[-0.025em]"
+        >
+          What you can count on
+        </h2>
+        <div class="grid gap-12 lg:grid-cols-3 lg:gap-10">
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div class="flex flex-col gap-1">
+              <h3 class="font-semibold">
+                Correct by construction
+              </h3>
+              <p class="text-sm leading-relaxed text-surface-600">
+                Every token is checked against PrimeVue’s own engine, in all four presets, so nothing
+                in your preset is misspelled or made up. The export holds only what you changed:
+              </p>
+            </div>
+            <ul class="text-sm">
+              <li
+                v-for="change in changes"
+                :key="change.id"
+                class="flex items-baseline justify-between gap-3 border-t border-surface-200 py-2"
+              >
+                <span>{{ change.label }}</span>
+                <span class="truncate text-surface-500">{{ change.detail }}</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div class="flex flex-col gap-1">
+              <h3 class="font-semibold">
+                Readable in light and dark
+              </h3>
+              <p class="text-sm leading-relaxed text-surface-600">
+                Contrast is checked in both modes, with a one-click fix for each failure. Pick a pale
+                yellow at the top and watch these fail.
+              </p>
+            </div>
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-surface-500">
+                  <th class="pb-2 font-medium">
+                    Pair
+                  </th>
+                  <th class="pb-2 text-right font-medium">
+                    Light
+                  </th>
+                  <th class="pb-2 text-right font-medium">
+                    Dark
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="row in contrastRows"
+                  :key="row.pair.id"
+                  class="border-t border-surface-200"
+                >
+                  <td class="py-2 pr-2">
+                    {{ row.pair.label }}
+                  </td>
+                  <td
+                    v-for="result in [row.light, row.dark]"
+                    :key="result === row.light ? 'light' : 'dark'"
+                    class="whitespace-nowrap py-2 text-right tabular-nums"
+                    :class="result.pass === false ? 'font-semibold text-red-700' : ''"
+                  >
+                    {{ ratio(result.ratio) }}
+                    <i
+                      :class="result.pass === false ? 'pi pi-times' : 'pi pi-check text-surface-400'"
+                      class="ml-1 text-xs"
+                      :aria-label="result.pass === false ? 'fails' : 'passes'"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
+            <div class="flex flex-col gap-1">
+              <h3 class="font-semibold">
+                Yours, and private
+              </h3>
+              <p class="text-sm leading-relaxed text-surface-600">
+                Nothing to sign up for and nothing to pay.
+              </p>
+            </div>
+            <ul class="flex flex-col text-sm">
+              <li
+                v-for="point in ['Open source under the MIT license', 'Runs in your browser: nothing is uploaded', 'Themes travel as a link or a file', 'A plain definePreset file, nothing extra to install']"
+                :key="point"
+                class="flex items-start gap-2.5 border-t border-surface-200 py-2"
+              >
+                <i
+                  class="pi pi-check mt-1 text-xs text-surface-500"
+                  aria-hidden="true"
+                />
+                {{ point }}
+              </li>
+            </ul>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -265,10 +467,9 @@ const VARIANTS = [
             One color, all the way down
           </h2>
           <p class="max-w-[60ch] leading-relaxed text-surface-600">
-            A PrimeVue preset has three layers: a palette, semantic tokens that give shades a meaning,
-            and component tokens. Preset Studio replaces the palette and keeps every reference, so your
-            color lands where each base style wants it. Below is how {{ BASE_PRESET_LABELS[choices.base] }}
-            wires it; switch the base style above and the shades move.
+            A preset has three layers: a palette, semantic tokens that give its shades a meaning, and
+            component tokens. Your color replaces the palette and every reference stays, so it lands
+            where {{ baseLabel }} wants it. Switch the base style at the top and the shades move.
           </p>
         </div>
 
@@ -289,10 +490,12 @@ const VARIANTS = [
             <span>On screen</span>
           </div>
           <ul class="border-t border-surface-200">
+            <!-- Phones show the first two chains: enough to see the idea without a long scroll. -->
             <li
-              v-for="row in cascade"
+              v-for="(row, rowIndex) in cascade"
               :key="row.token"
               class="grid grid-cols-1 items-center gap-3 border-b border-surface-200 py-5 lg:grid-cols-[minmax(0,2.4fr)_1rem_minmax(0,3fr)_1rem_minmax(0,3fr)_1rem_minmax(0,2fr)] lg:gap-6"
+              :class="{ 'max-sm:hidden': rowIndex >= 2 }"
               :aria-label="row.label"
             >
               <div class="flex flex-wrap items-center gap-2">
@@ -366,7 +569,7 @@ const VARIANTS = [
                 <span class="w-24 text-sm text-surface-500 lg:hidden">On screen</span>
                 <Button
                   v-if="row.token === 'button-primary-background'"
-                  label="Send invite"
+                  label="Save"
                   tabindex="-1"
                 />
                 <ToggleSwitch
@@ -377,11 +580,11 @@ const VARIANTS = [
                 />
                 <Tag
                   v-else-if="row.token === 'tag-primary-background'"
-                  value="Admin"
+                  value="New"
                 />
                 <InputText
                   v-else
-                  model-value="maya@northwind.io"
+                  model-value="you@example.com"
                   aria-label="Example input, focused"
                   class="w-full min-w-0"
                   tabindex="-1"
@@ -392,33 +595,6 @@ const VARIANTS = [
             </li>
           </ul>
         </div>
-      </div>
-    </section>
-
-    <!-- What leaves the browser: the preset file for these choices. -->
-    <section
-      class="border-b border-surface-200"
-      aria-labelledby="export"
-    >
-      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
-        <div class="flex flex-col gap-4">
-          <h2
-            id="export"
-            class="text-3xl font-semibold tracking-[-0.025em]"
-          >
-            What you take home
-          </h2>
-          <p class="max-w-[46ch] leading-relaxed text-surface-600">
-            One <code class="font-mono text-[0.9em]">definePreset</code> file with only what you changed,
-            and the setup steps for Nuxt or Vue. Or send the theme to a teammate as a link.
-          </p>
-        </div>
-        <figure class="flex min-w-0 flex-col gap-2">
-          <pre class="max-h-[26rem] overflow-auto rounded-2xl border border-surface-200 bg-surface-50 p-5 font-mono text-[0.8125rem] leading-relaxed text-surface-800"><code>{{ code }}</code></pre>
-          <figcaption class="text-sm text-surface-500">
-            The export for the choices at the top of this page.
-          </figcaption>
-        </figure>
       </div>
     </section>
 
@@ -439,11 +615,12 @@ const VARIANTS = [
             Made in Preset Studio from a handful of choices each. Open one to keep going from there.
           </p>
         </div>
-        <ul class="grid gap-x-8 gap-y-12 md:grid-cols-2">
+        <!-- Below md, one row to swipe through instead of four cards stacked. -->
+        <ul class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:gap-x-8 md:gap-y-12 md:overflow-visible md:px-0">
           <li
             v-for="example in examples"
             :key="example.name"
-            class="flex min-w-0 flex-col gap-4"
+            class="flex w-[85%] min-w-0 shrink-0 snap-start flex-col gap-4 md:w-auto"
           >
             <div class="relative flex min-h-[21rem] items-center justify-center overflow-hidden rounded-2xl bg-surface-100 p-6 sm:p-10">
               <template v-if="example.drawn">
@@ -491,144 +668,89 @@ const VARIANTS = [
       </div>
     </section>
 
-    <!-- Three things the editor does, run on the theme picked at the top. -->
-    <section aria-labelledby="inside">
-      <div class="mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="mb-12 grid gap-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+    <!-- What leaves the browser: the preset file for these choices, and where it goes. -->
+    <section
+      class="border-b border-surface-200"
+      aria-labelledby="export"
+    >
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+        <div class="flex flex-col gap-4">
           <h2
-            id="inside"
+            id="export"
             class="text-3xl font-semibold tracking-[-0.025em]"
           >
-            What the editor does with it
+            What you take home
           </h2>
-          <p class="max-w-[60ch] leading-relaxed text-surface-600">
-            Three of the things it does, run on the theme you picked at the top. Change the color
-            there and they change with it.
+          <p class="max-w-[46ch] leading-relaxed text-surface-600">
+            One <code class="font-mono text-[0.9em]">definePreset</code> file with only what you changed,
+            and the setup for Nuxt or Vue. Or send the theme to a teammate as a link.
           </p>
         </div>
-
-        <div class="grid gap-12 lg:grid-cols-3 lg:gap-10">
-          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
-            <div>
-              <h3 class="font-semibold">
-                Checks contrast in light and dark
-              </h3>
-              <p class="mt-1 text-sm text-surface-600">
-                Pick a pale yellow above and watch these fail.
-              </p>
-            </div>
-            <table class="w-full text-sm">
-              <thead>
-                <tr class="text-left text-surface-500">
-                  <th class="pb-2 font-medium">
-                    Pair
-                  </th>
-                  <th class="pb-2 text-right font-medium">
-                    Light
-                  </th>
-                  <th class="pb-2 text-right font-medium">
-                    Dark
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr
-                  v-for="row in contrastRows"
-                  :key="row.pair.id"
-                  class="border-t border-surface-200"
-                >
-                  <td class="py-2 pr-2">
-                    {{ row.pair.label }}
-                  </td>
-                  <td
-                    v-for="result in [row.light, row.dark]"
-                    :key="result === row.light ? 'light' : 'dark'"
-                    class="whitespace-nowrap py-2 text-right tabular-nums"
-                    :class="result.pass === false ? 'font-semibold text-red-700' : ''"
-                  >
-                    {{ ratio(result.ratio) }}
-                    <i
-                      :class="result.pass === false ? 'pi pi-times' : 'pi pi-check text-surface-400'"
-                      class="ml-1 text-xs"
-                      :aria-label="result.pass === false ? 'fails' : 'passes'"
-                    />
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
-            <div>
-              <h3 class="font-semibold">
-                Keeps a list of what you changed
-              </h3>
-              <p class="mt-1 text-sm text-surface-600">
-                {{ changes.length }} {{ changes.length === 1 ? 'change' : 'changes' }} on top of {{ BASE_PRESET_LABELS[choices.base] }} so far. In the editor, each one can be undone on its own.
-              </p>
-            </div>
-            <ul class="text-sm">
-              <li
-                v-for="change in changes"
-                :key="change.id"
-                class="flex items-baseline justify-between gap-3 border-t border-surface-200 py-2"
+        <figure class="flex min-w-0 flex-col gap-2">
+          <Tabs value="preset">
+            <TabList>
+              <Tab value="preset">
+                themes/my-preset.ts
+              </Tab>
+              <Tab value="nuxt">
+                Nuxt
+              </Tab>
+              <Tab value="vue">
+                Vue
+              </Tab>
+            </TabList>
+            <TabPanels class="!px-0 !pb-0">
+              <TabPanel
+                v-for="file in [{ value: 'preset', text: code }, { value: 'nuxt', text: nuxtSetup }, { value: 'vue', text: vueSetup }]"
+                :key="file.value"
+                :value="file.value"
               >
-                <span>{{ change.label }}</span>
-                <span class="truncate text-surface-500">{{ change.detail }}</span>
-              </li>
-            </ul>
-          </div>
+                <pre class="max-h-[26rem] overflow-auto rounded-2xl border border-surface-200 bg-surface-50 p-5 font-mono text-[0.8125rem] leading-relaxed text-surface-800"><code>{{ file.text }}</code></pre>
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+          <figcaption class="text-sm text-surface-500">
+            The export for the choices at the top of this page.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
 
-          <div class="flex min-w-0 flex-col gap-4 border-t border-surface-900 pt-5">
-            <div>
-              <h3 class="font-semibold">
-                Shows every variant at once
-              </h3>
-              <p class="mt-1 text-sm text-surface-600">
-                Each component editor lays out every style and state, so nothing is designed by accident.
+    <!-- What people ask before they try it. -->
+    <section
+      class="border-b border-surface-200"
+      aria-labelledby="questions"
+    >
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+        <h2
+          id="questions"
+          class="text-3xl font-semibold tracking-[-0.025em]"
+        >
+          Questions
+        </h2>
+        <Accordion
+          :value="[]"
+          multiple
+          class="min-w-0"
+        >
+          <AccordionPanel
+            v-for="item in FAQ"
+            :key="item.q"
+            :value="item.q"
+          >
+            <AccordionHeader>{{ item.q }}</AccordionHeader>
+            <AccordionContent>
+              <p class="max-w-[62ch] leading-relaxed text-surface-600">
+                {{ item.a }}
               </p>
-            </div>
-            <div
-              class="grid grid-cols-[auto_repeat(3,minmax(0,1fr))] items-center gap-2 text-xs text-surface-500"
-              :style="hero.vars"
-              aria-hidden="true"
-            >
-              <span />
-              <span
-                v-for="variant in VARIANTS"
-                :key="variant.label"
-                class="text-center"
-              >{{ variant.label }}</span>
-              <template
-                v-for="row in SEVERITIES"
-                :key="row.label"
-              >
-                <span class="pr-1">{{ row.label }}</span>
-                <Button
-                  v-for="variant in VARIANTS"
-                  :key="variant.label"
-                  label="Save"
-                  size="small"
-                  :severity="row.severity"
-                  :outlined="variant.outlined"
-                  :text="variant.text"
-                  :tabindex="-1"
-                />
-              </template>
-            </div>
-          </div>
-        </div>
-
-        <p class="mt-12 max-w-[70ch] text-sm leading-relaxed text-surface-600">
-          Also in the editor: shared styles for form fields, lists, menus and overlays; all of the preset’s
-          tokens, searchable; light and dark side by side; and nothing to sign up for. Themes stay in
-          your browser and travel as a link or a file.
-        </p>
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
       </div>
     </section>
 
     <!-- The way out: the page ends where the visitor goes next. -->
-    <section aria-label="Continue in the editor">
+    <section aria-label="Open the editor">
       <ol
         class="flex h-2"
         aria-hidden="true"
@@ -645,7 +767,9 @@ const VARIANTS = [
           Your choices come with you into the editor.
         </p>
         <Button
-          label="Continue in the editor"
+          label="Open the editor"
+          icon="pi pi-arrow-right"
+          icon-pos="right"
           size="large"
           :loading="opening === 'hero'"
           class="self-start sm:self-auto"

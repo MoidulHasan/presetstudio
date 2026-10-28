@@ -1,12 +1,16 @@
 <script setup lang="ts">
-// A small piece of a real app (inviting people to a workspace) built from PrimeVue components,
-// drawn in the theme given as CSS variables (`specimenVars` with `SPECIMEN_COMPONENTS`).
-// `compact` keeps the form only; `elevated` lifts the card off a colored background.
-defineProps<{ vars: Record<string, string>, compact?: boolean, elevated?: boolean }>()
+// A sheet of real PrimeVue components (buttons, a field, toggles, tags…) drawn in the theme given
+// as CSS variables (`specimenVars` with `SPECIMEN_COMPONENTS`): what a theme changes, with no
+// made-up app around it. `compact` keeps the first rows (`phoneCompact`: only on phones);
+// `elevated` lifts the card off a colored background.
+defineProps<{ vars: Record<string, string>, compact?: boolean, phoneCompact?: boolean, elevated?: boolean }>()
 
-const email = ref('maya@northwind.io')
-const role = ref('Editor')
-const welcome = ref(true)
+const search = ref('')
+const period = ref('Week')
+const checked = ref(true)
+const radio = ref('on')
+const on = ref(true)
+const level = ref(60)
 </script>
 
 <template>
@@ -14,78 +18,88 @@ const welcome = ref(true)
     class="ps-specimen"
     :style="vars"
   >
-    <Card :pt="{ root: { class: elevated ? 'shadow-2xl' : '' }, body: { class: compact ? '!p-4 !gap-3' : '' } }">
-      <template #title>
-        <span :class="compact ? 'text-base' : ''">Invite people to Northwind</span>
-      </template>
-      <template
-        v-if="!compact"
-        #subtitle
-      >
-        They get an email with a link to join.
-      </template>
+    <Card :pt="{ root: { class: elevated ? 'shadow-2xl' : '' }, body: { class: compact ? '!p-4' : '' } }">
       <template #content>
         <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-2">
-            <label
-              v-if="!compact"
-              :for="`specimen-email-${compact ? 'c' : 'f'}`"
-              class="text-sm font-medium"
-            >Email</label>
+          <div class="flex flex-wrap gap-2">
+            <Button label="Primary" />
+            <Button
+              label="Secondary"
+              severity="secondary"
+            />
+            <Button
+              label="Outlined"
+              outlined
+            />
+          </div>
+          <IconField>
+            <InputIcon class="pi pi-search" />
             <InputText
-              :id="`specimen-email-${compact ? 'c' : 'f'}`"
-              v-model="email"
-              aria-label="Email"
+              v-model="search"
+              placeholder="Search"
+              aria-label="Search"
               fluid
             />
-          </div>
+          </IconField>
           <SelectButton
-            v-model="role"
-            :options="['Viewer', 'Editor', 'Admin']"
+            v-model="period"
+            :options="['Day', 'Week', 'Month']"
             :allow-empty="false"
-            aria-label="Role"
+            aria-label="Period"
           />
-          <label class="flex items-center gap-3 text-sm">
-            <ToggleSwitch v-model="welcome" />
-            Send a welcome email
-          </label>
-          <div class="flex flex-wrap gap-2">
-            <Button label="Send invite" />
-            <Button
-              label="Cancel"
-              severity="secondary"
-              text
-            />
+          <div class="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+            <label class="flex items-center gap-2">
+              <Checkbox
+                v-model="checked"
+                binary
+              />
+              Checkbox
+            </label>
+            <label class="flex items-center gap-2">
+              <RadioButton
+                v-model="radio"
+                value="on"
+              />
+              Radio
+            </label>
+            <label class="flex items-center gap-2">
+              <ToggleSwitch v-model="on" />
+              Switch
+            </label>
           </div>
-          <template v-if="!compact">
+          <div
+            v-if="!compact"
+            class="flex flex-col gap-5"
+            :class="{ 'max-sm:hidden': phoneCompact }"
+          >
+            <Slider
+              v-model="level"
+              aria-label="Level"
+              class="mx-1"
+            />
+            <div class="flex flex-wrap items-center gap-2">
+              <Tag value="New" />
+              <Tag
+                value="Success"
+                severity="success"
+              />
+              <Tag
+                value="Warning"
+                severity="warn"
+              />
+              <Tag
+                value="Danger"
+                severity="danger"
+              />
+              <Badge value="3" />
+            </div>
             <Message
               severity="success"
               size="small"
             >
-              Sam Okafor joined 2 minutes ago.
+              Changes saved.
             </Message>
-            <ul class="flex flex-col gap-3">
-              <li class="flex items-center gap-3">
-                <Avatar
-                  label="SO"
-                  shape="circle"
-                />
-                <span class="flex-1 text-sm">Sam Okafor</span>
-                <Tag value="Admin" />
-              </li>
-              <li class="flex items-center gap-3">
-                <Avatar
-                  label="LP"
-                  shape="circle"
-                />
-                <span class="flex-1 text-sm">Lena Petrova</span>
-                <Tag
-                  value="Pending"
-                  severity="warn"
-                />
-              </li>
-            </ul>
-          </template>
+          </div>
         </div>
       </template>
     </Card>

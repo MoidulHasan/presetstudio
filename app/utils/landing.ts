@@ -1,7 +1,7 @@
 import { createDefaultThemeState, type BasePresetName, type Density, type NeutralColorName, type RadiusScale, type ThemeState } from './theme/types'
 
 /** Components the landing page's specimen uses: their tokens go into its CSS variables. */
-export const SPECIMEN_COMPONENTS = ['card', 'inputtext', 'selectbutton', 'togglebutton', 'toggleswitch', 'button', 'avatar', 'tag', 'message'] as const
+export const SPECIMEN_COMPONENTS = ['card', 'button', 'inputtext', 'iconfield', 'selectbutton', 'togglebutton', 'checkbox', 'radiobutton', 'toggleswitch', 'slider', 'tag', 'badge', 'message'] as const
 
 export type LandingCorners = Extract<RadiusScale, 'none' | 'base' | 'large' | 'xlarge'>
 
