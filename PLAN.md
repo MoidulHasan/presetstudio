@@ -1,225 +1,145 @@
 # Preset Studio: work plan
 
-Hand-off for continuing the work in a new session (e.g. a Claude Code cloud session).
-Read `CLAUDE.md` first: licensing rules, architecture and conventions there are binding.
-This file is the task list plus everything a fresh session needs to know that isn't in the code.
+Hand-off for continuing the work in a new session. Read `CLAUDE.md` first: licensing rules,
+architecture and conventions there are binding. This file is the task list plus what a fresh
+session needs to know that isn't in the code.
 
-Last updated: 2026-10-24.
+Last updated: 2026-10-29 (version 1.0.0).
 
 ---
 
 ## 1. Where things stand
 
-### Product today
+### Product
 
-An editor (`/editor`) with three panes: section nav · live preview (iframe, `/preview`) · inspector.
+Live at [presetstudio.vercel.app](https://presetstudio.vercel.app). The editor (`/editor`) has one
+layout: a destination rail and one panel beside the live preview (an iframe, `/preview`).
 
-| Area | What exists |
+| Destination | Sections |
 |---|---|
-| Start | Quick start (base preset, brand color, corners, neutrals) |
-| Foundations | Primary color (+ states grid), Surfaces (built-in, tinted, custom color, tinted backgrounds), Status colors, Text, Shape (scales + custom px), Density (presets + custom scale), Focus ring |
-| Patterns | Form fields, Lists, Menus, Overlays (+ backdrop), Containers, Selection: each edits one semantic group |
-| Components | All components (88, every token, inspect/reveal in preview) + visual editors: Button (+ SplitButton, SpeedDial, ButtonGroup family), Message, Toast, Tag, Badge |
-| Advanced | All tokens (raw semantic list) |
-| Review | Accessibility (contrast pairs) |
+| Overview | The theme at a glance (tiles drawn in its colors), base style, ready-to-ship checklist |
+| Colors | Primary, Surfaces, Status, Text, Selection |
+| Shape & spacing | Shape, Density, Focus ring |
+| Components | All 88 components (tokens) + visual editors (Button with its family, Message, Toast, Tag, Badge); shared styles: Form fields, Lists, Menus, Overlays, Containers |
+| Review | What you changed, Accessibility (contrast, Fix / Fix all), All tokens |
 
-Every foundation, pattern and visual component has a **stage**: a preview page showing every
-relevant state (hover/pressed/focus forced via copied CSS rules), light and dark side by side,
-where clicking an element selects its exact control. The preview toolbar has **Stage | In
-context**; panels have **Design | All tokens**. Cross-links use **"Used by N components"** chips.
+New themes go through the guided setup (four questions, or one of four example themes). The site
+has a home page with a live try-out, `/docs`, a social card and Vercel Web Analytics.
 
-### Git / deploy state (verify with `git log`, `git status`)
+### Deploy and repo
 
-- `origin/main` = `d942723` → this is what production (Vercel) runs.
-- `origin/feat/component-studio` = `c97c7ec` → an older preview.
-- Local `main` = 20+ commits ahead of `origin/main`, **not pushed**, ending with this plan.
-  A cloud session only sees what's on GitHub: the owner must push first (see task P0).
-- Vercel builds every pushed branch; previews need a Vercel login (Deployment Protection).
-  The latest preview URL is shown in GitHub's commit status (`gh api repos/MoidulHasan/presetstudio/commits/<sha>/statuses`).
+- GitHub `main` is production: Vercel deploys every push (about 2 minutes); CI runs license check,
+  lint, type check, tests and build on every push and pull request.
+- Check what's unpushed with `git log origin/main..main`.
+- Repo basics: `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, issue and pull request
+  templates.
 
-### Health
+### Health (2026-10-29)
 
-- `pnpm test`: 17 files, 140 tests, all passing (pure logic in `app/utils/theme/`).
-- `pnpm lint` and `vue-tsc --noEmit -p .nuxt/tsconfig.app.json`: clean.
-- `pnpm build`: last run green on Vercel for `c97c7ec`; **not run since**. Run it (P0).
-- No new dependencies since the license check.
+- 28 test files, 219 tests; lint, types, build and license check green.
+- Full browser sweep (Chrome only): 180 views (18 sections × 4 base styles, light / dark / both,
+  1440 / 1100 / 390 px), all 88 component editors, every token validated as CSS under extreme
+  settings, and the main flows (setup, undo across reloads, two tabs, share link and file round
+  trips, search, Pick, Compare, contrast Fix all, theme menu, phone preview). All clean.
+- The export was checked in fresh Nuxt 4 and Vite + Vue apps: every checked token matched in light
+  and dark.
 
 ---
 
 ## 2. How to work
 
-### Setup
+### Setup and checks
 
 ```bash
 nvm use 24            # .nvmrc
 pnpm install
 pnpm dev              # http://localhost:3000/editor
-```
 
-### Before every commit (CLAUDE.md requires all four)
-
-```bash
+# before every commit (CLAUDE.md requires all of them)
 pnpm lint
+pnpm exec vue-tsc --noEmit -p .nuxt/tsconfig.app.json
 pnpm test
 pnpm build
 pnpm license:check
-npx vue-tsc --noEmit -p .nuxt/tsconfig.app.json   # also typecheck, the build doesn't fail on all type errors
 ```
 
 ### Owner's working preferences (follow them)
 
-- **Never push or merge without the owner's review.** Commit freely; ask before pushing. Preview branches are fine once the owner has said so for that work.
-- Small, logical Conventional Commits, ending with the `Co-Authored-By` line the session gives you.
-- **Interactive UI = PrimeVue components** (Button, Select, SelectButton, Slider, …), never native `<button>`/`<select>`; natives only for semantic markup.
-- **Verify UI in a real browser**, not just tests: the owner judges by what they see. Check light and dark, and widths 1920 / 1100 / 390.
-- UX bar is high: one home per concept, plain labels ("Pill radius · buttons with rounded", not token names), no floating popups in odd places, no overflow out of panels/cards, preview always shows what's being edited.
-- Before deep restructures, propose briefly (with a recommendation) and wait for "go"; for clear fixes just do them.
-- The owner's laptop struggles with heavy commands: avoid running `pnpm build` repeatedly on their machine (fine in the cloud).
-- Don't change the owner's saved theme while testing (see gotchas).
+- **Never push without the owner saying so** ("push it"). Commit freely, in small Conventional Commits ending with the `Co-Authored-By` line the session gives you.
+- **Interactive UI = PrimeVue components**; natives only for semantic markup.
+- **Verify UI in a real browser**, not just tests: light and dark, and wide, medium and phone widths. The owner judges by what they see.
+- Quiet UI: one home per concept, plain labels, no explanatory gray text (ⓘ tooltips instead), nothing said twice.
+- Propose deep restructures briefly (with a recommendation) and wait for "go"; just do clear fixes.
+- The owner runs `pnpm dev` on port 3000 in their own terminal: don't stop it, and don't build in the repo while it runs (a build rewrites files it uses). Build in a copy instead (below).
+- Don't change the owner's saved themes while testing; use a fresh browser context.
+
+### Building without disturbing the dev server
+
+```bash
+B=/c/Users/<you>/AppData/Local/Temp/psb   # short path: Windows' 260-character limit breaks deep pnpm paths
+rm -rf "$B" && mkdir -p "$B"
+git ls-files -co --exclude-standard -z | tar --null -T - -cf - | tar -xf - -C "$B"
+cd "$B" && pnpm install --frozen-lockfile --prefer-offline && pnpm build
+```
 
 ### Verifying UI without a person
 
-If the session has a browser tool: open `/editor`, use the store from the console:
+With a browser tool, the stores are reachable from the page:
 
 ```js
-const s = document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$pinia._s.get('editor')
-s.prefs.section = 'formfield'      // open a section
-s.openComponent('button')          // open a visual editor
-document.querySelector('iframe').contentDocument  // the preview
+const pinia = document.querySelector('#__nuxt').__vue_app__.config.globalProperties.$pinia
+const editor = pinia._s.get('editor')   // also 'workspace', 'preset'
+editor.openSection('formfield')
+editor.openComponent('button')
+document.querySelector('iframe').contentDocument   // the preview
 ```
 
-Overflow check used for every panel (paste in the console; returns offending elements):
-
-```js
-(() => { const aside = document.querySelector('aside[aria-label=Inspector]'); const out = []
-  const isBox = el => { const cs = getComputedStyle(el); return parseFloat(cs.borderLeftWidth) > 0 || el.tagName === 'BUTTON' || el.tagName === 'LABEL' || cs.overflow !== 'visible' }
-  const ar = aside.getBoundingClientRect()
-  for (const el of aside.querySelectorAll('*')) { const r = el.getBoundingClientRect(); if (!r.width || !r.height) continue
-    if (r.right > ar.right + 1) { out.push('PAST PANEL ' + el.tagName); continue }
-    if (el.closest('[data-pc-name=slider]')) continue
-    let box = el.parentElement; while (box && box !== aside && !isBox(box)) box = box.parentElement
-    if (!box || box === aside) continue; const b = box.getBoundingClientRect(); const cs = getComputedStyle(box)
-    if (cs.overflow !== 'visible' && cs.overflowX !== 'visible') continue
-    if (r.left < b.left - 1 || r.right > b.right + 1) out.push(el.tagName + ' [' + el.textContent.trim().slice(0, 25) + ']') }
-  return out })()
-```
-
-Narrow widths: load `/editor` in fixed-width iframes (390 / 1100) inside the page and run the
-same check on `iframe.contentDocument`.
+For sweeps, open a fresh browser context (empty storage), and collect `console` errors and
+`pageerror`s while switching sections; check `aside[aria-label=Inspector]` for
+`scrollWidth > clientWidth` (overflow).
 
 ### Gotchas (cost real time before)
 
-- **Background tab**: browser automation often runs with `document.visibilityState === 'hidden'`. `requestAnimationFrame` and timers stall, so the preview doesn't update and scripted waits time out. Take a screenshot (makes the tab visible) before checking the preview, and run long scripted checks in small chunks.
-- **Pinia store changes don't hot-reload**: after editing a store in `app/stores/`, reload the page, otherwise new actions are "not a function".
-- **Nuxt dev overlay replays old errors** after a reload; check the console for new ones before believing them.
-- **Owner's data**: the workspace lives in `localStorage['presetstudio:workspace']`, prefs in `presetstudio:prefs`. Back both up before testing on their machine and restore after; leave edits you didn't make.
-- **vue-tsc in templates**: assigning to a ref or indexing a const map inside a template expression (`x = {...}`, `MAP[key]` inside `.map()`) gives "Property 'value' does not exist". Move it into a script function.
-- **PrimeVue states**: hover/pressed/focus-visible are pseudo-classes (forceable via `preview-css.ts`), but list/menu focus and selection are classes (`.p-focus`, `.p-*-option-selected`, `.p-tieredmenu-item-active`). Stages show those with PrimeVue's own markup and classes.
-- **Static markup needs the component CSS**: PrimeVue loads a component's styles only when an instance mounts. Stages that use static markup (toast, popover, dialog, listbox, menus) also render a hidden real instance (`<div class="hidden"><Dialog :visible="false" /></div>`).
-- **Light and dark on one page** works only inside `.ps-scheme` areas (`schemeScopeCss`), which re-declare the theme variables. Use `PreviewStageSchemes` for stages.
-- **Stage pick targets** must match `/^[a-z]+(?::[a-z]+){0,3}$/` (lowercase, colons). Grid row/column keys are lowercase for this reason.
-- **Recoloring** moves only a variant's main palette (`mainPalette` in `recolor.ts`), so neutral parts stay neutral.
-- **Design vs overrides**: foundations write `theme.design` (mapped by `designToTokens`); everything else writes `theme.overrides`. Overrides win.
+- **Background tab**: browser automation may run with `document.visibilityState === 'hidden'`, which stalls `requestAnimationFrame`; take a screenshot first to make the tab visible.
+- **Pinia store changes don't hot-reload**: reload the page after editing a store.
+- **Hot reload between multi-step edits** logs transitional errors (half-edited files). Reload and recheck before believing them.
+- **Tailwind v4 in dev** doesn't generate arbitrary classes (`h-[630px]`) from a brand-new file until the dev server restarts.
+- **`nuxt.config.ts` changes restart the dev server**, and `pnpm add` reloads its dependencies once.
+- **CRLF files**: scripted multi-line replacements must match the file's line endings.
+- **vue-tsc in templates**: assigning to a ref or indexing a const map inside a template expression fails type checking; move it into a script function.
+- **PrimeVue states**: hover, pressed and focus-visible are pseudo-classes (forced via `preview-css.ts`); list and menu focus and selection are classes (`.p-focus`, `.p-*-option-selected`). Stages show those with PrimeVue's own markup.
+- **Static markup needs the component CSS**: PrimeVue loads a component's styles only when an instance mounts; stages with static markup also mount a hidden real instance.
+- **Light and dark on one page** works only inside `.ps-scheme` areas (`schemeScopeCss`).
+- **Stage pick targets** match `/^[a-z]+(?::[a-z]+){0,3}$/`.
+- **Generated lengths never write a bare `0`**: PrimeVue adds tokens to lengths in `calc()`, where a bare 0 is invalid (it froze Material's switch handle).
 
 ---
 
 ## 3. Tasks (in recommended order)
 
-Each task: goal · where · approach · done when.
+### P0. Before announcing
 
-### P0. Ship what's built
+1. **Owner settings:** enable Web Analytics in Vercel; enable private vulnerability reporting (GitHub → Settings → Security), which `SECURITY.md` points to; set the repo description and topics; tag `v1.0.0` and publish a GitHub release from `CHANGELOG.md`.
+2. **DataTable visual editor**, on a reusable **parts studio** (below). The core audience builds admin apps.
+3. **Launch:** a short demo video or GIF, then Show HN, r/vuejs, Vue Land Discord, dev.to.
 
-1. Run the full checks above (`pnpm build` included) on local `main`; fix anything that fails.
-2. Ask the owner to push `main` to a preview branch (or push with their OK): `git push origin main:feat/foundations-patterns`.
-3. Owner reviews the Vercel preview; merge to `main` with their OK.
+### P1. After launch
 
-Done when production runs the current editor.
+- **More visual editors** with the parts studio: Tabs + Accordion · Checkbox / RadioButton / ToggleSwitch · menus (Menu, Menubar, TieredMenu, ContextMenu, PanelMenu) · Card + Panel + Fieldset.
+- **"Check your AI-written preset":** paste a `definePreset` file; flag token names that don't exist, preview it, run contrast. Parse it safely (no `eval`).
+- **Typography:** PrimeVue tokens don't cover the base font family or size. A Look & feel section (font family, base size 13–16px) applied to the preview root, scaling the ~40 component `fontSize` tokens like density scales spacing; the export adds a CSS snippet. New optional design fields only need defaults in `parseDesign`.
+- **Compare for Look & feel:** Compare (hold) works for shared styles and components (overrides); foundations change `theme.design`, so compare against `resetSection(theme, section)`.
+- **Automated browser tests in CI** (Playwright, Apache-2.0): the 2026-10-29 sweep as a base.
+- **Firefox and WebKit check**: untested so far. Share links rely on `CompressionStream('deflate-raw')`.
 
-### P1. Fixes
+### The parts studio (for P0.2)
 
-**Status (2026-10-25): all five done** on `fix/review-findings`, verified in a browser:
-P1.1 translucent colors show over the scheme's content background (`opaqueOver` in `color.ts`) with an opacity hint;
-P1.2 no overflow in any section at 1920 / 1100 / 390 (Status, Tag, Badge and Form fields stages scroll inside their cards on phones);
-P1.3 below xl a stage shows one scheme with a Light | Dark switch that starts at the editor's scheme (`Schemes.vue`, `PREVIEW_SCHEME`);
-P1.4 `.p-focus` on component roots is forced, options and menu items are not (`preview-css.ts`);
-P1.5 the hover box follows the pointer, also side by side and after scrolling (it re-targets what's under the pointer).
+Two recipes exist: **severity components** (`STUDIO_COMPONENTS`, `STUDIO_CONFIG` in `studio-controls.ts`, a stage in `components/preview/stage/`, `Severity.vue` does the rest) and **hand-built** (Button: `components/editor/studio/Button.vue`). Most remaining components aren't severity-shaped. The third recipe: rows = the component's parts (`groupComponentTokens` in `components.ts`, e.g. DataTable header, headerCell, row, bodyCell, footer), each with a state grid from `stateMatrix` (`studio.ts`; extend `propertyState` for `selected*`, `striped*`, `focus*`), plus `STUDIO_CONFIG`-style controls, reusing `TokenGrid` / `VariantColors`. Stages must show the real states (DataTable: header, sorted column, hovered row, selected row, stripes, small and large). Done when each new editor has a stage with clickable cells, a Design view, tests for its paths, and appears in the component list automatically.
 
-**P1.1 Color picker shows black for mixed colors**
-- Where: `app/components/editor/TokenRow.vue` (`swatch`, `pickerColor`); helpers in `app/utils/theme/color.ts` (`parseColor`, `composite`, `toHex`).
-- Cause: values like `color-mix(in srgb, {primary.400}, transparent 96%)` resolve to colors with alpha (or don't parse), so the swatch is null and the picker falls back to `#000000`.
-- Approach: parse the resolved value with `parseColor`; if it has alpha, `composite` it over the scheme's content background for the swatch and picker. Picking a color should write an opaque hex only after the user changes it; leave the original `color-mix` until then. Show a small "mixed" hint next to the value.
-- Done when: Aura dark Button "outlined primary hover background" shows its real tint in the picker and swatch; a unit test covers parsing/compositing.
+### Known gaps
 
-**P1.2 Phone-width pass for the new sections**
-- Where: Foundations, Patterns, visual component panels and stages at 390px (and 1100px).
-- Approach: run the overflow check (section 2) on every section with a grid cell selected; screenshot each stage in the Preview pane.
-- Done when: no overflow anywhere; stages are readable on a phone (see P1.3).
-
-**P1.3 Stages below 1280px**
-- Where: `app/components/preview/stage/Schemes.vue`.
-- Problem: below `xl` the dark column sits under the light column (long scroll); on phones, wide grids (Form fields: 5 states) get cramped.
-- Approach: below `xl`, show a small Light | Dark switch at the top of the stage instead of stacking both (keep both side by side from `xl` up); for `stacked` stages (Form fields) let the grid scroll horizontally inside its card on phones.
-- Done when: every stage is usable at 390 / 768 / 1100 without long scrolling.
-
-**P1.4 "Show focus states" (In context) misses JS-focused components**
-- Where: `app/utils/theme/preview-css.ts` (`forcedStateSelector`), `usePreviewForcedStyles.ts`.
-- Problem: Select, CascadeSelect, TreeSelect, MultiSelect… mark focus with a `.p-focus` class, not `:focus`, so the copied rules don't apply.
-- Approach: in the focus rewrite also handle `.p-focus` on component roots (e.g. `.p-select.p-focus` → `.ps-show-focus .p-select`), but not on list options/menu items (`.p-*-option.p-focus`, `.p-*-item.p-focus`): those would highlight every option. Add tests next to the existing ones.
-- Done when: Focus ring → In context shows rings on selects too.
-
-**P1.5 Inspect hover highlight**
-- Where: `app/composables/usePreviewInspector.ts`.
-- Clicking works; hovering wasn't verifiable with automation. Manually verify the hover box and label follow the pointer, including in side-by-side mode and while scrolling; fix if not.
-
-### P2. Features
-
-**P2.1 More visual editors** (highest user value)
-- Next components, by usage: DataTable · Tabs + Accordion · Checkbox / RadioButton / ToggleSwitch · Menu family (Menu, Menubar, TieredMenu, ContextMenu, PanelMenu) · Card + Panel + Fieldset.
-- Two recipes exist:
-  - **Severity components** (variants keyed by severity): add the name to `STUDIO_COMPONENTS` and `STUDIO_ICONS` (`app/utils/theme/components.ts`), its controls to `STUDIO_CONFIG` (`app/utils/theme/studio-controls.ts`; the test checks paths in all presets), a stage in `app/components/preview/stage/<Name>.vue` (use `PreviewStageSchemes`, emit `pick` targets `<style>:<severity>:<state>` or `section:<key>[:<size>]`), dispatch it in `app/pages/preview.vue`, and a subtitle in `STUDIO_SUBTITLES` (`ComponentsPanel.vue`). `Severity.vue` does the rest.
-  - **Hand-built** (Button): `components/editor/studio/Button.vue`, using `VariantColors`, `Control`, `Length`, `Weight`, `Shadow`.
-- Most of the next components aren't severity-shaped. Build a third generic recipe: **parts studio**. Rows = the component's parts (`groupComponentTokens` in `components.ts`, e.g. DataTable header, headerCell, row, bodyCell, footer), each with a state grid from `stateMatrix` (`studio.ts`; extend `propertyState` for `selected*`, `striped*`, `focus*` prefixes), plus `STUDIO_CONFIG`-style controls. Reuse `TokenGrid` / `VariantColors`.
-- Stages must show the component's real states (DataTable: header, sorted column, hover row (force), selected row, striped rows, small/large; Tabs: active, hover, disabled, scroll buttons; etc.).
-- Done when each new editor has a stage with clickable cells, a Design view, tests for its paths, and appears in the sidebar/pinned list automatically.
-
-**P2.2 Typography**
-- PrimeVue tokens don't cover the base font family or size; components use `1rem` and inherit the root size.
-- Approach: a Foundations → Typography section: font family (system stack options + custom text), base size (13–16px). Apply to the preview root (`/preview` html style); scale the ~40 component `fontSize` tokens proportionally (like density does for spacing); the export adds a CSS snippet (`html { font-size: …; font-family: … }`) next to the preset code (`app/utils/theme/export.ts`, Export panel). New optional design fields → defaults in `parseDesign` (`serialize.ts`), no version bump.
-- Done when the preview, stages and export all reflect it, with tests for the mapping.
-
-**P2.3 Cmd+K search**
-- A command palette (PrimeVue Dialog + AutoComplete or Listbox) over: sections, components (88), semantic tokens and component tokens (`store.descriptors`), and actions (export, reset, new theme). Selecting a token opens its section/component with the token expanded.
-- Done when every section, component and token is reachable by typing.
-- **Done (2026-10-26):** a search box in the top bar (a dialog below md), ⌘K / Ctrl+K also from inside the preview. Ranking in `app/utils/search.ts` (+ tests); a token opens the list that holds it, filtered to it and expanded (`editor.openToken`, `useTokenRequest`). Primitive tokens aren't listed (no editor shows them).
-
-**P2.4 Import and share**
-- Theme file: export the `ThemeState` as JSON (`serializeThemeState`) and import it (validated by `parseThemeState`, which sanitizes values).
-- Share link: compress the serialized state (`CompressionStream('deflate-raw')` + base64url) into the URL hash; on load, offer to import it as a new theme. No server.
-- Importing an existing PrimeVue preset `.ts` file is out of scope unless the owner asks (needs parsing JS safely).
-- Done when a theme round-trips through file and link, with tests for encode/decode and malicious input.
-- **Done (2026-10-25):** Export → Share (copy link, download `.presetstudio.json`), Theme actions → Import theme file, and `/editor#theme=…` asks before adding the theme. `share.ts` + tests (round trips, tampered/oversized tokens, a deflate bomb, injected keys and names).
-
-**P2.5 Accessibility coverage**
-- Where: `app/utils/theme/contrast.ts` (`CONTRAST_PAIRS`), Accessibility panel.
-- Add pairs for what the new editors change: severity buttons (`button-<sev>-color` on `-background`), messages, toasts, tags, selection highlight, form field text/placeholder, list option selected text. Keep the introduced vs inherited classification (presets' own severities often fail).
-- Done when recoloring a severity or selection to a low-contrast color shows up as an introduced issue.
-
-**P2.6 Compare for foundations**
-- Compare (hold) exists for patterns and components (`store.compareOverrides`). Foundations change `theme.design`, not overrides.
-- Approach: generalise to `compareState()`: for design sections return `resetSection(theme, section)` (`sections.ts`); add the Compare button to foundation panels.
-
-**P2.7 Undo across reloads**
-- History is in memory (`app/utils/theme/history.ts`, store), so a reload loses it (an accidental "Reset theme" became permanent once).
-- Approach: persist the last ~30 snapshots per theme in `sessionStorage` (or localStorage, size-capped); confirm before "Reset theme" or make reset clearly undoable after reload.
-- **Done (2026-10-25):** the last 30 undo/redo steps per theme live in the tab's sessionStorage (~1 MB cap, validated on load), so Undo works after a reload, Reset included.
-
-### P3. Quality
-
-**P3.1 Browser smoke tests**: Playwright (Apache-2.0; check license, add as dev dependency, run `pnpm license:check`). For each section: open it, no console errors, change one value, assert the preview's CSS variable changed; stage click selects a cell. Run in CI, not on the owner's laptop by default.
-
-**P3.2 Docs, landing page, README**: `app/pages/index.vue`, `app/pages/docs/index.vue`, `README.md` don't describe foundations/patterns/visual editors/stages yet. Keep the trademark disclaimer (CLAUDE.md).
-
-**P3.3 Keep `CLAUDE.md` current** with every architectural change (it's the shared memory between sessions).
+- Firefox, Safari, touch devices and screen readers are untested.
+- Editor (needs Quill) and Ripple can't be previewed; InlineMessage, Steps, TabMenu and TabView are deprecated and not in the gallery. All by design.
 
 ---
 
@@ -229,10 +149,12 @@ P1.5 the hover box follows the pointer, also side by side and after scrolling (i
 |---|---|
 | Theme state, design → tokens | `app/utils/theme/types.ts`, `design.ts`, `build.ts`, `serialize.ts`, `sections.ts` |
 | Tokens, resolver, schema | `tokens.ts`, `schema.ts`, `semantic.ts`, `components.ts` |
-| Visual editor model | `studio.ts` (variants, state matrix), `studio-controls.ts` (component controls), `semantic-studio.ts` (patterns, `PATTERN_SECTIONS`), `recolor.ts`, `stages.ts` |
-| Preview protocol + CSS | `messages.ts`, `preview-css.ts`, `app/composables/usePreviewForcedStyles.ts`, `usePreviewInspector.ts`, `app/pages/preview.vue` |
-| Stores | `app/stores/workspace.ts` (themes, history, persistence), `preset.ts` (resolvers, contrast, token edits, export), `editor.ts` (prefs, sections, stages, compare, open helpers) |
-| Editor shell | `app/pages/editor.vue`, `components/editor/SectionNav.vue`, `Inspector.vue`, `PreviewToolbar.vue`, `PreviewStage.vue`, `PreviewFrame.vue` |
-| Panels | `components/editor/panels/*` (Primary, Surface, Status, Shape, Density, Focus, Pattern, Components, Semantic, Accessibility, QuickStart) |
-| Visual editor UI | `components/editor/studio/*` (VariantColors, TokenGrid, ColorPair, PalettePicker, Control, Length, Spacing, Weight, Shadow, Number, Button, Severity, SemanticGroup), `components/editor/UsedBy.vue`, `TokenRow.vue`, `SemanticTokenList.vue` |
-| Stages | `components/preview/stage/*` (Schemes, Button, Message, Toast, Tag, Badge, Foundation + `foundation/*`, Semantic + `semantic/*`) |
+| Contrast and fixes | `contrast.ts`, `app/composables/useContrastFixes.ts`, `components/editor/panels/AccessibilityPanel.vue` |
+| Visual editor model | `studio.ts`, `studio-controls.ts`, `semantic-studio.ts` (`PATTERN_SECTIONS`), `recolor.ts`, `stages.ts` |
+| Preview protocol and CSS | `messages.ts`, `preview-css.ts`, `app/composables/usePreviewForcedStyles.ts`, `usePreviewInspector.ts`, `usePreviewSpotlight.ts`, `app/pages/preview.vue` |
+| Stores | `app/stores/workspace.ts` (themes, history, persistence), `preset.ts` (resolvers, contrast, token edits, export), `editor.ts` (prefs, sections, stages, compare) |
+| Editor shell | `app/pages/editor.vue`, `components/editor/DestinationNav.vue`, `SectionTabs.vue`, `Inspector.vue`, `TopBar.vue`, `Setup.vue`, `PreviewToolbar.vue`, `PreviewStage.vue` |
+| Panels | `components/editor/panels/*` (Overview, Primary, Surface, Status, Shape, Density, Focus, Pattern, Components, Semantic, Changes, Accessibility, QuickStart for the setup) |
+| Visual editor UI | `components/editor/studio/*`, `UsedBy.vue`, `TokenRow.vue`, `SemanticTokenList.vue` |
+| Stages | `components/preview/stage/*` |
+| Site | `app/pages/index.vue`, `components/landing/*`, `utils/landing.ts`, `utils/theme/specimen.ts`, `app/pages/docs/index.vue`, `plugins/analytics.client.ts`, `public/` (og.png, landing/editor.jpg, fonts) |
