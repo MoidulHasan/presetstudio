@@ -96,18 +96,32 @@ export function classifyContrast(current: ContrastResult[], baseline: ContrastRe
 
 // --- Fixing a failing pair ------------------------------------------------------------------
 
+interface FixPlan {
+  adjust: 'foreground' | 'background'
+  /** Tokens that move along by the same number of steps, keeping their spacing. */
+  with?: string[]
+  /** How the fix names what follows ('hover and pressed follow'). */
+  follows?: string
+}
+
+const PRIMARY_STATES: Pick<FixPlan, 'with' | 'follows'> = { with: ['primary-hover-color', 'primary-active-color'], follows: 'hover and pressed follow' }
+
 /**
- * Which side of a pair a fix moves, and tokens that move along by the same number of steps (the
- * primary color's hover and pressed shades keep their spacing). Pairs not listed have no fix.
+ * Which side of a pair a fix moves, in order of preference: the next side is tried when a side
+ * isn't on a scale (Nora's highlight has white text on a solid primary background, the others
+ * primary text on a tint). Pairs not listed have no fix.
  */
-const FIXES: Record<string, { adjust: 'foreground' | 'background', with?: string[] }> = {
-  'primary': { adjust: 'background', with: ['primary-hover-color', 'primary-active-color'] },
-  'primary-ui': { adjust: 'foreground', with: ['primary-hover-color', 'primary-active-color'] },
-  'text': { adjust: 'foreground' },
-  'muted': { adjust: 'foreground' },
-  'field': { adjust: 'foreground' },
-  'placeholder': { adjust: 'foreground' },
-  'highlight': { adjust: 'foreground' },
+const FIXES: Record<string, FixPlan[]> = {
+  'primary': [{ adjust: 'background', ...PRIMARY_STATES }],
+  'primary-ui': [{ adjust: 'foreground', ...PRIMARY_STATES }],
+  'text': [{ adjust: 'foreground' }],
+  'muted': [{ adjust: 'foreground' }],
+  'field': [{ adjust: 'foreground' }],
+  'placeholder': [{ adjust: 'foreground' }],
+  'highlight': [
+    { adjust: 'foreground', with: ['highlight-focus-color'], follows: 'the focused state follows' },
+    { adjust: 'background', with: ['highlight-focus-background'], follows: 'the focused state follows' },
+  ],
 }
 
 const STEPS = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
@@ -119,6 +133,8 @@ export interface ContrastFix {
   to: string
   /** The pair's ratio after the fix. */
   ratio: number
+  /** What moves along with it, when something does ('hover and pressed follow'). */
+  follows?: string
 }
 
 /** The scale shade a token points at ('primary-color' → primary 500), if it points at one. */
@@ -136,8 +152,14 @@ function shadeOf(resolver: TokenResolver, token: string): { group: string, step:
  * companions move by as many steps. Null when the pair passes, has no fix, or no shade passes.
  */
 export function contrastFix(resolver: TokenResolver, pair: ContrastPair): ContrastFix | null {
-  const plan = FIXES[pair.id]
-  if (!plan) return null
+  for (const plan of FIXES[pair.id] ?? []) {
+    const fix = fixBy(resolver, pair, plan)
+    if (fix) return fix
+  }
+  return null
+}
+
+function fixBy(resolver: TokenResolver, pair: ContrastPair, plan: FixPlan): ContrastFix | null {
   const adjusted = plan.adjust === 'foreground' ? pair.foreground : pair.background
   const fixed = plan.adjust === 'foreground' ? pair.background : pair.foreground
   const other = parseColor(resolver.resolve(fixed)?.value ?? '')
@@ -166,5 +188,5 @@ export function contrastFix(resolver: TokenResolver, pair: ContrastPair): Contra
     const shade = shadeOf(resolver, token)
     if (shade && shade.group === from.group) edits.push({ token, value: ref(shade.group, shade.step + delta) })
   }
-  return { edits, to: `${from.group}.${STEPS[best.index]}`, ratio: best.ratio }
+  return { edits, to: `${from.group}.${STEPS[best.index]}`, ratio: best.ratio, follows: edits.length > 1 ? plan.follows : undefined }
 }

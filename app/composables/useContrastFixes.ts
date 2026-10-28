@@ -18,7 +18,7 @@ const TEXT_CANDIDATES = ['#ffffff', '{surface.0}', '{surface.950}', '{surface.90
 
 /**
  * One-click fixes for failing contrast checks: the nearest passing shade of the token's own scale
- * (hover and pressed follow), or for primary button text with no passing shade, the most readable
+ * (its other states follow), or for primary button text with no passing shade, the most readable
  * text color. Every fix is an ordinary edit (undoable); one "Fix all" is one undo step.
  */
 export function useContrastFixes() {
@@ -55,7 +55,7 @@ export function useContrastFixes() {
   function fixFor(result: ClassifiedContrast, scheme: ColorScheme): ContrastFixAction | null {
     const shade = shadeFix(result, scheme)
     if (shade) {
-      const follow = shade.edits.length > 1 ? '; hover and pressed follow' : ''
+      const follow = shade.follows ? `; ${shade.follows}` : ''
       return {
         hint: `Use ${shade.to} (${shade.ratio.toFixed(1)}:1)${follow}`,
         apply: (key) => {

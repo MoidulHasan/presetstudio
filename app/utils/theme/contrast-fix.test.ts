@@ -1,5 +1,6 @@
 import Aura from '@primeuix/themes/aura'
 import Lara from '@primeuix/themes/lara'
+import Nora from '@primeuix/themes/nora'
 import { describe, expect, it } from 'vitest'
 import { CONTRAST_PAIRS, checkContrast, contrastFix } from './contrast'
 import { buildEffectivePreset } from './build'
@@ -47,6 +48,23 @@ describe('contrastFix', () => {
     const resolver = createResolver(buildEffectivePreset(state, aura), 'light')
     const fix = contrastFix(resolver, pair('muted'))!
     expect(fix.edits).toEqual([{ token: 'text-muted-color', value: '{surface.500}' }])
+  })
+
+  it('moves the other side when one isn\'t on a scale (Nora\'s white text on a solid highlight)', () => {
+    const state = createDefaultThemeState('nora')
+    state.design.primary = { kind: 'custom', color: '#fff7a8', algorithm: 'oklch', shades: {} }
+    const preset = buildEffectivePreset(state, Nora as unknown as TokenTree)
+    const fix = contrastFix(createResolver(preset, 'light'), pair('highlight'))!
+    expect(fix.edits[0]!.token).toBe('highlight-background')
+    expect(fix.edits.map(e => e.token)).toContain('highlight-focus-background')
+    expect(fix.follows).toBe('the focused state follows')
+    let overrides: TokenTree = {}
+    for (const edit of fix.edits) {
+      const key = edit.token.replace('highlight-', '').replace(/-(\w)/g, (_, c: string) => c.toUpperCase())
+      overrides = setPath(overrides, ['semantic', 'colorScheme', 'light', 'highlight', key], edit.value)
+    }
+    const fixed = createResolver(buildEffectivePreset({ ...state, overrides }, Nora as unknown as TokenTree), 'light')
+    expect(checkContrast(fixed, [pair('highlight')])[0]!.pass).toBe(true)
   })
 
   it('works on other base presets', () => {
