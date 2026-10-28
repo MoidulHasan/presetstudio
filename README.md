@@ -1,8 +1,10 @@
 # Preset Studio
 
-A free, open-source, web-based visual theme (preset) generator for PrimeVue 4.
+A free, open-source visual theme editor for PrimeVue 4. **[presetstudio.vercel.app](https://presetstudio.vercel.app)**
 
-Pick a base preset, choose your brand color, watch real components update live in light and dark mode, then copy a ready-to-paste `definePreset(...)` module into your app.
+Give it one color. See every component in every state, light and dark, and export a `definePreset` file with only what you changed.
+
+![The Preset Studio editor on Button: its settings on the left; every button variant in its default, hover, pressed and focus states on the right, in light and dark side by side.](public/landing/editor.jpg)
 
 ## Why it exists
 
@@ -10,35 +12,31 @@ PrimeVue 5 moved to a proprietary license, and the official Theme Designer now o
 
 Preset Studio is built only on the last MIT-licensed releases (`primevue` 4.5.5, `@primeuix/themes` 2.0.3, `primeicons` 7.0.0). These are pinned exactly and verified by a license-check script. It shares no code, UI or assets with PrimeTek's commercial products.
 
-## Features
+## What it does
 
-- **Base presets:** Aura, Lara, Nora and Material. A new theme starts identical to its base, and every control can reset back to it
-- **Primary color:** use the preset default, pick one of the 22 built-in palettes, or enter a custom color. Custom colors get a perceptual (OKLCH) or classic 50–950 scale, and any shade can be fine-tuned by hand
-- **Surfaces:** neutral palettes chosen separately for light and dark mode, including a neutral tinted with your primary hue
-- **Shape and density:** corner-radius scales, plus compact/comfortable spacing across inputs, buttons, lists, overlays, cards and tables
-- **Focus ring:** keep the preset's own style or switch to a custom outline (width, offset, color)
-- **Semantic tokens:** browse and search every semantic token per color scheme. Set a value or point it at another token (with suggestions), see the full reference chain, and reset single tokens
-- **Accessibility:** live WCAG contrast checks for key color pairs in both color schemes, with a one-click fix for primary button text
-- **Live, isolated preview:** the theme renders in an iframe with its own PrimeVue instance, so the editor UI never changes
-- **Every component:** a gallery of about 80 PrimeVue components in 10 categories, plus realistic dashboard, form and settings pages
-- **Light and dark side by side,** at desktop, tablet or mobile widths
-- **Quick start:** base style, brand color, corners and neutrals in four steps
-- **Multiple themes** with undo/redo (⌘Z / ⇧⌘Z), saved in your browser. The editor itself has light and dark modes
-- **Code export:** a minimal `definePreset(...)` module named after your theme, plus ready-made Nuxt and Vue setup snippets, with copy and download
+- **Start fast:** a guided setup (base style, brand color, corners, neutrals) or one of four example themes. Aura, Lara, Nora and Material are the base styles.
+- **Look & feel for the whole library:** brand color (22 built-in palettes or any color, with a perceptual 50–950 scale you can fine-tune), neutrals per mode, status colors, text, corner radius, density and the focus ring. Each choice reaches every component of every base style.
+- **Shared styles:** form fields, lists, menus, overlays, containers and selection, each edited once for all the components that use it.
+- **Every component:** all 88 components' tokens, searchable. Button, Message, Toast, Tag and Badge have visual editors with a stage that shows every variant in every state.
+- **A preview you can trust:** your theme renders in its own PrimeVue instance, as stages ("All states") or sample pages ("In an app"), in light, dark or both side by side. Pick anything in the preview to edit it, and see which components a section reaches.
+- **Review:** every change listed and revertible on its own; contrast checks in both modes, counting the base style's own failures, with a one-click fix for each.
+- **Your workspace:** several themes with undo and redo (kept across reloads), search (⌘K / Ctrl+K), share links and theme files. Everything stays in your browser.
+- **Export:** one `definePreset` file with only what you changed, plus the setup for Nuxt or Vue.
 
-Planned: a component token editor with an inspect mode, global token search, and import/share.
+## Using the exported preset
 
-## Usage of the exported preset
+The [docs](https://presetstudio.vercel.app/docs) have the details. In short, with Vue:
 
 ```ts
-// my-preset.ts: paste the exported code here
 import PrimeVue from 'primevue/config'
-import MyPreset from './my-preset'
+import MyThemePreset from './themes/my-theme'
 
-app.use(PrimeVue, { theme: { preset: MyPreset } })
+app.use(PrimeVue, {
+  theme: { preset: MyThemePreset, options: { darkModeSelector: 'system' } },
+})
 ```
 
-With Nuxt and `@primevue/nuxt-module`, set `primevue: { importTheme: { as: 'MyPreset', from: '~/my-preset.ts' } }`.
+With Nuxt and `@primevue/nuxt-module`, `importTheme` must point at a file that exports `{ preset, options }`, not the bare preset; on Nuxt 4 it lives under `app/`.
 
 ## Stack
 
@@ -67,22 +65,25 @@ pnpm license:check    # fail if any PrimeTek package isn't MIT / on a proprietar
 
 ```
 app/
-  pages/            /, /editor, /preview (iframe only), /docs
-  components/       app shell, editor panels, preview gallery
-  stores/theme.ts   Pinia store (ThemeState, persisted to localStorage)
-  utils/theme/      framework-free logic: palette, merge, export, serialize, messages (+ tests)
-  themes/           the editor's own fixed theme
+  pages/          / (landing), /docs, /editor, /preview (only inside the editor's iframe)
+  components/     site shell, landing, editor panels and studios, preview pages and stages
+  stores/         workspace (saved themes, undo), preset (the theme as a preset), editor (UI)
+  composables/    preview linking, spotlight, contrast fixes, …
+  utils/theme/    framework-free logic: palettes, resolver, design mapping, export, sharing (+ tests)
+public/           favicon, the self-hosted Inter font, landing images
 scripts/
   check-licenses.mjs
 ```
 
+`CLAUDE.md` describes the architecture in detail.
+
 ### Dependency policy
 
-Never upgrade `primevue`, `@primevue/*`, `@primeuix/*` or `primeicons` past their pinned versions. Newer majors are proprietary. Dependabot ignores major updates for these packages, and `pnpm license:check` fails if one slips in. New dependencies must be MIT, ISC, BSD or Apache-2.0.
+Never upgrade `primevue`, `@primevue/*`, `@primeuix/*` or `primeicons` past their pinned versions. Newer majors are proprietary. Dependabot ignores major updates for these packages, and `pnpm license:check` fails if one slips in. New dependencies must be MIT, ISC, BSD or Apache-2.0; the one exception is the Inter font (SIL OFL 1.1).
 
 ## License
 
-[MIT](./LICENSE) © 2026 Moidul Hasan Khan. Third-party notices are in [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).
+[MIT](./LICENSE) © 2026 Moidul Hasan Khan. Third-party notices, including the Inter font, are in [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).
 
 ## Disclaimer
 
