@@ -14,8 +14,6 @@ import { BASE_PRESETS, BASE_PRESET_LABELS, SHADES, type BasePresetName, type Tok
 useSeoMeta({
   title: 'Preset Studio: theme PrimeVue around your brand',
   description: 'A visual theme editor for PrimeVue 4. Pick your brand color, see every component in every state in light and dark, check contrast, and export a preset with only what you changed. Free, open source, runs in your browser.',
-  ogTitle: 'Preset Studio: theme PrimeVue around your brand',
-  ogDescription: 'A free, open-source visual theme editor for PrimeVue 4.',
 })
 
 // Base presets: Aura ships with the site (the editor's own theme is built on it); the others

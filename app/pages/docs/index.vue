@@ -4,6 +4,8 @@ import { generateNuxtSnippets, generateVueSnippet } from '~/utils/theme/export'
 useSeoMeta({
   title: 'Docs · Preset Studio',
   description: 'How to make a PrimeVue 4 preset in Preset Studio and add it to a Nuxt or Vue app: setup, dark mode, sharing and changing a theme later.',
+  ogTitle: 'Preset Studio docs',
+  ogDescription: 'Make a PrimeVue 4 preset and add it to your Nuxt or Vue app.',
 })
 
 // The same snippets the Export drawer gives, for a theme named "My theme".
