@@ -27,6 +27,9 @@ const parts = computed<[number, number] | null>(() => {
   return [values[0]!, values[values.length - 1]!]
 })
 
+// The readout rounds like the other length controls (a density-scaled 0.938rem is 15px, not 15.008px).
+const shown = (px: number) => Math.round(px * 10) / 10
+
 const usesRem = computed(() => /rem/.test(resolved.value?.value ?? '') || !/px/.test(resolved.value?.value ?? ''))
 const format = (px: number) => (px === 0 ? '0' : usesRem.value ? `${Math.round((px / 16) * 1000) / 1000}rem` : `${px}px`)
 
@@ -60,7 +63,7 @@ const follows = computed(() => {
         />
       </span>
       <span class="flex shrink-0 items-center gap-1">
-        <span class="font-mono text-surface-500">{{ parts ? `${parts[0]} / ${parts[1]}px` : resolved?.value }}</span>
+        <span class="font-mono text-surface-500">{{ parts ? `${shown(parts[0])} / ${shown(parts[1])}px` : resolved?.value }}</span>
         <Button
           v-if="source === 'custom'"
           v-tooltip.left="'Back to the preset value'"
