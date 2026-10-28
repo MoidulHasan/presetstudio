@@ -39,7 +39,7 @@ const team = [
     <header class="flex flex-wrap items-center justify-between gap-3">
       <div>
         <h1 class="text-2xl font-semibold text-color">
-          Overview
+          Dashboard
         </h1>
         <p class="text-sm text-muted-color">
           Welcome back. Here's what happened in your store.
