@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { useEditorStore } from '~/stores/editor'
 import { usePresetStore } from '~/stores/preset'
-import { EDITOR_DESTINATIONS, destinationOf, type Destination, type EditorSection } from '~/utils/editor-sections'
+import { EDITOR_DESTINATIONS, destinationOf, type Destination } from '~/utils/editor-sections'
 
 // The editor's five places (Overview, Colors, Shape & spacing, Components, Review): a rail beside
-// the panel on wide screens, a bar above it on narrow ones. A destination reopens the section
-// last used in it.
+// the panel on wide screens, a bar above it on narrow ones. A destination always opens its first
+// section (Components: the list), so the rail goes to the same place every time.
 const props = withDefaults(defineProps<{ orientation?: 'vertical' | 'horizontal' }>(), { orientation: 'vertical' })
 
 const editor = useEditorStore()
@@ -14,14 +14,10 @@ const { isModified } = useSectionStatus()
 
 const current = computed(() => destinationOf(editor.prefs.section).key)
 
-// Remembered for the session, shared by both orientations.
-const lastSection = useState<Record<string, EditorSection>>('ps-destination-sections', () => ({}))
-watch(() => editor.prefs.section, (section) => {
-  lastSection.value = { ...lastSection.value, [destinationOf(section).key]: section }
-}, { immediate: true })
-
 function open(destination: Destination) {
-  editor.openSection(lastSection.value[destination.key] ?? destination.sections[0]!)
+  const home = destination.sections[0]!
+  if (home === 'components') editor.openComponentList()
+  else editor.openSection(home)
 }
 
 const items = computed(() => EDITOR_DESTINATIONS.map(d => ({
