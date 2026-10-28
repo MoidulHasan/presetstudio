@@ -24,12 +24,12 @@ const meta = computed(() => {
   }
   return SECTION_META[editor.prefs.section]
 })
-// With section tabs (the two-pane layout), the active tab names the section, so there's no title
-// row, except inside a component (its name, the way back, Show in preview). Its explanation is
-// on the tab, and Reset closes the panel.
+// In the two-pane layout the navigation names the section (the active tab, or the rail for
+// Overview), so there's no title row, except inside a component (its name, the way back, Show in
+// preview). A section's explanation is on its tab, and Reset closes the panel.
 const slots = useSlots()
 const tabbed = computed(() => !!slots.nav && destinationOf(editor.prefs.section).sections.length > 1)
-const titled = computed(() => !tabbed.value || !!openComponent.value)
+const titled = computed(() => !slots.nav || !!openComponent.value)
 
 function showInPreview(component: string) {
   editor.prefs.pane = 'preview'
@@ -121,15 +121,16 @@ useStageTargets(body)
     ref="body"
     class="flex flex-col"
   >
-    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900">
+    <h2
+      v-if="!titled"
+      class="sr-only"
+    >
+      {{ meta.label }}
+    </h2>
+    <!-- Hidden when there's nothing to show in it (Overview: no tabs, no title, no toolbar). -->
+    <header class="sticky top-0 z-10 border-b border-surface-200 bg-surface-0 dark:border-surface-800 dark:bg-surface-900 [&:not(:has([role=tablist])):has(#inspector-toolbar:empty:only-child)]:hidden">
       <!-- The two-pane layout puts the destination's section tabs here. -->
       <slot name="nav" />
-      <h2
-        v-if="!titled"
-        class="sr-only"
-      >
-        {{ meta.label }}
-      </h2>
       <!-- Hidden when it would hold only an empty toolbar. -->
       <div
         class="flex flex-col gap-3 px-4 py-3 [&:has(>#inspector-toolbar:empty:only-child)]:hidden"
