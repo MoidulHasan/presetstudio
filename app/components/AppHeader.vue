@@ -4,7 +4,7 @@ import { REPO_URL } from '~/utils/site'
 
 // Site header (landing and docs): in the content column, so the logo lines up with the page.
 // It stays at the top while scrolling, so the editor is always one click away; its border only
-// shows once the page has scrolled under it. Docs come back once there are docs to read.
+// shows once the page has scrolled under it.
 const scrolled = ref(false)
 const onScroll = () => (scrolled.value = window.scrollY > 4)
 onMounted(() => {
@@ -25,6 +25,14 @@ onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
         class="flex items-center gap-2"
         aria-label="Main"
       >
+        <Button
+          :as="NuxtLink"
+          to="/docs"
+          label="Docs"
+          severity="secondary"
+          size="small"
+          text
+        />
         <Button
           v-tooltip.bottom="'Source on GitHub'"
           as="a"
