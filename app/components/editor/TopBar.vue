@@ -2,6 +2,7 @@
 import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
+import { usePresetStore } from '~/stores/preset'
 import type { EditorLayout, UiTheme } from '~/utils/editor-sections'
 
 // The theme (switch, rename, import, reset…), search (⌘K), undo/redo, and the two ways out:
@@ -11,6 +12,7 @@ const emit = defineEmits<{ export: [tab: 'app' | 'share'] }>()
 
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
+const preset = usePresetStore()
 const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
 const mod = isMac ? '⌘' : 'Ctrl+'
 
@@ -77,6 +79,45 @@ const settingsItems = computed<MenuItem[]>(() => [
       :class="editor.prefs.layout === 'classic' ? 'xl:!hidden' : ''"
     />
     <EditorThemeSwitcher class="min-w-0" />
+
+    <!-- The theme's state: saved (quiet), not saved (the way to keep it), contrast (only when it fails). -->
+    <div class="flex shrink-0 items-center gap-1">
+      <span
+        v-if="workspace.saved"
+        v-tooltip.bottom="'Saved in this browser. Share or export to keep a copy elsewhere.'"
+        class="hidden items-center gap-1 text-xs text-surface-500 lg:flex dark:text-surface-400"
+        role="status"
+      >
+        <i
+          class="pi pi-check text-[10px]"
+          aria-hidden="true"
+        />
+        Saved
+      </span>
+      <Button
+        v-else
+        v-tooltip.bottom="'This browser won’t let the editor save (private mode or full storage). Download the theme file to keep it.'"
+        label="Not saved"
+        icon="pi pi-exclamation-triangle"
+        severity="warn"
+        size="small"
+        text
+        class="!px-2 !py-1 !text-xs"
+        @click="$emit('export', 'share')"
+      />
+      <Button
+        v-if="preset.contrastIssues"
+        v-tooltip.bottom="'Open the contrast checks'"
+        :label="`${preset.contrastIssues} contrast`"
+        icon="pi pi-exclamation-circle"
+        severity="danger"
+        size="small"
+        text
+        :aria-label="`${preset.contrastIssues} contrast check${preset.contrastIssues === 1 ? '' : 's'} fail. Open the contrast checks`"
+        class="!px-2 !py-1 !text-xs [&_.p-button-label]:max-lg:hidden"
+        @click="editor.openSection('accessibility')"
+      />
+    </div>
 
     <div
       ref="searchBox"

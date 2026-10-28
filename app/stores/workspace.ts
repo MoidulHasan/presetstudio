@@ -177,13 +177,15 @@ export const useWorkspaceStore = defineStore('workspace', () => {
     }
   }
 
+  /** Whether the last save reached the browser's storage (the top bar says when it didn't). */
+  const saved = ref(true)
   let saveTimer: ReturnType<typeof setTimeout> | undefined
   function save() {
     clearTimeout(saveTimer)
     saveTimer = undefined
     const stored = deserializeWorkspace(readStorage(WORKSPACE_KEY))
     if (stored) adoptWorkspace(mergeWorkspaces(state.value, stored))
-    writeStorage(WORKSPACE_KEY, JSON.stringify(state.value))
+    saved.value = writeStorage(WORKSPACE_KEY, JSON.stringify(state.value))
   }
   watch(state, () => {
     clearTimeout(saveTimer)
@@ -209,6 +211,7 @@ export const useWorkspaceStore = defineStore('workspace', () => {
   }
 
   return {
+    saved,
     state,
     activeDoc,
     theme,

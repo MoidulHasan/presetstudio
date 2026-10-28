@@ -24,13 +24,16 @@ export function readStorage(key: string, area: StorageArea = 'local'): string | 
   }
 }
 
-export function writeStorage(key: string, value: string, area: StorageArea = 'local'): void {
-  if (!import.meta.client) return
+/** Stores a value; false when the browser refused (private mode, full quota, blocked storage). */
+export function writeStorage(key: string, value: string, area: StorageArea = 'local'): boolean {
+  if (!import.meta.client) return false
   try {
     storage(area).setItem(key, value)
+    return true
   }
   catch {
-    // Persistence is best-effort.
+    // Persistence is best-effort; the editor says when it isn't saving.
+    return false
   }
 }
 
