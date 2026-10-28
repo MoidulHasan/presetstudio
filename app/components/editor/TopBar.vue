@@ -2,17 +2,17 @@
 import type { MenuItem } from 'primevue/menuitem'
 import { useEditorStore } from '~/stores/editor'
 import { useWorkspaceStore } from '~/stores/workspace'
-import { usePresetStore } from '~/stores/preset'
 import type { EditorLayout, UiTheme } from '~/utils/editor-sections'
 
-// The theme (switch, rename, import, reset…), search (⌘K), undo/redo, and the two ways out:
-// Share and Export. The base preset is chosen in Quick start, resets live in the theme menu and panels;
-// the editor's own appearance and layout are in the settings menu.
+// The theme (switch, rename, import, reset…), whether it's saved, search (⌘K), undo/redo, and the
+// one way out: Export (code for your app, a share link or the theme file). The base preset is
+// chosen in the setup and Overview, resets live in the theme menu and panels; the editor's own
+// appearance and layout are in the settings menu.
+// Failing contrast checks show on the navigation's Review entry.
 const emit = defineEmits<{ export: [tab: 'app' | 'share'] }>()
 
 const editor = useEditorStore()
 const workspace = useWorkspaceStore()
-const preset = usePresetStore()
 const isMac = import.meta.client && /Mac|iPhone|iPad/.test(navigator.platform)
 const mod = isMac ? '⌘' : 'Ctrl+'
 
@@ -80,11 +80,11 @@ const settingsItems = computed<MenuItem[]>(() => [
     />
     <EditorThemeSwitcher class="min-w-0" />
 
-    <!-- The theme's state: saved (quiet), not saved (the way to keep it), contrast (only when it fails). -->
-    <div class="flex shrink-0 items-center gap-1">
+    <!-- Whether the theme is saved: quietly yes, or not (the way to keep it). -->
+    <div class="flex shrink-0 items-center">
       <span
         v-if="workspace.saved"
-        v-tooltip.bottom="'Saved in this browser. Share or export to keep a copy elsewhere.'"
+        v-tooltip.bottom="'Saved in this browser. Export a share link or the theme file to keep a copy elsewhere.'"
         class="hidden items-center gap-1 text-xs text-surface-500 lg:flex dark:text-surface-400"
         role="status"
       >
@@ -104,18 +104,6 @@ const settingsItems = computed<MenuItem[]>(() => [
         text
         class="!px-2 !py-1 !text-xs"
         @click="$emit('export', 'share')"
-      />
-      <Button
-        v-if="preset.contrastIssues"
-        v-tooltip.bottom="'Open the contrast checks'"
-        :label="`${preset.contrastIssues} contrast`"
-        icon="pi pi-exclamation-circle"
-        severity="danger"
-        size="small"
-        text
-        :aria-label="`${preset.contrastIssues} contrast check${preset.contrastIssues === 1 ? '' : 's'} fail. Open the contrast checks`"
-        class="!px-2 !py-1 !text-xs [&_.p-button-label]:max-lg:hidden"
-        @click="editor.openSection('accessibility')"
       />
     </div>
 
@@ -219,16 +207,6 @@ const settingsItems = computed<MenuItem[]>(() => [
           </a>
         </template>
       </Menu>
-      <Button
-        label="Share"
-        icon="pi pi-share-alt"
-        severity="secondary"
-        size="small"
-        outlined
-        aria-label="Share"
-        :pt="{ label: { class: 'hidden sm:inline' } }"
-        @click="$emit('export', 'share')"
-      />
       <Button
         label="Export"
         icon="pi pi-code"

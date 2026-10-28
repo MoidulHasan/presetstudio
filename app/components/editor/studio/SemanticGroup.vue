@@ -72,9 +72,6 @@ useStagePick(async ([kind, first, second]) => {
 
 <template>
   <div class="flex flex-col gap-6">
-    <!-- Where this group shows up -->
-    <EditorUsedBy :components="usedBy" />
-
     <!-- Colors -->
     <div
       v-if="grid"
@@ -128,5 +125,8 @@ useStagePick(async ([kind, first, second]) => {
         />
       </EditorInspectorGroup>
     </div>
+
+    <!-- Where this group shows up, last as in the other sections -->
+    <EditorUsedBy :components="usedBy" />
   </div>
 </template>

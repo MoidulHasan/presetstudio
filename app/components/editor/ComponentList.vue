@@ -111,7 +111,11 @@ function open(name: string, carryQuery: boolean) {
           aria-label="Which components to show"
           size="small"
         />
-        <span class="text-xs text-surface-500">{{ listTotal }} component{{ listTotal === 1 ? '' : 's' }}</span>
+        <!-- The search box already says how many there are; while searching, how many match. -->
+        <span
+          v-if="listQuery.trim()"
+          class="text-xs text-surface-500"
+        >{{ listTotal }} match{{ listTotal === 1 ? '' : 'es' }}</span>
       </div>
     </Teleport>
 
@@ -119,49 +123,48 @@ function open(name: string, carryQuery: boolean) {
     <section
       v-if="!listQuery.trim() && listShow === 'all'"
       aria-label="Visual editors"
-      class="flex flex-col gap-2"
+      class="flex flex-col"
     >
-      <h3 class="flex items-center gap-2 px-2 text-xs font-medium text-surface-500">
+      <h3 class="mb-1 flex items-center gap-2 px-2 text-xs font-medium text-surface-500">
         <i
           class="pi pi-sparkles"
           aria-hidden="true"
         />
         Visual editors
       </h3>
-      <Button
-        v-for="name in STUDIO_COMPONENTS"
-        :key="name"
-        severity="secondary"
-        outlined
-        class="!w-full !min-w-0 !justify-start !gap-3 !p-3 text-left"
-        :aria-label="`Open the ${COMPONENT_META[name]!.label} visual editor`"
-        @click="open(name, false)"
-      >
-        <span
-          class="grid size-9 shrink-0 place-items-center rounded-lg bg-surface-100 dark:bg-surface-800"
-          aria-hidden="true"
+      <ul class="flex flex-col">
+        <li
+          v-for="name in STUDIO_COMPONENTS"
+          :key="name"
         >
-          <i
-            :class="STUDIO_ICONS[name] ?? 'pi pi-box'"
-            class="text-surface-600 dark:text-surface-300"
-          />
-        </span>
-        <span class="flex min-w-0 flex-1 flex-col">
-          <span class="text-sm font-semibold text-surface-900 dark:text-surface-0">{{ COMPONENT_META[name]!.label }}</span>
-          <span class="truncate text-xs text-surface-500">{{ STUDIO_SUBTITLES[name] ?? 'Every variant and state, light and dark' }}</span>
-        </span>
-        <Badge
-          v-if="preset.componentOverrideCounts[name]"
-          :value="`${preset.componentOverrideCounts[name]} custom`"
-          severity="contrast"
-          size="small"
-          class="shrink-0"
-        />
-        <i
-          class="pi pi-arrow-right shrink-0 text-xs text-surface-400"
-          aria-hidden="true"
-        />
-      </Button>
+          <Button
+            v-tooltip.left="{ value: STUDIO_SUBTITLES[name], showDelay: 600 }"
+            severity="secondary"
+            text
+            class="!w-full !min-w-0 !justify-start !gap-2.5 !px-2 !py-1.5"
+            :aria-label="`Open the ${COMPONENT_META[name]!.label} visual editor`"
+            @click="open(name, false)"
+          >
+            <i
+              :class="STUDIO_ICONS[name] ?? 'pi pi-box'"
+              class="w-4 shrink-0 text-center text-sm text-surface-500 dark:text-surface-400"
+              aria-hidden="true"
+            />
+            <span class="min-w-0 flex-1 truncate text-left text-sm font-medium text-surface-900 dark:text-surface-0">{{ COMPONENT_META[name]!.label }}</span>
+            <Badge
+              v-if="preset.componentOverrideCounts[name]"
+              :value="`${preset.componentOverrideCounts[name]} custom`"
+              severity="contrast"
+              size="small"
+              class="shrink-0"
+            />
+            <i
+              class="pi pi-chevron-right shrink-0 text-xs text-surface-400"
+              aria-hidden="true"
+            />
+          </Button>
+        </li>
+      </ul>
     </section>
 
     <p

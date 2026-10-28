@@ -4,7 +4,7 @@ import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import type { EditorSection } from '~/utils/editor-sections'
 import { listChanges } from '~/utils/theme/changes'
-import { DENSITY_FACTORS } from '~/utils/theme/design'
+import { densityFactor } from '~/utils/theme/design'
 import { BASE_PRESETS, BASE_PRESET_LABELS, SHADES, STATUS_KINDS, type BasePresetName, type SurfaceDesign } from '~/utils/theme/types'
 
 // The theme at a glance: the base style, each decision drawn in the theme's own colors (in the
@@ -66,7 +66,7 @@ const tiles = computed<Tile[]>(() => {
   const light = surfaceName(d.surface.light)
   const dark = surfaceName(d.surface.dark)
   const components = Object.keys(preset.componentOverrideCounts).length
-  const factor = d.density === 'custom' ? d.densityScale : d.density === 'base' ? 1 : DENSITY_FACTORS[d.density]
+  const factor = densityFactor(d.density, d.densityScale)
   const muted = value('text-muted-color')
   const all: Tile[] = [
     {
@@ -104,7 +104,7 @@ const tiles = computed<Tile[]>(() => {
       value: d.density === 'custom' ? `Custom (${factor}×)` : DENSITY[d.density] ?? baseDefault.value,
       section: 'density',
       // Exaggerated, so compact and comfortable look different at this size.
-      visual: { kind: 'density', gap: Math.round(2 + (factor - 0.5) * 8), color: muted },
+      visual: { kind: 'density', gap: Math.max(1, Math.min(12, Math.round((factor - 0.5) * 16))), color: muted },
     },
     {
       label: 'Focus ring',
@@ -291,14 +291,17 @@ const issues = computed(() => preset.contrastIssues)
             @click="editor.openSection('accessibility')"
           />
         </li>
-        <li class="flex min-h-9 items-center gap-3">
+        <!-- "Saved" is in the top bar; here only when it isn't. -->
+        <li
+          v-if="!workspace.saved"
+          class="flex min-h-9 items-center gap-3"
+        >
           <i
-            :class="workspace.saved ? 'pi pi-check-circle text-green-600 dark:text-green-400' : 'pi pi-exclamation-triangle text-orange-600 dark:text-orange-400'"
+            class="pi pi-exclamation-triangle text-orange-600 dark:text-orange-400"
             aria-hidden="true"
           />
-          <span class="flex-1 text-sm">{{ workspace.saved ? 'Saved in this browser' : 'Not saved: this browser refuses storage' }}</span>
+          <span class="flex-1 text-sm">Not saved: this browser refuses storage</span>
           <Button
-            v-if="!workspace.saved"
             label="Download"
             icon="pi pi-download"
             size="small"
@@ -325,33 +328,18 @@ const issues = computed(() => preset.contrastIssues)
           />
         </li>
       </ul>
-      <div class="flex flex-wrap items-center gap-2 pt-2">
-        <Button
-          label="Export"
-          icon="pi pi-code"
-          size="small"
-          :severity="preset.pristine ? 'secondary' : undefined"
-          :outlined="preset.pristine"
-          @click="editor.requestExport('app')"
-        />
-        <Button
-          label="Share"
-          icon="pi pi-share-alt"
-          severity="secondary"
-          size="small"
-          outlined
-          @click="editor.requestExport('share')"
-        />
-        <Button
-          v-if="!preset.pristine"
-          label="Run the setup again"
-          severity="secondary"
-          size="small"
-          text
-          class="ml-auto"
-          @click="editor.openSetup()"
-        />
-      </div>
     </EditorInspectorGroup>
+
+    <!-- Export is in the top bar. -->
+    <Button
+      v-if="!preset.pristine"
+      label="Run the setup again"
+      icon="pi pi-bolt"
+      severity="secondary"
+      size="small"
+      text
+      class="-ml-3 self-start"
+      @click="editor.openSetup()"
+    />
   </div>
 </template>

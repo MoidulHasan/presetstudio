@@ -2,19 +2,20 @@
 import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import { MAX_RADIUS, RADIUS_VALUES, radiusScaleFrom } from '~/utils/theme/design'
-import { BASE_PRESET_LABELS, RADIUS_STEPS, type CustomRadius, type RadiusScale, type RadiusStep } from '~/utils/theme/types'
+import { RADIUS_STEPS, type CustomRadius, type RadiusScale, type RadiusStep } from '~/utils/theme/types'
 
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
+const { baseDefault } = useBaseDefault()
 
-const options: Array<{ value: RadiusScale, label: string }> = [
+const options = computed<Array<{ value: RadiusScale, label: string }>>(() => [
   { value: 'none', label: 'Square' },
   { value: 'small', label: 'Subtle' },
-  { value: 'base', label: `Default` },
+  { value: 'base', label: baseDefault.value },
   { value: 'large', label: 'Rounded' },
   { value: 'xlarge', label: 'Soft' },
   { value: 'custom', label: 'Custom' },
-]
+])
 
 // Which components use each step differs per preset (Material's buttons use sm, Aura's md),
 // so the hints follow the reference chains of a few well-known tokens.
@@ -112,12 +113,6 @@ function previewRadius(value: RadiusScale): string {
           </template>
         </EditorOptionCard>
       </div>
-      <p
-        v-if="workspace.theme.design.radius === 'base'"
-        class="text-xs text-surface-500 dark:text-surface-400"
-      >
-        Using {{ BASE_PRESET_LABELS[workspace.theme.basePreset] }}'s radius scale.
-      </p>
     </EditorInspectorGroup>
 
     <EditorInspectorGroup
@@ -202,15 +197,6 @@ function previewRadius(value: RadiusScale): string {
           </dd>
         </div>
       </dl>
-      <Button
-        label="Customize these values"
-        icon="pi pi-sliders-h"
-        severity="secondary"
-        size="small"
-        outlined
-        class="self-start"
-        @click="setRadius('custom')"
-      />
     </EditorInspectorGroup>
   </div>
 </template>

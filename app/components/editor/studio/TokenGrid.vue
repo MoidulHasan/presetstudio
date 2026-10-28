@@ -93,9 +93,8 @@ defineExpose({ focus })
           />
           <span
             v-else
-            class="text-center text-xs text-surface-400"
             aria-hidden="true"
-          >—</span>
+          />
         </template>
       </template>
     </div>

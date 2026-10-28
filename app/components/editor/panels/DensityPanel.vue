@@ -7,12 +7,16 @@ import type { Density } from '~/utils/theme/types'
 const workspace = useWorkspaceStore()
 const preset = usePresetStore()
 
-const options: Array<{ value: Density, label: string, hint: string }> = [
+const { baseDefault } = useBaseDefault()
+const options = computed<Array<{ value: Density, label: string, hint: string }>>(() => [
   { value: 'compact', label: 'Compact', hint: 'Data-dense apps, admin tools' },
-  { value: 'base', label: 'Default', hint: 'The base preset\'s spacing' },
+  { value: 'base', label: baseDefault.value, hint: 'Balanced, for most apps' },
   { value: 'comfortable', label: 'Comfortable', hint: 'Touch-friendly, airy layouts' },
   { value: 'custom', label: 'Custom', hint: 'Pick your own spacing scale' },
-]
+])
+
+/** The glyph's line gap, exaggerated so the options look different at this size. */
+const glyphGap = (value: Density) => Math.max(1, Math.min(12, Math.round((densityFactor(value, design.value.densityScale) - 0.5) * 16)))
 
 const design = computed(() => workspace.theme.design)
 
@@ -73,7 +77,7 @@ const showValues = ref(false)
           <template #visual>
             <span
               class="flex w-8 flex-col justify-center"
-              :style="{ gap: `${3 * densityFactor(option.value, design.densityScale)}px` }"
+              :style="{ gap: `${glyphGap(option.value)}px` }"
               aria-hidden="true"
             >
               <span
