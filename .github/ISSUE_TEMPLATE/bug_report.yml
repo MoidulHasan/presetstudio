@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in the editor, the export or the site doesn't work as it should.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the editor
+        2. …
+    validations:
+      required: true
+  - type: input
+    id: share
+    attributes:
+      label: Share link (optional)
+      description: Export → Share → copy the link. It opens your theme as a copy and makes most bugs easy to reproduce.
+  - type: dropdown
+    id: base
+    attributes:
+      label: Base style
+      options: [Aura, Lara, Nora, Material, Not sure]
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and system
+      placeholder: e.g. Chrome 140 on macOS 15

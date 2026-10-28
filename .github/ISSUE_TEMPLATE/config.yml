@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Docs
+    url: https://presetstudio.vercel.app/docs
+    about: Adding the exported preset to Nuxt or Vue, dark mode, sharing and what's supported.
+  - name: Report a security problem
+    url: https://github.com/MoidulHasan/presetstudio/security/advisories/new
+    about: Privately, please, not as a public issue.

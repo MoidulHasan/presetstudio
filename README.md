@@ -81,6 +81,10 @@ scripts/
 
 Never upgrade `primevue`, `@primevue/*`, `@primeuix/*` or `primeicons` past their pinned versions. Newer majors are proprietary. Dependabot ignores major updates for these packages, and `pnpm license:check` fails if one slips in. New dependencies must be MIT, ISC, BSD or Apache-2.0; the one exception is the Inter font (SIL OFL 1.1).
 
+## Contributing
+
+Bug reports, ideas and pull requests are welcome: see [CONTRIBUTING.md](./CONTRIBUTING.md). Report security problems privately ([SECURITY.md](./SECURITY.md)). Changes are listed in [CHANGELOG.md](./CHANGELOG.md).
+
 ## License
 
 [MIT](./LICENSE) © 2026 Moidul Hasan Khan. Third-party notices, including the Inter font, are in [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).

@@ -1,0 +1,21 @@
+name: Idea or feature request
+description: Something Preset Studio should do, or do better.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: What you want to do
+      description: The result you're after, more than a specific solution. "My buttons need a third outline style" says more than "add a field".
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: How you do it today
+      description: A workaround, another tool, or editing the preset by hand.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Colors, Shape and spacing, A component, Preview, Export or setup, Docs or site, Other]
