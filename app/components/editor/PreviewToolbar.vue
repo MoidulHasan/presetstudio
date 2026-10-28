@@ -93,7 +93,7 @@ const viewItems = computed<MenuItem[]>(() => [
         command: () => (editor.prefs.showFocus = !editor.prefs.showFocus),
       },
       {
-        label: 'Dim what this section doesn’t change',
+        label: 'Highlight what this section changes',
         icon: 'pi pi-lightbulb',
         checked: editor.prefs.spotlight,
         disabled: !lit.value?.length || !!editor.activeStage,
