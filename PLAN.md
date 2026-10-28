@@ -120,7 +120,7 @@ For sweeps, open a fresh browser context (empty storage), and collect `console` 
 ### P0. Before announcing
 
 1. **Owner settings:** enable Web Analytics in Vercel; enable private vulnerability reporting (GitHub → Settings → Security), which `SECURITY.md` points to; set the repo description and topics; tag `v1.0.0` and publish a GitHub release from `CHANGELOG.md`.
-2. **DataTable visual editor**, on a reusable **parts studio** (below). The core audience builds admin apps.
+2. ~~DataTable visual editor~~ **Done** (unreleased): `parts-studio.ts` + `Parts.vue`, stage `components/preview/stage/DataTable.vue`. Next parts editors only need a config and a stage.
 3. **Launch:** a short demo video or GIF, then Show HN, r/vuejs, Vue Land Discord, dev.to.
 
 ### P1. After launch

@@ -59,7 +59,7 @@ const CONTENTS = [
           <li>
             Adjust from there. <strong>Colors</strong> and <strong>Shape &amp; spacing</strong> change the whole
             library; <strong>Components</strong> has shared styles (form fields, lists, menus, overlays) and every
-            single component, five of them with a visual editor.
+            single component, six of them with a visual editor.
           </li>
           <li>
             Check it under <strong>Review</strong>: what you changed, and contrast in light and dark, with a fix

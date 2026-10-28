@@ -17,7 +17,7 @@ Preset Studio is built only on the last MIT-licensed releases (`primevue` 4.5.5,
 - **Start fast:** a guided setup (base style, brand color, corners, neutrals) or one of four example themes. Aura, Lara, Nora and Material are the base styles.
 - **Look & feel for the whole library:** brand color (22 built-in palettes or any color, with a perceptual 50–950 scale you can fine-tune), neutrals per mode, status colors, text, corner radius, density and the focus ring. Each choice reaches every component of every base style.
 - **Shared styles:** form fields, lists, menus, overlays, containers and selection, each edited once for all the components that use it.
-- **Every component:** all 88 components' tokens, searchable. Button, Message, Toast, Tag and Badge have visual editors with a stage that shows every variant in every state.
+- **Every component:** all 88 components' tokens, searchable. Button, Message, Toast, Tag, Badge and DataTable have visual editors with a stage that shows every variant and state.
 - **A preview you can trust:** your theme renders in its own PrimeVue instance, as stages ("All states") or sample pages ("In an app"), in light, dark or both side by side. Pick anything in the preview to edit it, and see which components a section reaches.
 - **Review:** every change listed and revertible on its own; contrast checks in both modes, counting the base style's own failures, with a one-click fix for each.
 - **Your workspace:** several themes with undo and redo (kept across reloads), search (⌘K / Ctrl+K), share links and theme files. Everything stays in your browser.

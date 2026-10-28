@@ -2,6 +2,11 @@
 
 Notable changes, newest first. Versions follow [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- **DataTable visual editor:** its header, column headers, sort icon, rows (hover, selected, striped), borders, row toggle and footer as one colors grid, plus padding for three sizes, title weights and icon sizes, on a stage with every state. Built on a reusable "parts" editor for components made of parts.
+- The spacing readout rounds like the other controls (15px, not 15.008px).
+
 ## 1.0.0 (2026-10-29)
 
 The first release: a free, open-source visual theme editor for PrimeVue 4 (styled mode).
