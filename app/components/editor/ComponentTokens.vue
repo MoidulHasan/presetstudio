@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '~/stores/workspace'
 import { usePresetStore } from '~/stores/preset'
 import { CATEGORY_META } from '~/utils/preview-categories'
 import { COMPONENT_META, STUDIO_COMPONENTS, groupComponentTokens, tokenLabel } from '~/utils/theme/components'
+import { PARTS_STUDIO } from '~/utils/theme/parts-studio'
 import type { TokenDescriptor } from '~/utils/theme/schema'
 import { matchesQuery, tokenSource } from '~/utils/theme/semantic'
 import type { ColorScheme } from '~/utils/theme/types'
@@ -210,6 +211,10 @@ function showInGallery() {
 
     <template v-if="designView">
       <EditorStudioButton v-if="component === 'button'" />
+      <EditorStudioParts
+        v-else-if="PARTS_STUDIO[component]"
+        :component="component"
+      />
       <EditorStudioSeverity
         v-else
         :component="component"

@@ -72,6 +72,7 @@ const STUDIO_SUBTITLES: Record<string, string> = {
   toast: 'Severities with summary, detail and close button',
   tag: 'Severities, plain and pill',
   badge: 'Severities in four sizes, plus dots',
+  datatable: 'Header, sorting, hover, selection and stripes, in three sizes',
 }
 
 function visualHint(name: string): string {

@@ -207,6 +207,9 @@ onBeforeUnmount(() => {
     <PreviewStageBadge
       v-else-if="stage === 'badge'"
     />
+    <PreviewStageDataTable
+      v-else-if="stage === 'datatable'"
+    />
     <PreviewStageFoundation
       v-else-if="stage?.startsWith('foundation-')"
       :stage="stage"
