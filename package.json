@@ -20,7 +20,7 @@
     "@pinia/nuxt": "1.0.2",
     "@primeuix/themes": "2.0.3",
     "@primevue/nuxt-module": "4.5.5",
-    "@tailwindcss/vite": "4.3.3",
+    "@tailwindcss/vite": "4.3.5",
     "@vercel/analytics": "2.0.1",
     "nuxt": "^4.6.2",
     "pinia": "4.1.0",
